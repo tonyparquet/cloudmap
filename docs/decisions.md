@@ -121,3 +121,12 @@ external`, `externalType`.
   `POST /api/audit/export` (journalise les exports faits dans le navigateur), `GET /api/help/iam`,
   `GET /api/config/app`, `GET /api/config/services`, `GET /api/profiles/:id/credentials/available`
   (booléen pour les lecteurs, sans détail), `GET /api/admin/audit.csv`.
+
+## Icônes (section 9.3)
+
+- Icônes génériques dessinées pour le projet : une par catégorie (glyphe blanc sur la tuile colorée de
+  la catégorie) + Git, navigateur, Internet. Résolution côté serveur : pack AWS
+  (`icons/aws/<nom>.svg`) → générique du même nom → générique de la catégorie → `generic.svg`.
+- `pnpm fetch-icons` : URL du pack via `AWS_ICONS_URL`, sinon recherche du lien sur la page officielle ;
+  si elle échoue (la page charge ses liens en JavaScript), le script l'indique et l'application garde
+  les icônes génériques. Le pack téléchargé n'est pas versionné (licence AWS).

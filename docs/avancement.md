@@ -8,7 +8,7 @@
 - [x] 6. `apps/server` : HTTPS TLS 1.3, contrôles de démarrage, en-têtes, SQLite + migrations, auth locale + TOTP + OIDC, sessions, CSRF, rôles, profils, identifiants, scans + SSE, snapshots, import, layouts, audit, + tests de sécurité
 - [x] 7. `apps/web` : thème, pages de la section 10, diagramme React Flow + ELK, nœuds et conteneurs, interactions, exports
 - [x] 8. `apps/cli` : scan hors-ligne, rotation de la clé maître
-- [ ] 9. Icônes : `scripts/fetch-icons.ts`, `map.yaml`, icônes génériques de repli
+- [x] 9. Icônes : `scripts/fetch-icons.ts`, `map.yaml`, icônes génériques de repli
 - [ ] 10. `deploy/`, `docs/`, `README.md`
 - [ ] 11. Tests E2E, puis `pnpm check` vert
 - [ ] 12. Vérification finale de la section 18
