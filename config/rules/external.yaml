@@ -1,0 +1,37 @@
+# Nœuds externes. Ceux déclarés dans un profil (`externalNodes`) gardent leur libellé ;
+# leur type dépend de l'icône : git → External::Git, browser → External::Browser, internet → External::Internet.
+- type: External::Git
+  typeLabel: Dépôt Git
+  label: Dépôt Git
+  icon: git
+  category: external
+  placement: { container: none }
+  relations:
+    - { kind: cicd, to: '$r.raw.linksTo', resolve: id }
+
+- type: External::Browser
+  typeLabel: Navigateur
+  label: Navigateur
+  icon: browser
+  category: external
+  placement: { container: none }
+  relations:
+    - { kind: network, to: '$r.raw.linksTo', resolve: id, label: HTTPS }
+
+- type: External::Internet
+  typeLabel: Internet
+  label: Internet
+  icon: internet
+  category: external
+  placement: { container: none }
+  relations:
+    - { kind: network, to: '$r.raw.linksTo', resolve: id }
+
+- type: External::*
+  typeLabel: Nœud externe
+  label: Externe
+  icon: generic
+  category: external
+  placement: { container: none }
+  relations:
+    - { kind: dependency, to: '$r.raw.linksTo', resolve: id }

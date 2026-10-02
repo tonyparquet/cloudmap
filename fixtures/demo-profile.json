@@ -1,0 +1,33 @@
+{
+  "id": "demo",
+  "name": "Démo",
+  "client": "Exemple fictif",
+  "description": "Profil de démonstration chargé depuis fixtures/ (DEMO_MODE=true). Données entièrement fictives.",
+  "accountId": "000000000000",
+  "regions": ["eu-west-3"],
+  "auth": { "kind": "import-only" },
+  "externalNodes": [
+    {
+      "id": "gitlab",
+      "label": "GitLab",
+      "sublabel": "dépôt",
+      "icon": "git",
+      "linksTo": ["arn:aws:codebuild:eu-west-3:000000000000:project/demo-build"]
+    },
+    {
+      "id": "navigateur",
+      "label": "Navigateur",
+      "sublabel": "ce poste",
+      "icon": "browser",
+      "linksTo": ["arn:aws:cloudfront::000000000000:distribution/E2DE000000001"]
+    }
+  ],
+  "probes": [
+    {
+      "url": "https://d111111abcdef8.cloudfront.net/",
+      "attachTo": "arn:aws:cloudfront::000000000000:distribution/E2DE000000001"
+    },
+    { "url": "https://a1b2c3d4e5.execute-api.eu-west-3.amazonaws.com/api", "attachTo": "a1b2c3d4e5" }
+  ],
+  "allowedGroups": []
+}

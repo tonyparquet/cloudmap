@@ -1,0 +1,68 @@
+# API Gateway REST (v1) et HTTP / WebSocket (v2), avec leurs liens VPC.
+- type: AWS::ApiGateway::RestApi
+  typeLabel: API Gateway (REST)
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.name'
+  sublabel: "'REST · ' & $join($r.raw._stages.stageName, ', ')"
+  icon: api-gateway
+  category: network
+  dnsNames: "$r.id & '.execute-api.' & $r.region & '.amazonaws.com'"
+  awsService: execute-api
+  status: [{ default: actif }]
+  relations:
+    - kind: network
+      to: '$r.raw._integrations.uri.$match($, /arn:aws[a-z-]*:lambda:[a-z0-9-]+:[0-9]{12}:function:[A-Za-z0-9_-]+/).match'
+      resolve: arn
+      label: intégration
+    - { kind: network, to: "$r.raw._integrations[connectionType = 'VPC_LINK'].connectionId", resolve: id }
+    - kind: network
+      to: "$r.raw._integrations[type in ['HTTP', 'HTTP_PROXY'] and $not(connectionType = 'VPC_LINK')].uri"
+      resolve: dns-name
+      unresolved: external
+
+- type: AWS::ApiGateway::VpcLink
+  typeLabel: Lien VPC (REST)
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.name'
+  sublabel: '$lowercase($r.raw.status)'
+  icon: vpc-link
+  category: network
+  status:
+    - { when: "$r.raw.status = 'AVAILABLE'", value: actif }
+    - { when: "$r.raw.status = 'PENDING'", value: en-veille }
+    - { when: "$r.raw.status = 'FAILED'", value: erreur }
+    - { default: inconnu }
+  relations:
+    - { kind: network, to: '$r.raw.targetArns', resolve: arn }
+
+- type: AWS::ApiGatewayV2::Api
+  typeLabel: API Gateway
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.Name'
+  sublabel: '$r.raw.ProtocolType'
+  icon: api-gateway
+  category: network
+  dnsNames: "[$r.raw.ApiEndpoint, $r.id & '.execute-api.' & $r.region & '.amazonaws.com']"
+  awsService: execute-api
+  status: [{ default: actif }]
+  relations:
+    # Lien VPC, puis cible de l'intégration : service Cloud Map, écouteur ALB/NLB (→ équilibreur) ou Lambda.
+    - { kind: network, to: "$r.raw._integrations[ConnectionType = 'VPC_LINK'].ConnectionId", resolve: id }
+    - kind: network
+      to: "$r.raw._integrations.$replace(IntegrationUri, ':listener/', ':loadbalancer/')"
+      resolve: arn
+    - kind: network
+      to: "$r.raw._integrations[IntegrationType = 'HTTP_PROXY' and $not(ConnectionType = 'VPC_LINK')].IntegrationUri"
+      resolve: dns-name
+      unresolved: external
+
+- type: AWS::ApiGatewayV2::VpcLink
+  typeLabel: Lien VPC
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.Name'
+  sublabel: "$lookup({'AVAILABLE': 'disponible', 'INACTIVE': 'en veille', 'PENDING': 'en attente', 'FAILED': 'en échec', 'DELETING': 'suppression'}, $r.raw.VpcLinkStatus)"
+  icon: vpc-link
+  category: network
+  placement: { container: subnet, ref: '$r.raw.SubnetIds', multi: replicate }
+  securityGroups: '$r.raw.SecurityGroupIds'
+  status:
+    - { when: "$r.raw.VpcLinkStatus = 'AVAILABLE'", value: actif }
+    - { when: "$r.raw.VpcLinkStatus in ['INACTIVE', 'PENDING', 'DELETING']", value: en-veille }
+    - { when: "$r.raw.VpcLinkStatus = 'FAILED'", value: erreur }
+    - { default: inconnu }

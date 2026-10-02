@@ -1,0 +1,12 @@
+# Métadonnées uniquement (DescribeParameters) : aucune valeur, même non chiffrée, n'est lue.
+- type: AWS::SSM::Parameter
+  typeLabel: Paramètre SSM
+  label: '$r.raw.Name'
+  sublabel: '$r.raw.Type'
+  icon: ssm
+  category: management
+  awsService: ssm
+  status: [{ default: actif }]
+  relations:
+    - { kind: data, to: '$r.raw.KeyId', resolve: arn, label: KMS }
+  group: { key: '$r.region' }

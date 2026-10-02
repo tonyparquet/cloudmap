@@ -1,0 +1,11 @@
+- type: AWS::CodeConnections::Connection
+  typeLabel: Connexion CodeConnections
+  label: '$r.raw.ConnectionName'
+  sublabel: '$r.raw.ProviderType'
+  icon: codeconnections
+  category: devtools
+  status:
+    - { when: "$r.raw.ConnectionStatus = 'AVAILABLE'", value: actif }
+    - { when: "$r.raw.ConnectionStatus = 'PENDING'", value: en-veille }
+    - { when: "$r.raw.ConnectionStatus = 'ERROR'", value: erreur }
+    - { default: inconnu }

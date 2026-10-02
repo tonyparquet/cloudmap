@@ -1,0 +1,13 @@
+- type: AWS::SQS::Queue
+  typeLabel: File SQS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.QueueName'
+  sublabel: "$r.raw.Attributes.ApproximateNumberOfMessages & ' message(s)'"
+  icon: sqs
+  category: integration
+  awsService: sqs
+  status: [{ default: actif }]
+  relations:
+    - kind: data
+      to: '$r.raw.Attributes.RedrivePolicy ? $eval($r.raw.Attributes.RedrivePolicy).deadLetterTargetArn'
+      resolve: arn
+      label: DLQ

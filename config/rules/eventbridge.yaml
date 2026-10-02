@@ -1,0 +1,14 @@
+- type: AWS::Events::Rule
+  typeLabel: Règle EventBridge
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.Name'
+  sublabel: "$r.raw.ScheduleExpression ? $r.raw.ScheduleExpression : 'motif d’événement'"
+  icon: eventbridge
+  category: integration
+  awsService: events
+  status:
+    - { when: "$r.raw.State = 'ENABLED'", value: actif }
+    - { when: "$r.raw.State = 'DISABLED'", value: arrete }
+    - { default: inconnu }
+  relations:
+    - { kind: data, to: '$r.raw._targets.Arn', resolve: arn, label: cible }
+  group: { key: '$r.raw.EventBusName' }

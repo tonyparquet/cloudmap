@@ -1,0 +1,26 @@
+- type: AWS::Route53::HostedZone
+  typeLabel: Zone Route 53
+  label: '$r.raw.Name'
+  sublabel: "($r.raw.Config.PrivateZone ? 'privée' : 'publique') & ' · ' & $string($r.raw.ResourceRecordSetCount) & ' enregistrement(s)'"
+  icon: route53
+  category: network
+  placement: { container: global }
+  status: [{ default: actif }]
+
+# Seuls les alias et CNAME sont collectés : ils portent les relations vers CloudFront / ALB / API Gateway.
+- type: AWS::Route53::RecordSet
+  typeLabel: Enregistrement DNS
+  label: '$r.raw.Name'
+  sublabel: "$r.raw.AliasTarget ? 'alias ' & $r.raw.Type : $r.raw.Type"
+  icon: route53
+  category: network
+  placement: { container: global }
+  status: [{ default: actif }]
+  relations:
+    - {
+        kind: network,
+        to: '[$r.raw.AliasTarget.DNSName, $r.raw.ResourceRecords.Value]',
+        resolve: dns-name,
+        label: alias,
+      }
+  group: { key: '$r.raw._hostedZoneName' }

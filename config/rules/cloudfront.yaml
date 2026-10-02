@@ -1,0 +1,17 @@
+- type: AWS::CloudFront::Distribution
+  typeLabel: CloudFront
+  label: '$r.tags.Name ? $r.tags.Name : ($r.raw.Aliases.Items[0] ? $r.raw.Aliases.Items[0] : $r.raw.DomainName)'
+  sublabel: '$r.raw.DomainName'
+  icon: cloudfront
+  category: network
+  placement: { container: global }
+  dnsNames: '[$r.raw.DomainName, $r.raw.Aliases.Items]'
+  status:
+    - { when: '$r.raw.Enabled = false', value: arrete }
+    - { when: "$r.raw.Status = 'Deployed'", value: actif }
+    - { when: "$r.raw.Status = 'InProgress'", value: en-veille }
+    - { default: inconnu }
+  relations:
+    # Origines : S3, API Gateway, ALB ou domaine personnalisé (nœud externe).
+    - { kind: network, to: '$r.raw.Origins.Items.DomainName', resolve: dns-name, unresolved: external }
+    - { kind: dependency, to: '$r.raw.WebACLId', resolve: arn, reverse: true, label: protège }

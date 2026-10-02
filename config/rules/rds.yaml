@@ -1,0 +1,52 @@
+- type: AWS::RDS::DBInstance
+  typeLabel: Base RDS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.DBInstanceIdentifier'
+  sublabel: "$lookup({'available': $r.raw.Engine, 'stopped': 'arrêtée', 'stopping': 'arrêt en cours', 'starting': 'démarrage', 'creating': 'création', 'modifying': 'modification', 'backing-up': 'sauvegarde', 'failed': 'en échec', 'storage-full': 'stockage plein'}, $r.raw.DBInstanceStatus)"
+  icon: rds
+  category: database
+  placement:
+    container: subnet
+    ref: '[$r.raw.DBSubnetGroup.Subnets[SubnetAvailabilityZone.Name = $r.raw.AvailabilityZone].SubnetIdentifier, $r.raw.DBSubnetGroup.Subnets.SubnetIdentifier]'
+    multi: first
+  securityGroups: '$r.raw.VpcSecurityGroups.VpcSecurityGroupId'
+  dnsNames: '$r.raw.Endpoint.Address'
+  status:
+    - { when: "$r.raw.DBInstanceStatus = 'available'", value: actif }
+    - { when: "$r.raw.DBInstanceStatus in ['stopped', 'stopping']", value: arrete }
+    - when: "$r.raw.DBInstanceStatus in ['failed', 'storage-full', 'inaccessible-encryption-credentials', 'incompatible-network', 'incompatible-parameters', 'incompatible-restore', 'restore-error']"
+      value: erreur
+    - { default: en-veille }
+  relations:
+    - { kind: data, to: '$r.raw.KmsKeyId', resolve: arn, label: KMS }
+  details:
+    moteur: "$r.raw.Engine & ' ' & $r.raw.EngineVersion"
+    classe: '$r.raw.DBInstanceClass'
+    multiAZ: '$r.raw.MultiAZ'
+
+- type: AWS::RDS::DBCluster
+  typeLabel: Cluster RDS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.DBClusterIdentifier'
+  sublabel: '$r.raw.Engine'
+  icon: rds
+  category: database
+  placement:
+    { container: subnet, ref: '$byId($r.raw.DBSubnetGroup).raw.Subnets.SubnetIdentifier', multi: first }
+  securityGroups: '$r.raw.VpcSecurityGroups.VpcSecurityGroupId'
+  dnsNames: '[$r.raw.Endpoint, $r.raw.ReaderEndpoint]'
+  status:
+    - { when: "$r.raw.Status = 'available'", value: actif }
+    - { when: "$r.raw.Status in ['stopped', 'stopping']", value: arrete }
+    - { when: "$r.raw.Status in ['failed', 'inaccessible-encryption-credentials']", value: erreur }
+    - { default: en-veille }
+  relations:
+    - { kind: dependency, to: '$r.raw.DBClusterMembers.DBInstanceIdentifier', resolve: id, label: membre }
+    - { kind: data, to: '$r.raw.KmsKeyId', resolve: arn, label: KMS }
+
+- {
+    type: AWS::RDS::DBSubnetGroup,
+    typeLabel: Groupe de sous-réseaux RDS,
+    label: '$r.raw.DBSubnetGroupName',
+    icon: rds,
+    category: database,
+    hidden: true,
+  }

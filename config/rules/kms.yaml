@@ -1,0 +1,13 @@
+# Clés KMS désignées par un alias géré par le client (ListAliases).
+- type: AWS::KMS::Key
+  typeLabel: Clé KMS
+  label: '$r.raw._aliases[0] ? $r.raw._aliases[0] : $r.id'
+  sublabel: "$r.raw.KeyManager = 'AWS' ? 'gérée par AWS' : 'gérée par le client'"
+  icon: kms
+  category: security
+  awsService: kms
+  status:
+    - { when: "$r.raw.KeyState = 'Enabled'", value: actif }
+    - { when: "$r.raw.KeyState in ['Disabled', 'PendingDeletion', 'PendingImport']", value: arrete }
+    - { when: '$not($exists($r.raw.KeyState))', value: inconnu }
+    - { default: erreur }

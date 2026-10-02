@@ -1,0 +1,30 @@
+- type: AWS::EKS::Cluster
+  typeLabel: Cluster EKS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.name'
+  sublabel: "'Kubernetes ' & $r.raw.version"
+  icon: eks
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.resourcesVpcConfig.subnetIds', multi: first }
+  securityGroups: '[$r.raw.resourcesVpcConfig.securityGroupIds, $r.raw.resourcesVpcConfig.clusterSecurityGroupId]'
+  dnsNames: '$r.raw.endpoint'
+  awsService: eks
+  status:
+    - { when: "$r.raw.status = 'ACTIVE'", value: actif }
+    - { when: "$r.raw.status in ['CREATING', 'UPDATING', 'PENDING']", value: en-veille }
+    - { when: "$r.raw.status = 'FAILED'", value: erreur }
+    - { default: inconnu }
+
+- type: AWS::EKS::Nodegroup
+  typeLabel: Groupe de nœuds EKS
+  label: '$r.raw.nodegroupName'
+  sublabel: "$string($r.raw.scalingConfig.desiredSize) & ' nœud(s)'"
+  icon: eks
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.subnets', multi: first }
+  status:
+    - { when: "$r.raw.status = 'ACTIVE' and $r.raw.scalingConfig.desiredSize > 0", value: actif }
+    - { when: "$r.raw.status = 'ACTIVE'", value: en-veille }
+    - { when: "$r.raw.status in ['DEGRADED', 'CREATE_FAILED', 'DELETE_FAILED']", value: erreur }
+    - { default: inconnu }
+  relations:
+    - { kind: dependency, to: '$r.raw.clusterName', resolve: id, reverse: true, label: cluster }

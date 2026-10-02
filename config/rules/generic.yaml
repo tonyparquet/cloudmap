@@ -1,0 +1,99 @@
+# Ressources sans règle dédiée (inventaire AWS Config ou Resource Explorer) : nœud générique
+# avec l'icône de sa catégorie. Le joker le plus long l'emporte ; `AWS::*` est le repli final.
+- type: AWS::*
+  label: &nom '$r.tags.Name ? $r.tags.Name : ($r.raw.resourceName ? $r.raw.resourceName : ($r.raw.Name ? $r.raw.Name : $r.id))'
+  icon: generic
+  category: generic
+
+# Formats AWS Config (CloudFormation)
+- { type: AWS::EC2::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::Lambda::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::ECS::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::EKS::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::Batch::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::ECR::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::ElasticBeanstalk::*, label: *nom, icon: compute, category: compute }
+- { type: AWS::RDS::*, label: *nom, icon: database, category: database }
+- { type: AWS::DMS::*, label: *nom, icon: database, category: database }
+- { type: AWS::DynamoDB::*, label: *nom, icon: database, category: database }
+- { type: AWS::ElastiCache::*, label: *nom, icon: database, category: database }
+- { type: AWS::Redshift::*, label: *nom, icon: database, category: database }
+- { type: AWS::OpenSearch::*, label: *nom, icon: database, category: database }
+- { type: AWS::S3::*, label: *nom, icon: storage, category: storage }
+- { type: AWS::EFS::*, label: *nom, icon: storage, category: storage }
+- { type: AWS::FSx::*, label: *nom, icon: storage, category: storage }
+- { type: AWS::Backup::*, label: *nom, icon: storage, category: storage }
+- { type: AWS::ElasticLoadBalancing::*, label: *nom, icon: network, category: network }
+- { type: AWS::ElasticLoadBalancingV2::*, label: *nom, icon: network, category: network }
+- { type: AWS::ApiGateway::*, label: *nom, icon: network, category: network }
+- { type: AWS::ApiGatewayV2::*, label: *nom, icon: network, category: network }
+- { type: AWS::CloudFront::*, label: *nom, icon: network, category: network }
+- { type: AWS::Route53::*, label: *nom, icon: network, category: network }
+- { type: AWS::NetworkFirewall::*, label: *nom, icon: network, category: network }
+- { type: AWS::ServiceDiscovery::*, label: *nom, icon: network, category: network }
+- { type: AWS::CodeBuild::*, label: *nom, icon: devtools, category: devtools }
+- { type: AWS::CodePipeline::*, label: *nom, icon: devtools, category: devtools }
+- { type: AWS::CodeDeploy::*, label: *nom, icon: devtools, category: devtools }
+- { type: AWS::CodeCommit::*, label: *nom, icon: devtools, category: devtools }
+- { type: AWS::IAM::*, label: *nom, icon: security, category: security }
+- { type: AWS::KMS::*, label: *nom, icon: security, category: security }
+- { type: AWS::SecretsManager::*, label: *nom, icon: security, category: security }
+- { type: AWS::WAFv2::*, label: *nom, icon: security, category: security }
+- { type: AWS::ACM::*, label: *nom, icon: security, category: security }
+- { type: AWS::CertificateManager::*, label: *nom, icon: security, category: security }
+- { type: AWS::GuardDuty::*, label: *nom, icon: security, category: security }
+- { type: AWS::SQS::*, label: *nom, icon: integration, category: integration }
+- { type: AWS::SNS::*, label: *nom, icon: integration, category: integration }
+- { type: AWS::Events::*, label: *nom, icon: integration, category: integration }
+- { type: AWS::StepFunctions::*, label: *nom, icon: integration, category: integration }
+- { type: AWS::Kinesis::*, label: *nom, icon: analytics, category: analytics }
+- { type: AWS::KinesisFirehose::*, label: *nom, icon: analytics, category: analytics }
+- { type: AWS::Glue::*, label: *nom, icon: analytics, category: analytics }
+- { type: AWS::Athena::*, label: *nom, icon: analytics, category: analytics }
+- { type: AWS::CloudWatch::*, label: *nom, icon: management, category: management }
+- { type: AWS::Logs::*, label: *nom, icon: management, category: management }
+- { type: AWS::SSM::*, label: *nom, icon: management, category: management }
+- { type: AWS::CloudTrail::*, label: *nom, icon: management, category: management }
+- { type: AWS::Config::*, label: *nom, icon: management, category: management }
+
+# Formats Resource Explorer (service:type)
+- { type: 'ec2:*', label: *nom, icon: compute, category: compute }
+- { type: 'lambda:*', label: *nom, icon: compute, category: compute }
+- { type: 'ecs:*', label: *nom, icon: compute, category: compute }
+- { type: 'eks:*', label: *nom, icon: compute, category: compute }
+- { type: 'ecr:*', label: *nom, icon: compute, category: compute }
+- { type: 'rds:*', label: *nom, icon: database, category: database }
+- { type: 'dms:*', label: *nom, icon: database, category: database }
+- { type: 'dynamodb:*', label: *nom, icon: database, category: database }
+- { type: 'elasticache:*', label: *nom, icon: database, category: database }
+- { type: 's3:*', label: *nom, icon: storage, category: storage }
+- { type: 'elasticfilesystem:*', label: *nom, icon: storage, category: storage }
+- { type: 'elasticloadbalancing:*', label: *nom, icon: network, category: network }
+- { type: 'apigateway:*', label: *nom, icon: network, category: network }
+- { type: 'cloudfront:*', label: *nom, icon: network, category: network }
+- { type: 'route53:*', label: *nom, icon: network, category: network }
+- { type: 'servicediscovery:*', label: *nom, icon: network, category: network }
+- { type: 'codebuild:*', label: *nom, icon: devtools, category: devtools }
+- { type: 'codepipeline:*', label: *nom, icon: devtools, category: devtools }
+- { type: 'iam:*', label: *nom, icon: security, category: security }
+- { type: 'kms:*', label: *nom, icon: security, category: security }
+- { type: 'secretsmanager:*', label: *nom, icon: security, category: security }
+- { type: 'sqs:*', label: *nom, icon: integration, category: integration }
+- { type: 'sns:*', label: *nom, icon: integration, category: integration }
+- { type: 'events:*', label: *nom, icon: integration, category: integration }
+- { type: 'states:*', label: *nom, icon: integration, category: integration }
+- { type: 'kinesis:*', label: *nom, icon: analytics, category: analytics }
+- { type: 'logs:*', label: *nom, icon: management, category: management }
+- { type: 'cloudwatch:*', label: *nom, icon: management, category: management }
+- { type: 'ssm:*', label: *nom, icon: management, category: management }
+- { type: '*', label: *nom, icon: generic, category: generic }
+
+# Sous-objets sans intérêt pour le diagramme (conformité AWS Config).
+- { type: AWS::Config::ResourceCompliance, label: *nom, icon: management, category: management, hidden: true }
+- {
+    type: AWS::Config::ConformancePackCompliance,
+    label: *nom,
+    icon: management,
+    category: management,
+    hidden: true,
+  }

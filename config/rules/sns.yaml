@@ -1,0 +1,10 @@
+- type: AWS::SNS::Topic
+  typeLabel: Rubrique SNS
+  label: '$r.tags.Name ? $r.tags.Name : $r.id'
+  sublabel: "$string($count($r.raw._subscriptions)) & ' abonnement(s)'"
+  icon: sns
+  category: integration
+  awsService: sns
+  status: [{ default: actif }]
+  relations:
+    - { kind: data, to: '$r.raw._subscriptions.Endpoint', resolve: arn, label: abonnement }

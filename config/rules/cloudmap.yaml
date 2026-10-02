@@ -1,0 +1,21 @@
+# L'espace de noms apparaît dans le sous-libellé du service.
+- {
+    type: AWS::ServiceDiscovery::Namespace,
+    typeLabel: Espace de noms Cloud Map,
+    label: '$r.raw.Name',
+    icon: cloudmap,
+    category: network,
+    hidden: true,
+  }
+
+- type: AWS::ServiceDiscovery::Service
+  typeLabel: Service Cloud Map
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.Name'
+  sublabel: "$string($r.raw._instanceCount) & ' instance(s)' & ($byId($r.raw.NamespaceId) ? ' · ' & $byId($r.raw.NamespaceId).raw.Name : '')"
+  icon: cloudmap
+  category: network
+  awsService: servicediscovery
+  status:
+    - { when: '$r.raw._instanceCount > 0', value: actif }
+    - { when: '$r.raw._instanceCount = 0', value: en-veille }
+    - { default: inconnu }

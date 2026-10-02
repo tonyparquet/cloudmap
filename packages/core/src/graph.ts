@@ -252,7 +252,10 @@ class GraphBuilder {
       case 'az':
       case 'subnet': {
         const subnets = (await this.ev.strings(p.ref, r)).filter((id) => this.containers.has(`subnet:${id}`));
-        if (subnets.length === 0) return [fallback];
+        if (subnets.length === 0) {
+          const vpc = (await this.ev.strings(p.vpcRef, r)).find((id) => this.containers.has(`vpc:${id}`));
+          return [vpc ? `vpc:${vpc}` : fallback];
+        }
         const chosen = p.multi === 'replicate' ? subnets : subnets.slice(0, 1);
         return [
           ...new Set(
@@ -294,8 +297,19 @@ class GraphBuilder {
     const rule = findRule(this.rules, r.type);
     if (rule?.hidden || !this.matchesTagFilters(r)) return;
     const raw = (r.raw ?? {}) as Record<string, unknown>;
-    const label = (rule ? await this.ev.str(rule.label, r) : undefined) || nameTag(r) || resourceName(r);
-    const sublabel = rule?.sublabel ? await this.ev.str(rule.sublabel, r) : undefined;
+    const external = r.type.startsWith('External::');
+    // Les nœuds externes déclarés dans le profil gardent leur libellé et leur sous-libellé.
+    const label =
+      (external && typeof raw.label === 'string' ? raw.label : undefined) ||
+      (rule ? await this.ev.str(rule.label, r) : undefined) ||
+      nameTag(r) ||
+      resourceName(r);
+    const sublabel =
+      external && typeof raw.sublabel === 'string'
+        ? raw.sublabel
+        : rule?.sublabel
+          ? await this.ev.str(rule.sublabel, r)
+          : undefined;
     const { status, source } = await this.status(rule, r);
     const containerIds = await this.placement(rule, r);
     const sgs = await this.ev.strings(rule?.securityGroups, r);
@@ -306,8 +320,7 @@ class GraphBuilder {
     const consoleUrl =
       (rule?.console ? await this.ev.str(rule.console, r) : undefined) ??
       (r.arn ? `https://console.aws.amazon.com/go/view?arn=${encodeURIComponent(r.arn)}` : undefined);
-    const icon =
-      r.type.startsWith('External::') && typeof raw.icon === 'string' ? raw.icon : (rule?.icon ?? 'generic');
+    const icon = external && typeof raw.icon === 'string' ? raw.icon : (rule?.icon ?? 'generic');
 
     const baseId = resourceKey(r);
     const ids: string[] = [];
@@ -367,6 +380,18 @@ class GraphBuilder {
     };
     this.metas.set(id, { node, sgs: [], ips: [], groupKey: '' });
     return id;
+  }
+
+  /** Nœud externe du profil correspondant à un domaine (ex. `gitlab.com` ↔ nœud d'id ou de libellé « GitLab »). */
+  private profileExternalFor(host: string): string | undefined {
+    const parts = host.split('.');
+    const candidates = new Set([host, parts.length >= 2 ? parts[parts.length - 2] : host]);
+    const match = (this.profile.externalNodes ?? []).find(
+      (n) => candidates.has(n.id.toLowerCase()) || candidates.has(n.label.toLowerCase()),
+    );
+    if (!match) return undefined;
+    const r = this.byId.get(`external:${match.id}`)?.[0];
+    return r ? this.nodesByResource.get(resourceKey(r))?.[0] : undefined;
   }
 
   private internetNode(): string {
@@ -559,12 +584,17 @@ class GraphBuilder {
       for (const value of await this.ev.strings(rel.to, r)) {
         let targets = this.resolve(rel.resolve ?? 'id', value);
         if (targets.length === 0) {
-          if (rel.unresolved === 'external') {
-            const host = normalizeHost(value);
-            targets = [
-              this.syntheticExternal(`external:dns:${host}`, 'External::Internet', host, 'domaine externe'),
-            ];
-          } else continue;
+          if (rel.unresolved !== 'external') continue;
+          const host = normalizeHost(value);
+          targets = [
+            this.profileExternalFor(host) ??
+              this.syntheticExternal(
+                `external:dns:${host}`,
+                rel.externalType ?? 'External::Internet',
+                host,
+                'domaine externe',
+              ),
+          ];
         }
         for (const t of targets) {
           if (t === meta.node.id) continue;
@@ -579,7 +609,9 @@ class GraphBuilder {
           });
           const targetMeta = this.metas.get(t);
           const awsService = targetMeta?.rule?.awsService;
-          if (meta.subnetId && awsService && rel.kind !== 'cicd' && targetMeta) {
+          // Seules les dépendances directes de la ressource (données, réseau) impliquent une sortie vers le service.
+          const outbound = !rel.reverse && (rel.kind === 'data' || rel.kind === 'network');
+          if (meta.subnetId && awsService && outbound && targetMeta) {
             this.serviceUses.push({
               from: this.flowNode(meta),
               serviceNode: t,

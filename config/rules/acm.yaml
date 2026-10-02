@@ -1,0 +1,14 @@
+- type: AWS::CertificateManager::Certificate
+  typeLabel: Certificat ACM
+  label: '$r.raw.DomainName'
+  sublabel: "$r.raw.NotAfter ? 'expire le ' & $substring($r.raw.NotAfter, 0, 10) : $lowercase($r.raw.Status)"
+  icon: acm
+  category: security
+  status:
+    - { when: "$r.raw.Status = 'ISSUED'", value: actif }
+    - { when: "$r.raw.Status = 'PENDING_VALIDATION'", value: en-veille }
+    - { when: "$r.raw.Status in ['EXPIRED', 'REVOKED', 'FAILED', 'VALIDATION_TIMED_OUT']", value: erreur }
+    - { default: inconnu }
+  relations:
+    - { kind: dependency, to: '$r.raw.InUseBy', resolve: arn, label: certificat }
+  group: { key: '$r.region' }

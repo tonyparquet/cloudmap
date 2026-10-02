@@ -1,0 +1,36 @@
+- type: AWS::CodePipeline::Pipeline
+  typeLabel: CodePipeline
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.name'
+  sublabel: "$lookup({'Succeeded': 'réussi', 'Failed': 'échoué', 'InProgress': 'en cours', 'Stopped': 'arrêté', 'Superseded': 'remplacé'}, $r.raw._state.stageStates[-1].latestExecution.status)"
+  icon: codepipeline
+  category: devtools
+  status:
+    - { when: "'Failed' in $r.raw._state.stageStates.latestExecution.status", value: erreur }
+    - {
+        when: "$r.raw._state.stageStates[-1].latestExecution.status in ['Succeeded', 'InProgress']",
+        value: actif,
+      }
+    - { default: en-veille }
+  relations:
+    - kind: cicd
+      to: "$r.raw.stages.actions[actionTypeId.provider = 'CodeStarSourceConnection'].configuration.ConnectionArn"
+      resolve: arn
+      reverse: true
+      label: source
+    - kind: cicd
+      to: "$r.raw.stages.actions[actionTypeId.provider = 'ECR'].configuration.RepositoryName"
+      resolve: ecr-image
+      reverse: true
+      label: source
+    - kind: cicd
+      to: "$r.raw.stages.actions[actionTypeId.provider = 'CodeBuild'].configuration.ProjectName"
+      resolve: id
+      label: build
+    - kind: cicd
+      to: "$r.raw.stages.actions[actionTypeId.provider = 'ECS'].configuration.ServiceName"
+      resolve: id
+      label: déploiement
+    - kind: cicd
+      to: "$r.raw.stages.actions[actionTypeId.provider = 'S3' and actionTypeId.category = 'Deploy'].configuration.BucketName"
+      resolve: s3-bucket
+      label: déploiement

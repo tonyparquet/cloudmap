@@ -1,0 +1,11 @@
+- type: AWS::Kinesis::Stream
+  typeLabel: Flux Kinesis
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.StreamName'
+  sublabel: "$string($r.raw.OpenShardCount) & ' fragment(s)'"
+  icon: kinesis
+  category: analytics
+  awsService: kinesis-streams
+  status:
+    - { when: "$r.raw.StreamStatus = 'ACTIVE'", value: actif }
+    - { when: "$r.raw.StreamStatus in ['CREATING', 'UPDATING']", value: en-veille }
+    - { default: inconnu }

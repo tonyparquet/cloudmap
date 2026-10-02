@@ -1,0 +1,10 @@
+# Les ACL de portée CLOUDFRONT ont la région « global » et vont dans le cadre Global.
+- type: AWS::WAFv2::WebACL
+  typeLabel: WAF
+  label: '$r.raw.Name'
+  sublabel: "$r.region = 'global' ? 'CloudFront' : 'régional'"
+  icon: waf
+  category: security
+  status: [{ default: actif }]
+  relations:
+    - { kind: dependency, to: '$r.raw._resources', resolve: arn, label: protège }

@@ -1,0 +1,16 @@
+- type: AWS::S3::Bucket
+  typeLabel: Compartiment S3
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.Name'
+  sublabel: "$r.raw._website ? 'site web statique' : ($r.raw._publicAccessBlock.BlockPublicAcls and $r.raw._publicAccessBlock.RestrictPublicBuckets ? 'accès public bloqué' : 'compartiment')"
+  icon: s3
+  category: storage
+  awsService: s3
+  # Noms DNS utilisés par les origines CloudFront et les sites web statiques.
+  dnsNames: >-
+    [$r.id & '.s3.amazonaws.com', $r.id & '.s3.' & $r.region & '.amazonaws.com',
+    $r.id & '.s3-' & $r.region & '.amazonaws.com', $r.id & '.s3-website-' & $r.region & '.amazonaws.com',
+    $r.id & '.s3-website.' & $r.region & '.amazonaws.com', $r.id & '.s3.dualstack.' & $r.region & '.amazonaws.com']
+  status: [{ default: actif }]
+  details:
+    accesPublicBloque: '$r.raw._publicAccessBlock'
+    siteWeb: '$r.raw._website'

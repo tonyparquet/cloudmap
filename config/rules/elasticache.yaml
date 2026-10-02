@@ -1,0 +1,21 @@
+- type: AWS::ElastiCache::CacheCluster
+  typeLabel: ElastiCache
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.CacheClusterId'
+  sublabel: "$r.raw.Engine & ' ' & $r.raw.EngineVersion"
+  icon: elasticache
+  category: database
+  placement:
+    container: subnet
+    ref: '[$r.raw._subnets[SubnetAvailabilityZone.Name = $r.raw.PreferredAvailabilityZone].SubnetIdentifier, $r.raw._subnets.SubnetIdentifier]'
+    multi: first
+  securityGroups: '$r.raw.SecurityGroups.SecurityGroupId'
+  dnsNames: '[$r.raw.ConfigurationEndpoint.Address, $r.raw.CacheNodes.Endpoint.Address]'
+  status:
+    - { when: "$r.raw.CacheClusterStatus = 'available'", value: actif }
+    - {
+        when: "$r.raw.CacheClusterStatus in ['creating', 'modifying', 'rebooting cluster nodes', 'snapshotting']",
+        value: en-veille,
+      }
+    - { when: "$r.raw.CacheClusterStatus in ['incompatible-network', 'restore-failed']", value: erreur }
+    - { default: inconnu }
+  group: { key: '$r.raw.ReplicationGroupId' }

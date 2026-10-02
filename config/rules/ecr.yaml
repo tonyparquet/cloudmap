@@ -1,0 +1,11 @@
+- type: AWS::ECR::Repository
+  typeLabel: Dépôt ECR
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.repositoryName'
+  sublabel: "$string($r.raw._imageCount) & ' image(s)'"
+  icon: ecr
+  category: compute
+  awsService: ecr.dkr
+  status:
+    - { when: '$r.raw._imageCount > 0', value: actif }
+    - { when: '$r.raw._imageCount = 0', value: en-veille }
+    - { default: inconnu }

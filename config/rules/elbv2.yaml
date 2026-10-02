@@ -1,0 +1,37 @@
+- type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  typeLabel: Équilibreur de charge
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.LoadBalancerName'
+  sublabel: "$lookup({'application': 'ALB', 'network': 'NLB', 'gateway': 'GWLB'}, $r.raw.Type) & ' · ' & ($r.raw.Scheme = 'internal' ? 'interne' : 'public')"
+  icon: elb
+  category: network
+  placement: { container: subnet, ref: '$r.raw.AvailabilityZones.SubnetId', multi: first }
+  securityGroups: '$r.raw.SecurityGroups'
+  dnsNames: '$r.raw.DNSName'
+  awsService: elasticloadbalancing
+  status:
+    - { when: "$r.raw.State.Code = 'active'", value: actif }
+    - { when: "$r.raw.State.Code = 'provisioning'", value: en-veille }
+    - { when: "$r.raw.State.Code in ['failed', 'active_impaired']", value: erreur }
+    - { default: inconnu }
+  relations:
+    - kind: network
+      to: '[$r.raw._listeners.DefaultActions.TargetGroupArn, $r.raw._listeners.DefaultActions.ForwardConfig.TargetGroups.TargetGroupArn]'
+      resolve: arn
+      label: écouteur
+  details:
+    ecouteurs: "$r.raw._listeners.(Protocol & ' ' & $string(Port))"
+
+- type: AWS::ElasticLoadBalancingV2::TargetGroup
+  typeLabel: Groupe cible
+  label: '$r.raw.TargetGroupName'
+  sublabel: "$r.raw.Protocol & ' ' & $string($r.raw.Port) & ' · ' & $string($count($r.raw._targets[TargetHealth.State = 'healthy'])) & '/' & $string($count($r.raw._targets)) & ' saine(s)'"
+  icon: target-group
+  category: network
+  placement: { container: vpc, ref: '$r.raw.VpcId' }
+  status:
+    - { when: "$count($r.raw._targets[TargetHealth.State = 'healthy']) > 0", value: actif }
+    - { when: '$count($r.raw._targets) = 0', value: en-veille }
+    - { when: "$count($r.raw._targets[TargetHealth.State = 'unhealthy']) > 0", value: erreur }
+    - { default: inconnu }
+  relations:
+    - { kind: network, to: '$r.raw._targets.Target.Id', resolve: target-group-targets, label: cible }

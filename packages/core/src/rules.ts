@@ -34,6 +34,8 @@ export const ruleSchema = z.strictObject({
     .strictObject({
       container: z.enum(['none', 'global', 'region', 'vpc', 'az', 'subnet']),
       ref: expr.optional(),
+      /** Repli si `ref` ne désigne aucun sous-réseau connu (ex. endpoint passerelle → VPC). */
+      vpcRef: expr.optional(),
       multi: z.enum(['replicate', 'first']).optional(),
     })
     .optional(),
@@ -61,6 +63,10 @@ export const ruleSchema = z.strictObject({
         label: z.string().max(80).optional(),
         reverse: z.boolean().optional(),
         unresolved: z.enum(['ignore', 'external']).optional(),
+        externalType: z
+          .string()
+          .regex(/^External::\w+$/)
+          .optional(),
       }),
     )
     .optional(),
@@ -92,7 +98,7 @@ export function isExpression(s: string): boolean {
 
 function ruleExpressions(rule: Rule): string[] {
   const out = [rule.label, rule.sublabel, rule.securityGroups, rule.ips, rule.dnsNames, rule.console];
-  out.push(rule.placement?.ref, rule.group?.key);
+  out.push(rule.placement?.ref, rule.placement?.vpcRef, rule.group?.key);
   for (const s of rule.status ?? []) if ('when' in s) out.push(s.when);
   for (const r of rule.relations ?? []) out.push(r.to);
   out.push(...Object.values(rule.details ?? {}));
@@ -112,7 +118,7 @@ export function parseRules(files: { name: string; content: string }[]): RuleSet 
     try {
       for (const doc of parseAllDocuments(file.content)) {
         if (doc.errors.length) throw doc.errors[0];
-        const value: unknown = doc.toJS({ maxAliasCount: 50 });
+        const value: unknown = doc.toJS({ maxAliasCount: 500 });
         if (Array.isArray(value)) items.push(...value);
         else if (value && typeof value === 'object' && Array.isArray((value as { rules?: unknown }).rules)) {
           items.push(...(value as { rules: unknown[] }).rules);

@@ -1,0 +1,27 @@
+- type: AWS::CodeBuild::Project
+  typeLabel: CodeBuild
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.name'
+  sublabel: "$r.raw._lastBuild ? $lookup({'SUCCEEDED': 'réussi', 'FAILED': 'échoué', 'FAULT': 'erreur', 'TIMED_OUT': 'délai dépassé', 'IN_PROGRESS': 'en cours', 'STOPPED': 'arrêté'}, $r.raw._lastBuild.buildStatus) : 'jamais lancé'"
+  icon: codebuild
+  category: devtools
+  placement: { container: subnet, ref: '$r.raw.vpcConfig.subnets', multi: first }
+  securityGroups: '$r.raw.vpcConfig.securityGroupIds'
+  awsService: codebuild
+  status:
+    - { when: "$r.raw._lastBuild.buildStatus in ['SUCCEEDED', 'IN_PROGRESS']", value: actif }
+    - { when: "$r.raw._lastBuild.buildStatus in ['FAILED', 'FAULT', 'TIMED_OUT']", value: erreur }
+    - { when: "$r.raw._lastBuild.buildStatus = 'STOPPED'", value: arrete }
+    - { default: en-veille }
+  relations:
+    # Source : connexion CodeConnections, ou dépôt GitLab / GitHub (nœud externe Git).
+    - { kind: cicd, to: '$r.raw.source.auth.resource', resolve: arn, reverse: true }
+    - kind: cicd
+      to: "$r.raw.source.type in ['GITHUB', 'GITHUB_ENTERPRISE', 'GITLAB', 'GITLAB_SELF_MANAGED', 'BITBUCKET', 'CODECOMMIT'] ? $r.raw.source.location"
+      resolve: dns-name
+      unresolved: external
+      externalType: External::Git
+      reverse: true
+    # Cible : dépôt ECR désigné par une variable d'environnement en clair (jamais les valeurs secrètes).
+    - kind: cicd
+      to: "$r.raw.environment.environmentVariables[type = 'PLAINTEXT' and $contains($uppercase(name), /REPO|IMAGE|ECR/)].value"
+      resolve: ecr-image

@@ -1,0 +1,25 @@
+- type: AWS::Lambda::Function
+  typeLabel: Lambda
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.FunctionName'
+  sublabel: "$r.raw.PackageType = 'Image' ? 'image conteneur' : $r.raw.Runtime"
+  icon: lambda
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.VpcConfig.SubnetIds', multi: first }
+  securityGroups: '$r.raw.VpcConfig.SecurityGroupIds'
+  awsService: lambda
+  status:
+    - { when: "$r.raw.State = 'Failed' or $r.raw.LastUpdateStatus = 'Failed'", value: erreur }
+    - { when: "$r.raw.State in ['Inactive', 'Pending']", value: en-veille }
+    - { when: "$r.raw.State = 'Active' or $not($exists($r.raw.State))", value: actif }
+    - { default: inconnu }
+  relations:
+    - kind: data
+      to: "$r.raw._eventSourceMappings[State != 'Disabled'].EventSourceArn"
+      resolve: arn
+      reverse: true
+      label: déclencheur
+    - { kind: data, to: '$r.raw.KMSKeyArn', resolve: arn, label: KMS }
+    - { kind: data, to: '$r.raw.DeadLetterConfig.TargetArn', resolve: arn, label: DLQ }
+  details:
+    memoire: '$r.raw.MemorySize'
+    variables: '$r.raw.Environment.VariableNames'

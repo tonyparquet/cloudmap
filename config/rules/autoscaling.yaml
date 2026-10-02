@@ -1,0 +1,17 @@
+- type: AWS::AutoScaling::AutoScalingGroup
+  typeLabel: Groupe Auto Scaling
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.AutoScalingGroupName'
+  sublabel: "$string($count($r.raw.Instances)) & '/' & $string($r.raw.DesiredCapacity) & ' instance(s)'"
+  icon: autoscaling
+  category: compute
+  placement: { container: subnet, ref: "$split($r.raw.VPCZoneIdentifier, ',')", multi: first }
+  status:
+    - {
+        when: "$r.raw.DesiredCapacity > 0 and $count($r.raw.Instances[LifecycleState = 'InService']) > 0",
+        value: actif,
+      }
+    - { when: '$r.raw.DesiredCapacity = 0', value: en-veille }
+    - { default: erreur }
+  relations:
+    - { kind: dependency, to: '$r.raw.Instances.InstanceId', resolve: id, label: instance }
+    - { kind: network, to: '$r.raw.TargetGroupARNs', resolve: arn, reverse: true }

@@ -1,0 +1,19 @@
+- type: AWS::EC2::Instance
+  typeLabel: Instance EC2
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.InstanceId'
+  sublabel: "$r.raw.InstanceType & ' · ' & $lookup({'running': 'en marche', 'stopped': 'arrêtée', 'stopping': 'arrêt', 'pending': 'démarrage', 'terminated': 'terminée', 'shutting-down': 'arrêt'}, $r.raw.State.Name)"
+  icon: ec2
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.SubnetId' }
+  securityGroups: '$r.raw.SecurityGroups.GroupId'
+  ips: '[$r.raw.PrivateIpAddress, $r.raw.NetworkInterfaces.PrivateIpAddresses.PrivateIpAddress]'
+  status:
+    - { when: "$r.raw.State.Name = 'running'", value: actif }
+    - { when: "$r.raw.State.Name in ['stopped', 'stopping', 'terminated', 'shutting-down']", value: arrete }
+    - { when: "$r.raw.State.Name = 'pending'", value: en-veille }
+    - { default: inconnu }
+  group: { key: '$r.tags.`aws:autoscaling:groupName`' }
+  details:
+    typeInstance: '$r.raw.InstanceType'
+    ipPublique: '$r.raw.PublicIpAddress'
+    image: '$r.raw.ImageId'

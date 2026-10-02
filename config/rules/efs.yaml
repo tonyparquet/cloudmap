@@ -1,0 +1,16 @@
+- type: AWS::EFS::FileSystem
+  typeLabel: EFS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.FileSystemId'
+  sublabel: "$string($r.raw.NumberOfMountTargets) & ' point(s) de montage'"
+  icon: efs
+  category: storage
+  placement: { container: subnet, ref: '$r.raw._mountTargets.SubnetId', multi: first }
+  securityGroups: '$r.raw._mountTargets.SecurityGroups'
+  ips: '$r.raw._mountTargets.IpAddress'
+  dnsNames: "$r.id & '.efs.' & $r.region & '.amazonaws.com'"
+  awsService: elasticfilesystem
+  status:
+    - { when: "$r.raw.LifeCycleState = 'available'", value: actif }
+    - { when: "$r.raw.LifeCycleState in ['creating', 'updating']", value: en-veille }
+    - { when: "$r.raw.LifeCycleState = 'error'", value: erreur }
+    - { default: inconnu }

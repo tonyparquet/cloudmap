@@ -1,0 +1,111 @@
+# Réseau EC2. VPC, sous-réseaux, tables de routage, groupes de sécurité, NACL et ENI sont rendus
+# comme conteneurs ou servent à l'inférence des flux : ils ne sont pas dessinés comme nœuds.
+- { type: AWS::EC2::VPC, typeLabel: VPC, label: '$r.raw.VpcId', icon: vpc, category: network, hidden: true }
+- {
+    type: AWS::EC2::Subnet,
+    typeLabel: Sous-réseau,
+    label: '$r.raw.SubnetId',
+    icon: vpc,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: AWS::EC2::RouteTable,
+    typeLabel: Table de routage,
+    label: '$r.raw.RouteTableId',
+    icon: vpc,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: AWS::EC2::SecurityGroup,
+    typeLabel: Groupe de sécurité,
+    label: '$r.raw.GroupName',
+    icon: vpc,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: AWS::EC2::NetworkAcl,
+    typeLabel: NACL,
+    label: '$r.raw.NetworkAclId',
+    icon: vpc,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: AWS::EC2::NetworkInterface,
+    typeLabel: Interface réseau,
+    label: '$r.raw.NetworkInterfaceId',
+    icon: vpc,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: AWS::EC2::VPCPeeringConnection,
+    typeLabel: Appairage VPC,
+    label: '$r.raw.VpcPeeringConnectionId',
+    icon: vpc,
+    category: network,
+    hidden: true,
+  }
+
+- type: AWS::EC2::InternetGateway
+  typeLabel: Passerelle Internet
+  label: "$r.tags.Name ? $r.tags.Name : 'IGW'"
+  sublabel: "$count($ofType('AWS::EC2::NatGateway')[raw.VpcId in $r.raw.Attachments.VpcId and raw.State = 'available']) = 0 ? 'sans NAT' : 'avec NAT'"
+  icon: igw
+  category: network
+  placement: { container: vpc, ref: '$r.raw.Attachments.VpcId' }
+  status:
+    - {
+        when: "'available' in $r.raw.Attachments.State or 'attached' in $r.raw.Attachments.State",
+        value: actif,
+      }
+    - { default: inconnu }
+
+- type: AWS::EC2::NatGateway
+  typeLabel: Passerelle NAT
+  label: "$r.tags.Name ? $r.tags.Name : 'NAT'"
+  sublabel: "$r.raw.ConnectivityType = 'private' ? 'NAT privée' : $join($r.raw.NatGatewayAddresses.PublicIp, ', ')"
+  icon: nat
+  category: network
+  placement: { container: subnet, ref: '$r.raw.SubnetId' }
+  ips: '$r.raw.NatGatewayAddresses.PrivateIp'
+  status:
+    - { when: "$r.raw.State = 'available'", value: actif }
+    - { when: "$r.raw.State = 'pending'", value: en-veille }
+    - { when: "$r.raw.State = 'failed'", value: erreur }
+    - { when: "$r.raw.State in ['deleting', 'deleted']", value: arrete }
+    - { default: inconnu }
+
+- type: AWS::EC2::VPCEndpoint
+  typeLabel: Endpoint VPC
+  label: "$r.tags.Name ? $r.tags.Name : 'Endpoint ' & $uppercase($substringAfter($r.raw.ServiceName, $r.region & '.'))"
+  sublabel: "$lookup({'Gateway': 'passerelle', 'Interface': 'interface', 'GatewayLoadBalancer': 'GWLB'}, $r.raw.VpcEndpointType)"
+  icon: endpoint
+  category: network
+  # Endpoint d'interface : dans son sous-réseau ; endpoint passerelle : en bordure du VPC.
+  placement: { container: subnet, ref: '$r.raw.SubnetIds', vpcRef: '$r.raw.VpcId', multi: first }
+  securityGroups: '$r.raw.Groups.GroupId'
+  status:
+    - { when: "$lowercase($r.raw.State) = 'available'", value: actif }
+    - { when: "$lowercase($r.raw.State) in ['pending', 'pendingacceptance']", value: en-veille }
+    - { when: "$lowercase($r.raw.State) in ['failed', 'rejected']", value: erreur }
+    - { default: inconnu }
+
+- type: AWS::EC2::TransitGatewayAttachment
+  typeLabel: Attachement Transit Gateway
+  label: "$r.tags.Name ? $r.tags.Name : 'TGW ' & $r.raw.TransitGatewayId"
+  sublabel: '$r.raw.TransitGatewayAttachmentId'
+  icon: transit-gateway
+  category: network
+  placement: { container: vpc, ref: '$r.raw.ResourceId' }
+  status:
+    - { when: "$r.raw.State = 'available'", value: actif }
+    - {
+        when: "$r.raw.State in ['pending', 'initiating', 'modifying', 'pendingAcceptance']",
+        value: en-veille,
+      }
+    - { when: "$r.raw.State in ['failed', 'rejected']", value: erreur }
+    - { default: arrete }

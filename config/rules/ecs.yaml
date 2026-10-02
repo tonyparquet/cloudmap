@@ -1,0 +1,51 @@
+- type: AWS::ECS::Cluster
+  typeLabel: Cluster ECS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.clusterName'
+  sublabel: "$string($r.raw.runningTasksCount) & ' tâche(s) · ' & $string($r.raw.activeServicesCount) & ' service(s)'"
+  icon: ecs
+  category: compute
+  status:
+    - { when: "$r.raw.status = 'ACTIVE' and $r.raw.runningTasksCount > 0", value: actif }
+    - { when: "$r.raw.status = 'ACTIVE'", value: en-veille }
+    - { default: arrete }
+
+# Exemple de la section 6 de la spécification.
+- type: AWS::ECS::Service
+  typeLabel: Tâche ECS
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.serviceName'
+  sublabel: "$string($r.raw.runningCount) & '/' & $string($r.raw.desiredCount) & ' tâche'"
+  icon: ecs
+  category: compute
+  placement:
+    container: subnet
+    ref: '$r.raw.networkConfiguration.awsvpcConfiguration.subnets[0]'
+    multi: replicate
+  securityGroups: '$r.raw.networkConfiguration.awsvpcConfiguration.securityGroups'
+  ips: "$r.raw._tasks.attachments.details[name = 'privateIPv4Address'].value"
+  status:
+    - { when: '$r.raw.runningCount > 0', value: actif }
+    - { when: '$r.raw.desiredCount = 0', value: en-veille }
+    - { when: '$r.raw.desiredCount > 0 and $r.raw.runningCount = 0', value: erreur }
+    - { default: inconnu }
+  relations:
+    - kind: data
+      to: '$r.raw._taskDefinition.containerDefinitions.image' # résolu vers ECR
+      resolve: ecr-image
+      label: images
+    - kind: data
+      to: '$r.raw._taskDefinition.containerDefinitions.secrets.valueFrom'
+      resolve: arn
+    - { kind: network, to: '$r.raw.loadBalancers.targetGroupArn', resolve: arn, reverse: true }
+    - {
+        kind: dependency,
+        to: '$r.raw.serviceRegistries.registryArn',
+        resolve: arn,
+        reverse: true,
+        label: découverte,
+      }
+  group:
+    key: '$r.raw.clusterArn' # regroupement si trop nombreux
+  details:
+    cluster: '$r.raw.clusterArn'
+    definitionDeTache: '$r.raw.taskDefinition'
+    typeDeLancement: '$r.raw.launchType'

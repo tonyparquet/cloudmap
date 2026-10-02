@@ -1,0 +1,14 @@
+- type: AWS::DynamoDB::Table
+  typeLabel: Table DynamoDB
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.TableName'
+  sublabel: "$string($r.raw.ItemCount) & ' élément(s)'"
+  icon: dynamodb
+  category: database
+  awsService: dynamodb
+  status:
+    - { when: "$r.raw.TableStatus = 'ACTIVE'", value: actif }
+    - { when: "$r.raw.TableStatus in ['CREATING', 'UPDATING', 'ARCHIVING']", value: en-veille }
+    - { when: "$r.raw.TableStatus = 'INACCESSIBLE_ENCRYPTION_CREDENTIALS'", value: erreur }
+    - { default: inconnu }
+  relations:
+    - { kind: data, to: '$r.raw.SSEDescription.KMSMasterKeyArn', resolve: arn, label: KMS }
