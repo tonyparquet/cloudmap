@@ -5,7 +5,6 @@ packages:
 # Tout reste dans le dossier du projet (aucun cache global).
 storeDir: .pnpm-store
 cacheDir: .tmp/pnpm-cache
-stateDir: .tmp/pnpm-state
 
 allowBuilds:
   argon2: true

@@ -12,6 +12,7 @@
     "@carto/core": "workspace:*",
     "@carto/scanner": "workspace:*",
     "@carto/security": "workspace:*",
-    "@carto/server": "workspace:*"
+    "@carto/server": "workspace:*",
+    "better-sqlite3": "^13.0.3"
   }
 }
