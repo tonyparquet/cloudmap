@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+.pnpm-store
+.tmp
+.dev
+.data
+.git
+coverage
+playwright-report
+test-results
+deploy/secrets
+config/icons/aws/*.svg

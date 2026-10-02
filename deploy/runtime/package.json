@@ -1,0 +1,9 @@
+{
+  "name": "cartographe-aws-runtime",
+  "private": true,
+  "description": "Dépendances natives chargées par le serveur et la CLI bundlés (image Docker).",
+  "dependencies": {
+    "argon2": "0.45.1",
+    "better-sqlite3": "13.0.3"
+  }
+}

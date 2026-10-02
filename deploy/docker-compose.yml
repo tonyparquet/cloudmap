@@ -1,0 +1,68 @@
+# Déploiement : voir docs/deploiement.md. Depuis le dossier deploy/ :
+#   PUBLIC_ORIGIN=https://carto.exemple.fr PUBLIC_HOST=carto.exemple.fr docker compose up -d
+# Les secrets sont des fichiers fournis par l'exploitant dans deploy/secrets/ (jamais versionnés).
+name: cartographe-aws
+
+services:
+  carto:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: cartographe-aws:latest
+    restart: unless-stopped
+    user: '10001:10001'
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?PUBLIC_ORIGIN est obligatoire (ex. https://carto.exemple.fr)}
+      TLS_CERT_FILE: /run/secrets/tls_cert
+      TLS_KEY_FILE: /run/secrets/tls_key
+      MASTER_KEY_FILE: /run/secrets/master_key
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+      AUTH_MODE: ${AUTH_MODE:-local}
+      HUB_CREDENTIALS: ${HUB_CREDENTIALS:-none}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    secrets:
+      - master_key
+      - tls_cert
+      - tls_key
+    volumes:
+      - config:/config
+      - data:/data
+    # Accès direct en HTTPS (sans Traefik). Retirer si seul Traefik expose le service.
+    ports:
+      - '8443:8443'
+    networks:
+      - web
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: web
+      traefik.http.routers.carto.rule: Host(`${PUBLIC_HOST:-carto.localhost}`)
+      traefik.http.routers.carto.entrypoints: websecure
+      traefik.http.routers.carto.tls: 'true'
+      traefik.http.routers.carto.tls.options: modern@file
+      traefik.http.services.carto.loadbalancer.server.port: '8443'
+      traefik.http.services.carto.loadbalancer.server.scheme: https
+      traefik.http.services.carto.loadbalancer.serversTransport: carto-transport@file
+
+secrets:
+  master_key:
+    file: ./secrets/master_key
+  tls_cert:
+    file: ./secrets/tls_cert.pem
+  tls_key:
+    file: ./secrets/tls_key.pem
+
+volumes:
+  config:
+  data:
+
+networks:
+  web:
+    name: web

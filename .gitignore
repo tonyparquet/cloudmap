@@ -11,3 +11,4 @@ test-results/
 .eslintcache
 # Pack officiel AWS téléchargé par scripts/fetch-icons.ts (licence AWS, non versionné)
 config/icons/aws/*.svg
+deploy/secrets/
