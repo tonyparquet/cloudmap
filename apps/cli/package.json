@@ -1,0 +1,17 @@
+{
+  "name": "@carto/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../scripts/bundle.mjs cli",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@aws-sdk/credential-providers": "^3.1144.0",
+    "@carto/core": "workspace:*",
+    "@carto/scanner": "workspace:*",
+    "@carto/security": "workspace:*",
+    "@carto/server": "workspace:*"
+  }
+}

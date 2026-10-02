@@ -1,0 +1,11 @@
+CLAUDE.md
+pnpm-lock.yaml
+.pnpm-store
+.tmp
+.dev
+.data
+**/dist
+coverage
+playwright-report
+test-results
+config/icons

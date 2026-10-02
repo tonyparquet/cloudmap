@@ -1,0 +1,13 @@
+node_modules/
+.pnpm-store/
+.tmp/
+.dev/
+.data/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.eslintcache
+# Pack officiel AWS téléchargé par scripts/fetch-icons.ts (licence AWS, non versionné)
+config/icons/aws/*.svg
