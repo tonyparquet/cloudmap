@@ -266,6 +266,9 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@aws-sdk/client-ec2':
+        specifier: ^3.1144.0
+        version: 3.1144.0
       '@aws-sdk/client-iam':
         specifier: ^3.1144.0
         version: 3.1144.0

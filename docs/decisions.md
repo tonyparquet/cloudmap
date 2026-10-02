@@ -74,3 +74,50 @@ external`, `externalType`.
   la règle « AccessDenied → statut inconnu ».
 - Les relations de la règle d'exemple ECS (images ECR, secrets, découverte Cloud Map) ajoutent
   quelques arêtes `data`/`dependency` au-delà de la liste 9.5, qui reste intégralement couverte.
+
+## Scanner (section 5)
+
+- Commandes en lecture autorisées en plus de `Describe*` / `List*` / `Get*` : `BatchGet*` (CodeBuild,
+  AWS Config), `Search`, `SelectResourceConfig`, `SimulatePrincipalPolicy`, `StartQuery` /
+  `GetQueryResults` (Logs Insights). Toujours interdites : `GetSecretValue`, `GetParameter*`,
+  `GetObject*` (test statique de liste blanche).
+- Assainissement à la collecte : variables d'environnement Lambda/ECS réduites à leurs noms,
+  buildspec CodeBuild retiré, variables CodeBuild en clair conservées seulement si elles désignent un
+  dépôt d'images, abonnements SNS limités aux ARN / origines HTTP (pas d'e-mail ni de téléphone),
+  politique SQS et `Input` des cibles EventBridge retirés.
+- Compartiments S3 : listés pour tout le compte, seuls ceux des régions du profil sont conservés.
+- Throttling : mode `adaptive` du SDK, puis jusqu'à 2 relances de la tâche (collecteur × région).
+- Inventaire générique : les types Resource Explorer correspondant à un collecteur dédié sont
+  convertis au format CloudFormation pour que les règles s'appliquent.
+
+## Serveur (sections 4 et 11)
+
+- **Pré-session anonyme** : `GET /api/auth/state` crée une session `anon` porteuse du jeton CSRF,
+  exigé aussi pour la connexion. Les étapes intermédiaires (`anon`, `mfa`, `enroll`) expirent en 15 min.
+- Les durées de `app.yaml` ne peuvent qu'être réduites (inactivité ≤ 30 min, absolue ≤ 8 h,
+  ré-authentification ≤ 15 min, 5 essais de connexion au plus).
+- Ré-authentification valable 5 minutes ; elle régénère l'identifiant de session.
+- Limitation des connexions : 5 échecs / 15 min par compte et par IP (échecs TOTP compris), puis
+  verrouillage 15 min × 2^n plafonné à 24 h, persisté en SQLite.
+- TOTP ± 30 s avec anti-rejeu (dernier pas de temps mémorisé) ; secret TOTP chiffré en enveloppe ;
+  10 codes de secours de 50 bits hachés en SHA-256 (entropie suffisante, Argon2 inutile).
+- Mots de passe : liste locale (mots de passe et bases courants), suites triviales, identifiant interdit.
+- **OIDC** : avec `SameSite=Strict`, le cookie de session n'est pas envoyé au retour du fournisseur ;
+  l'état (PKCE, `state`, `nonce`) est gardé en mémoire et référencé par un cookie `__Host-oidc`
+  (`SameSite=Lax`, 10 min), puis une page intermédiaire de même origine redirige vers `/`.
+  Rôles : `OIDC_ADMIN_GROUP`, et `OIDC_EDITOR_GROUP` (ajouté) ; revendication `OIDC_GROUPS_CLAIM`
+  (défaut `groups`). Le MFA est alors délégué au fournisseur d'identité.
+- **Coffre** : identifiants en mémoire indexés par la « famille » de session (survit aux
+  régénérations, effacée à la déconnexion ou à l'expiration). Les identifiants temporaires ne sont
+  jamais mémorisés sur disque ; « Mémoriser » ne concerne que les clés longue durée.
+- Un profil d'un autre groupe renvoie 404 (son existence n'est pas révélée). Le profil Démo est
+  visible de tous en mode démo et non modifiable.
+- Enregistrer une mise en page partagée exige le droit d'édition ; un lecteur peut déplacer les
+  nœuds sans enregistrer.
+- Journal d'audit en ajout seul garanti par des triggers SQLite ; export CSV (séparateur `;`, BOM,
+  neutralisation des formules).
+- Icônes servies sur `/icons/:nom` (session requise) avec une CSP `sandbox`.
+- Routes ajoutées à la table de la section 11 : `GET /api/snapshots/:id/inventory`,
+  `POST /api/audit/export` (journalise les exports faits dans le navigateur), `GET /api/help/iam`,
+  `GET /api/config/app`, `GET /api/config/services`, `GET /api/profiles/:id/credentials/available`
+  (booléen pour les lecteurs, sans détail), `GET /api/admin/audit.csv`.

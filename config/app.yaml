@@ -1,0 +1,62 @@
+# Paramètres non sensibles de l'application (copiés dans CONFIG_DIR au premier démarrage).
+# Les durées de sécurité ne peuvent qu'être réduites : les maxima de la spécification sont appliqués.
+
+session:
+  idleMinutes: 30 # expiration d'inactivité (max 30)
+  absoluteHours: 8 # expiration absolue (max 8)
+  reauthMinutes: 5 # validité d'une ré-authentification (max 15)
+
+credentials:
+  memoryTtlMinutes: 60 # durée de conservation en mémoire des identifiants saisis
+  defaultDurationSeconds: 3600 # durée des identifiants temporaires obtenus (900 à 43200)
+
+scanner:
+  concurrency: 6
+  probeTimeoutMs: 5000
+  defaultServices:
+    - network
+    - ec2
+    - autoscaling
+    - ecs
+    - lambda
+    - eks
+    - elbv2
+    - apigateway
+    - cloudfront
+    - route53
+    - waf
+    - rds
+    - dynamodb
+    - elasticache
+    - s3
+    - efs
+    - sqs
+    - sns
+    - eventbridge
+    - kinesis
+    - cloudmap
+    - codebuild
+    - codepipeline
+    - ecr
+    - codeconnections
+    - secretsmanager
+    - ssm
+    - kms
+    - acm
+    - cloudwatch
+    - inventory
+
+grouping:
+  threshold: 5
+
+snapshots:
+  maxCount: 50 # par profil
+  maxAgeDays: 365
+
+import:
+  maxBytes: 52428800 # 50 Mio
+
+rateLimit:
+  apiPerMinute: 600
+  loginAttempts: 5 # par compte et par adresse IP (max 5)
+  loginWindowMinutes: 15

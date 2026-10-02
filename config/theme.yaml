@@ -1,0 +1,74 @@
+# Jetons de thème (section 9.2). « clair » et « client » ne font que surcharger « sombre ».
+defaut: sombre
+
+themes:
+  sombre:
+    bg: '#16131f'
+    panel: '#1f1b2e'
+    panelBorder: '#2e2a40'
+    text: '#e4e4e7'
+    muted: '#a1a1aa'
+    accent: '#8b5cf6'
+    font: Inter
+    container:
+      global: { color: '#a78bfa', dash: '6 4', width: 1.2, radius: 12 }
+      region: { color: '#2dd4bf', dash: '6 4', width: 1.5, radius: 12 }
+      vpc: { color: '#8b5cf6', dash: '', width: 1.5, radius: 10 }
+      az: { color: '#6b7280', dash: '5 4', width: 1, radius: 8 }
+      subnetPrivate: { color: '#14b8a6', dash: '', width: 1, radius: 8 }
+      subnetPublic: { color: '#84cc16', dash: '', width: 1, radius: 8 }
+    node:
+      tile: { size: 44, radius: 8, border: 2, borderColor: '#e4e4e7' }
+      label: { color: '#ffffff', size: 13, weight: 700 }
+      sublabel: { color: '#a1a1aa', size: 11 }
+    category:
+      network: '#8c4fff'
+      compute: '#ed7100'
+      database: '#c925d1'
+      storage: '#7aa116'
+      devtools: '#3f8624'
+      security: '#dd344c'
+      external: '#2a2540'
+      integration: '#e7157b'
+      analytics: '#8c4fff'
+      management: '#e7157b'
+      generic: '#4b5563'
+    status:
+      actif: '#22c55e'
+      autre: '#a1a1aa'
+      erreur: '#ef4444'
+    edge:
+      network: { color: '#a78bfa', width: 1.5 }
+      cicd: { color: '#e879f9', width: 1.5, dash: '4 4', animated: true }
+      data: { color: '#94a3b8', width: 1.2 }
+      dependency: { color: '#64748b', width: 1, dash: '2 3' }
+      blocked: { color: '#ef4444', dash: '5 4' }
+      unexplained: { color: '#f59e0b' }
+      label: { color: '#ffffff', size: 11, weight: 700, background: '#16131f' }
+
+  clair:
+    bg: '#f8fafc'
+    panel: '#ffffff'
+    panelBorder: '#e2e8f0'
+    text: '#0f172a'
+    muted: '#475569'
+    node:
+      tile: { borderColor: '#cbd5e1' }
+      label: { color: '#0f172a' }
+      sublabel: { color: '#475569' }
+    category:
+      external: '#64748b'
+    edge:
+      label: { color: '#0f172a', background: '#f8fafc' }
+
+  client:
+    bg: '#0b1f33'
+    panel: '#102a43'
+    panelBorder: '#1f3b57'
+    accent: '#38bdf8'
+    container:
+      region: { color: '#38bdf8' }
+      vpc: { color: '#f59e0b' }
+    edge:
+      network: { color: '#7dd3fc' }
+      label: { background: '#0b1f33' }
