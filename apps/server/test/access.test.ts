@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAndLogin, reauth, ROOT, setupAdmin, startApp, type Client } from './helpers.ts';
@@ -158,5 +158,29 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
     expect(inv.json().resources.length).toBe(
       (fixture as unknown as { resources: unknown[] }).resources.length,
     );
+  });
+
+  it('un nouveau fichier de règle dans CONFIG_DIR/rules change le rendu sans rebuild', async () => {
+    const url = `/api/snapshots/${snapshotB}/graph`;
+    const before = (await editorB.req('GET', url)).json().graph as { nodes: { id: string; label: string }[] };
+    const rds = before.nodes.find((n) => n.label === 'RDS');
+    expect(rds).toBeDefined();
+    const file = join(s.ctx.config.configDir, 'rules', 'zz-surcharge.yaml');
+    writeFileSync(
+      file,
+      'type: AWS::RDS::DBInstance\nlabel: Base principale\nicon: rds\ncategory: database\n',
+    );
+    try {
+      const after = (await editorB.req('GET', url)).json().graph as {
+        nodes: { id: string; label: string }[];
+      };
+      expect(after.nodes.find((n) => n.id === rds?.id)?.label).toBe('Base principale');
+    } finally {
+      rmSync(file);
+    }
+    const restored = (await editorB.req('GET', url)).json().graph as {
+      nodes: { id: string; label: string }[];
+    };
+    expect(restored.nodes.find((n) => n.id === rds?.id)?.label).toBe('RDS');
   });
 });

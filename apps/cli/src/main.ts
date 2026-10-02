@@ -40,7 +40,7 @@ async function scan(args: string[]): Promise<void> {
     .split(',')
     .map((r) => r.trim())
     .filter(Boolean);
-  if (regions.length === 0) fail('--regions est obligatoire (ex. --regions eu-west-3)');
+  if (regions.length === 0) fail('--regions est obligatoire (ex. --regions <région>[,<région>])');
   if (regions.some((r) => !/^[a-z]{2}(-[a-z]+)+-\d{1,2}$/.test(r))) fail('code de région invalide');
   const services = values.services
     ?.split(',')

@@ -84,5 +84,26 @@ test('parcours démo : connexion admin + TOTP, diagramme, panneau, filtre, expor
   expect(svg).toContain('<svg');
   expect(svg).toContain('Tâche ECS');
 
+  // Autres exports : PNG (2×), PDF, draw.io, JSON du graphe.
+  const exportAs = async (label: string) => {
+    await page.getByRole('button', { name: 'Exporter' }).click();
+    const [d] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: label, exact: true }).click(),
+    ]);
+    return readFileSync(await d.path());
+  };
+  expect((await exportAs('PNG (2×)')).subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  expect((await exportAs('PDF')).subarray(0, 5).toString()).toBe('%PDF-');
+  const drawio = (await exportAs('draw.io')).toString();
+  expect(drawio).toContain('<mxfile');
+  expect(drawio).toContain('TCP 5432');
+  const json = JSON.parse((await exportAs('JSON du graphe')).toString()) as {
+    nodes: unknown[];
+    containers: unknown[];
+  };
+  expect(json.nodes.length).toBeGreaterThanOrEqual(16);
+  expect(json.containers.length).toBe(9);
+
   expect(cspErrors).toEqual([]);
 });
