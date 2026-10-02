@@ -2,7 +2,7 @@
 
 - [x] 1. Squelette du monorepo, tsconfig, lint, scripts, Vitest
 - [x] 2. `packages/security` : chiffrement d'enveloppe, redaction, + tests
-- [ ] 3. `packages/core` : types zod, moteur de règles JSONata, classification des sous-réseaux, inférence des flux, `buildGraph`, regroupement, diff, + tests
+- [x] 3. `packages/core` : types zod, moteur de règles JSONata, classification des sous-réseaux, inférence des flux, `buildGraph`, regroupement, diff, + tests
 - [ ] 4. `fixtures/demo-snapshot.json` conforme à 9.5 et toutes les règles YAML de la section 6
 - [ ] 5. `packages/scanner` : orchestrateur, collecteurs de 5.2, inventaire générique, + tests avec mocks et test de liste blanche
 - [ ] 6. `apps/server` : HTTPS TLS 1.3, contrôles de démarrage, en-têtes, SQLite + migrations, auth locale + TOTP + OIDC, sessions, CSRF, rôles, profils, identifiants, scans + SSE, snapshots, import, layouts, audit, + tests de sécurité
