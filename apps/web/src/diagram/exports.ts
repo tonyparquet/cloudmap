@@ -31,15 +31,66 @@ function captureOptions(bounds: Rect, bg: string) {
   };
 }
 
+let fontCss: Promise<string> | undefined;
+
+/**
+ * Police Inter (sous-ensemble latin) embarquée dans les exports. Fournie à html-to-image pour qu'il
+ * n'essaie pas de résoudre lui-même les URL relatives via une balise <base> (interdite par la CSP).
+ */
+function fontEmbedCss(): Promise<string> {
+  fontCss ??= (async () => {
+    const out: string[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules: CSSRuleList;
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(rules)) {
+        if (!(rule instanceof CSSFontFaceRule)) continue;
+        const m = /url\(["']?([^"')]*latin-wght-normal[^"')]*)["']?\)/.exec(
+          rule.style.getPropertyValue('src'),
+        );
+        if (!m?.[1] || m[1].includes('latin-ext')) continue;
+        const bytes = new Uint8Array(
+          await (await fetch(new URL(m[1], sheet.href ?? window.location.href))).arrayBuffer(),
+        );
+        let bin = '';
+        for (let i = 0; i < bytes.length; i += 0x8000)
+          bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        out.push(
+          `@font-face{font-family:${rule.style.getPropertyValue('font-family')};font-style:normal;font-weight:100 900;src:url(data:font/woff2;base64,${btoa(bin)}) format('woff2');}`,
+        );
+      }
+    }
+    return out.join('\n');
+  })();
+  return fontCss;
+}
+
 export async function exportSvg(bounds: Rect, bg: string): Promise<string> {
-  return toSvg(viewport(), captureOptions(bounds, bg));
+  return toSvg(viewport(), { ...captureOptions(bounds, bg), fontEmbedCSS: await fontEmbedCss() });
 }
 
 export async function exportPng(bounds: Rect, bg: string): Promise<string> {
-  return toPng(viewport(), { ...captureOptions(bounds, bg), pixelRatio: 2 });
+  return toPng(viewport(), {
+    ...captureOptions(bounds, bg),
+    pixelRatio: 2,
+    fontEmbedCSS: await fontEmbedCss(),
+  });
 }
 
-const dataUrlToBlob = async (url: string) => (await fetch(url)).blob();
+/** Conversion locale d'une URL data: en Blob (un fetch de data: serait bloqué par la CSP connect-src). */
+function dataUrlToBlob(url: string): Blob {
+  const comma = url.indexOf(',');
+  const head = url.slice(0, comma);
+  const body = url.slice(comma + 1);
+  const type = /^data:([^;,]+)/.exec(head)?.[1] ?? 'application/octet-stream';
+  if (head.endsWith(';base64'))
+    return new Blob([Uint8Array.from(atob(body), (c) => c.charCodeAt(0))], { type });
+  return new Blob([decodeURIComponent(body)], { type });
+}
 
 /** PDF minimal (une page, image JPEG) écrit sans dépendance. */
 export function pdfFromJpeg(jpeg: Uint8Array, width: number, height: number): Uint8Array {
@@ -103,9 +154,7 @@ export async function exportPdf(bounds: Rect, bg: string): Promise<Blob> {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0);
-  const jpeg = new Uint8Array(
-    await (await dataUrlToBlob(canvas.toDataURL('image/jpeg', 0.92))).arrayBuffer(),
-  );
+  const jpeg = new Uint8Array(await dataUrlToBlob(canvas.toDataURL('image/jpeg', 0.92)).arrayBuffer());
   const pdf = pdfFromJpeg(jpeg, canvas.width, canvas.height);
   return new Blob([pdf.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
@@ -170,11 +219,9 @@ export async function runExport(
   format: ExportFormat,
   ctx: { bounds: Rect; nodes: Node[]; graph: Graph; theme: Theme; profileId: string; name: string },
 ) {
-  const base = `${ctx.name.replace(/[^\w.-]+/g, '-')}-${new Date().toISOString().slice(0, 10)}`;
-  if (format === 'svg')
-    download(`${base}.svg`, await dataUrlToBlob(await exportSvg(ctx.bounds, ctx.theme.bg)));
-  if (format === 'png')
-    download(`${base}.png`, await dataUrlToBlob(await exportPng(ctx.bounds, ctx.theme.bg)));
+  const base = `${ctx.name.replace(/[^\p{L}\p{N}._-]+/gu, '-')}-${new Date().toISOString().slice(0, 10)}`;
+  if (format === 'svg') download(`${base}.svg`, dataUrlToBlob(await exportSvg(ctx.bounds, ctx.theme.bg)));
+  if (format === 'png') download(`${base}.png`, dataUrlToBlob(await exportPng(ctx.bounds, ctx.theme.bg)));
   if (format === 'pdf') download(`${base}.pdf`, await exportPdf(ctx.bounds, ctx.theme.bg));
   if (format === 'drawio')
     download(`${base}.drawio`, toDrawio(ctx.nodes, ctx.graph, ctx.theme), 'application/xml');

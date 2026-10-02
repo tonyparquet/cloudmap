@@ -10,5 +10,5 @@
 - [x] 8. `apps/cli` : scan hors-ligne, rotation de la clé maître
 - [x] 9. Icônes : `scripts/fetch-icons.ts`, `map.yaml`, icônes génériques de repli
 - [x] 10. `deploy/`, `docs/`, `README.md`
-- [ ] 11. Tests E2E, puis `pnpm check` vert
+- [x] 11. Tests E2E, puis `pnpm check` vert
 - [ ] 12. Vérification finale de la section 18

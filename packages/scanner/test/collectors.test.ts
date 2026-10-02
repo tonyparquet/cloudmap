@@ -65,11 +65,9 @@ describe('scanner (mocks AWS)', () => {
 
   it('AccessDenied : ressource marquée « inconnu », erreur consignée, le scan continue', async () => {
     ecs.on(ListClustersCommand).resolves({ clusterArns: [`arn:aws:ecs:eu-west-3:${ACCOUNT}:cluster/c1`] });
-    ecs
-      .on(DescribeClustersCommand)
-      .resolves({
-        clusters: [{ clusterArn: `arn:aws:ecs:eu-west-3:${ACCOUNT}:cluster/c1`, clusterName: 'c1' }],
-      });
+    ecs.on(DescribeClustersCommand).resolves({
+      clusters: [{ clusterArn: `arn:aws:ecs:eu-west-3:${ACCOUNT}:cluster/c1`, clusterName: 'c1' }],
+    });
     ecs
       .on(ListServicesCommand)
       .resolves({ serviceArns: [`arn:aws:ecs:eu-west-3:${ACCOUNT}:service/c1/api`] });

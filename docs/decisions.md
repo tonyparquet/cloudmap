@@ -130,3 +130,16 @@ external`, `externalType`.
 - `pnpm fetch-icons` : URL du pack via `AWS_ICONS_URL`, sinon recherche du lien sur la page officielle ;
   si elle échoue (la page charge ses liens en JavaScript), le script l'indique et l'application garde
   les icônes génériques. Le pack téléchargé n'est pas versionné (licence AWS).
+
+## Tests E2E et exports (sections 10 et 16)
+
+- `pnpm e2e` démarre son propre serveur (`scripts/e2e-server.mjs`, port 8444, données vierges dans
+  `.tmp/e2e-data`, mode démo) et vérifie : création de l'administrateur + TOTP, profil Démo, nœuds et
+  conteneurs de la section 9.5, panneau latéral, filtre, export SVG, absence de violation CSP.
+- Navigateur Playwright et éventuelles bibliothèques système manquantes (poste WSL sans droits root :
+  `libnss3`, `libnspr4`, `libasound2` extraites par `apt-get download` + `dpkg -x`) sont placés dans
+  `.tmp/`, référencés par `playwright.config.ts` : rien n'est installé hors du projet.
+- Exports SVG / PNG : capture du diagramme complet par html-to-image. La police Inter (sous-ensemble
+  latin) est fournie explicitement, et les URL `data:` sont converties localement : la CSP stricte
+  (`base-uri 'none'`, `connect-src 'self'`) reste inchangée. PDF : écrit sans dépendance (une page,
+  image JPEG). draw.io : conteneurs imbriqués, tuiles et arêtes orthogonales avec les couleurs du thème.
