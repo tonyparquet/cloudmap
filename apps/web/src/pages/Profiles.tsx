@@ -3,9 +3,12 @@ import { del, get } from '../api.ts';
 import { t, tOr } from '../i18n/index.ts';
 import { Link } from '../router.tsx';
 import { useApp } from '../store.ts';
-import { Alert, useAction, useLoad } from '../ui.tsx';
+import { Alert, fmtDate, useAction, useLoad } from '../ui.tsx';
 
-export type ProfileView = Profile & { canEdit: boolean };
+export type ProfileView = Profile & {
+  canEdit: boolean;
+  lastSnapshot?: { id: string; createdAt: string; resourceCount: number; errorCount: number } | null;
+};
 
 export function ProfilesPage() {
   const role = useApp((s) => s.auth?.user?.role);
@@ -24,7 +27,16 @@ export function ProfilesPage() {
       </div>
       {error && <Alert kind="error">{error}</Alert>}
       {actionError && <Alert kind="error">{actionError}</Alert>}
-      {data?.profiles.length === 0 && <p className="muted">{t('profils.aucun')}</p>}
+      {data && role !== 'viewer' && data.profiles.every((p) => p.id === 'demo') && (
+        <div className="card welcome">
+          <h2>{t('profils.bienvenueTitre')}</h2>
+          <p className="muted">{t('profils.bienvenueTexte')}</p>
+          <Link to="/profils/nouveau" className="btn primary">
+            {t('profils.ajouterCompte')}
+          </Link>
+        </div>
+      )}
+      {data?.profiles.length === 0 && role === 'viewer' && <p className="muted">{t('profils.aucun')}</p>}
       <div className="grid">
         {data?.profiles.map((p) => (
           <div className="card" key={p.id} data-testid="profil">
@@ -45,8 +57,22 @@ export function ProfilesPage() {
               {t('profils.regions')} : {p.regions.join(', ') || '—'}
               <br />
               {t('profils.acces')} : {tOr(`auth.${p.auth.kind}`, p.auth.kind)}
+              <br />
+              {p.lastSnapshot ? (
+                t('profils.dernierScan', {
+                  date: fmtDate(p.lastSnapshot.createdAt),
+                  n: p.lastSnapshot.resourceCount,
+                })
+              ) : (
+                <span className="badge">{t('profils.jamaisScanne')}</span>
+              )}
             </p>
             <div className="row">
+              {p.canEdit && !p.lastSnapshot && (
+                <Link to={`/profils/${p.id}/demarrage`} className="btn primary">
+                  {t('profils.miseEnRoute')}
+                </Link>
+              )}
               <Link to={`/profils/${p.id}/diagramme`} className="btn">
                 {t('profils.diagramme')}
               </Link>

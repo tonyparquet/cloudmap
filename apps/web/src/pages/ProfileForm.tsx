@@ -1,10 +1,10 @@
 import type { ExternalNode, Profile } from '@carto/core';
 import { useEffect, useState } from 'react';
 import { get, post, put } from '../api.ts';
-import { t } from '../i18n/index.ts';
+import { t, type MessageKey } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
-import { Alert, Check, Field, useAction } from '../ui.tsx';
+import { Alert, Check, Field, useAction, useLoad } from '../ui.tsx';
 
 /** Codes des régions publiques AWS (données génériques, pas des données client). */
 const AWS_REGIONS = [
@@ -42,6 +42,54 @@ const AWS_REGIONS = [
   'ap-northeast-3',
 ];
 
+const REGION_GROUPS: [string, RegExp][] = [
+  ['regions.europe', /^eu-/],
+  ['regions.ameriques', /^(us|ca|sa|mx)-/],
+  ['regions.asie', /^ap-/],
+  ['regions.autres', /^(af|me|il)-/],
+];
+
+/** Régions groupées par continent, filtrables, sélection résumée en pastilles retirables. */
+function RegionPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [filter, setFilter] = useState('');
+  const shown = AWS_REGIONS.filter((r) => r.includes(filter.trim().toLowerCase()));
+  const toggle = (r: string, on: boolean) => onChange(on ? [...value, r] : value.filter((x) => x !== r));
+  return (
+    <fieldset className="regions">
+      <legend>{t('form.regions')}</legend>
+      <p className="muted small">{t('form.regionsAide')}</p>
+      <div className="chips" aria-live="polite">
+        <span className="muted small">{t('form.regionsChoisies', { n: value.length })}</span>
+        {value.map((r) => (
+          <button key={r} type="button" className="chip" onClick={() => toggle(r, false)}>
+            {r} ✕
+          </button>
+        ))}
+      </div>
+      <input
+        type="search"
+        placeholder={t('form.regionsFiltre')}
+        aria-label={t('form.regionsFiltre')}
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
+      <div className="region-groups">
+        {REGION_GROUPS.map(([label, re]) => {
+          const list = shown.filter((r) => re.test(r));
+          return list.length === 0 ? null : (
+            <div key={label}>
+              <h3>{t(label as MessageKey)}</h3>
+              {list.map((r) => (
+                <Check key={r} label={r} checked={value.includes(r)} onChange={(v) => toggle(r, v)} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 type AuthKind = Profile['auth']['kind'];
 type Probe = NonNullable<Profile['probes']>[number];
 
@@ -63,6 +111,8 @@ export function ProfileForm({ id }: { id?: string }) {
   const [lookback, setLookback] = useState(24);
   const [tagFilters, setTagFilters] = useState('');
   const [run, error, busy] = useAction();
+  const services = useLoad(() => get<{ hubAvailable: boolean }>('/api/config/services'), []);
+  const hubAvailable = services.data?.hubAvailable ?? false;
 
   useEffect(() => {
     if (!id) return;
@@ -134,7 +184,7 @@ export function ProfileForm({ id }: { id?: string }) {
       const r = id
         ? await put<{ profile: Profile }>(`/api/profiles/${id}`, body)
         : await post<{ profile: Profile }>('/api/profiles', body);
-      navigate(`/profils/${r.profile.id}/diagramme`);
+      navigate(`/profils/${r.profile.id}/${id ? 'diagramme' : 'demarrage'}`);
     });
 
   return (
@@ -148,46 +198,56 @@ export function ProfileForm({ id }: { id?: string }) {
       <h1>{id ? t('form.titreEdition') : t('form.titreNouveau')}</h1>
       <div className="card">
         <Field label={t('form.nom')}>
-          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            maxLength={100}
+            autoFocus={!id}
+          />
         </Field>
         <Field label={t('form.client')}>
           <input value={client} onChange={(e) => setClient(e.target.value)} maxLength={100} />
         </Field>
-        <Field label={t('form.description')}>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
-        </Field>
         <Field label={t('form.compte')}>
-          <input value={accountId} onChange={(e) => setAccountId(e.target.value)} pattern="\d{12}" required />
+          <input
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value.replace(/\D/g, '').slice(0, 12))}
+            inputMode="numeric"
+            pattern="\d{12}"
+            placeholder="123456789012"
+            required
+          />
+          <span className="small">{t('form.compteAide')}</span>
         </Field>
-        <Field label={t('form.regions')}>
-          <select
-            multiple
-            size={8}
-            value={regions}
-            onChange={(e) => setRegions([...e.target.selectedOptions].map((o) => o.value))}
-          >
-            {AWS_REGIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t('form.groupes')}>
-          <input value={groups} onChange={(e) => setGroups(e.target.value)} />
-        </Field>
+        <RegionPicker value={regions} onChange={setRegions} />
       </div>
 
       <div className="card">
-        <Field label={t('form.mode')}>
-          <select value={authKind} onChange={(e) => setAuthKind(e.target.value as AuthKind)}>
-            {(['access-keys', 'assume-role-hub', 'import-only'] as const).map((k) => (
-              <option key={k} value={k}>
-                {t(`auth.${k}`)}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <fieldset className="choices">
+          <legend>{t('form.mode')}</legend>
+          {(['access-keys', 'assume-role-hub', 'import-only'] as const).map((k) => {
+            const disabled = k === 'assume-role-hub' && !hubAvailable && authKind !== k;
+            return (
+              <label
+                key={k}
+                className={`choice${authKind === k ? ' selected' : ''}${disabled ? ' disabled' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="authKind"
+                  checked={authKind === k}
+                  disabled={disabled}
+                  onChange={() => setAuthKind(k)}
+                />
+                <span>
+                  <strong>{t(`auth.${k}`)}</strong>
+                  <span className="muted small">{disabled ? t('form.hubIndispo') : t(`form.mode.${k}`)}</span>
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
         {authKind === 'assume-role-hub' && (
           <>
             <Field label={t('form.roleArn')}>
@@ -203,9 +263,18 @@ export function ProfileForm({ id }: { id?: string }) {
             </Field>
           </>
         )}
+        <Field label={t('form.groupes')}>
+          <input value={groups} onChange={(e) => setGroups(e.target.value)} />
+          <span className="small">{t('form.groupesAide')}</span>
+        </Field>
       </div>
 
-      <div className="card">
+      <details className="card">
+        <summary>{t('form.avance')}</summary>
+        <Field label={t('form.description')}>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
+        </Field>
+
         <h2>{t('form.externes')}</h2>
         {externals.map((x, i) => (
           <div className="row" key={i}>
@@ -256,9 +325,7 @@ export function ProfileForm({ id }: { id?: string }) {
         >
           + {t('commun.ajouter')}
         </button>
-      </div>
 
-      <div className="card">
         <h2>{t('form.sondes')}</h2>
         {probes.map((p, i) => (
           <div className="row" key={i}>
@@ -295,9 +362,7 @@ export function ProfileForm({ id }: { id?: string }) {
         <button type="button" onClick={() => setProbes([...probes, { url: 'https://' }])}>
           + {t('commun.ajouter')}
         </button>
-      </div>
 
-      <div className="card">
         <h2>{t('form.flowLogs')}</h2>
         <Check label={t('form.flowLogsActifs')} checked={flowEnabled} onChange={setFlowEnabled} />
         <Field label={t('form.flowLogsGroupes')}>
@@ -315,12 +380,16 @@ export function ProfileForm({ id }: { id?: string }) {
         <Field label={t('form.filtresTags')}>
           <textarea value={tagFilters} onChange={(e) => setTagFilters(e.target.value)} />
         </Field>
-      </div>
+      </details>
 
       {error && <Alert kind="error">{error}</Alert>}
       <div className="row">
-        <button className="primary" type="submit" disabled={busy}>
-          {t('commun.enregistrer')}
+        <button
+          className="primary"
+          type="submit"
+          disabled={busy || (regions.length === 0 && authKind !== 'import-only')}
+        >
+          {id ? t('commun.enregistrer') : t('form.creerContinuer')}
         </button>
         <button type="button" onClick={() => window.history.back()}>
           {t('commun.annuler')}

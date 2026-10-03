@@ -66,6 +66,13 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
   it('un viewer ne voit que les profils de ses groupes', async () => {
     const list = (await viewerA.req('GET', '/api/profiles')).json().profiles.map((p: { id: string }) => p.id);
     expect(list).toEqual([profileA]);
+    // Résumé du dernier scan pour la page Profils : aucun snapshot encore pour A, l'import pour B.
+    expect((await viewerA.req('GET', '/api/profiles')).json().profiles[0].lastSnapshot).toBeNull();
+    const all = (await admin.req('GET', '/api/profiles')).json().profiles as {
+      id: string;
+      lastSnapshot: { id: string; resourceCount: number } | null;
+    }[];
+    expect(all.find((p) => p.id === profileB)?.lastSnapshot).toMatchObject({ id: snapshotB });
     expect((await viewerA.req('GET', `/api/profiles/${profileB}`)).status).toBe(404);
     expect((await viewerA.req('GET', `/api/profiles/${profileB}/snapshots`)).status).toBe(404);
     expect((await viewerA.req('GET', `/api/snapshots/${snapshotB}/graph`)).status).toBe(404);

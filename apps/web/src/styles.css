@@ -565,3 +565,154 @@ pre.code {
   margin: auto;
   color: var(--muted);
 }
+
+/* ------------------------------------------------------------------ mise en route */
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.empty .btn {
+  display: inline-block;
+  margin-top: 8px;
+}
+.empty {
+  text-align: center;
+}
+.welcome {
+  border-color: var(--accent);
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px;
+  min-width: 0;
+}
+legend {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  padding: 0;
+}
+.choices {
+  display: grid;
+  gap: 8px;
+}
+.choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.choice > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choice.selected {
+  border-color: var(--accent);
+}
+.choice.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.choice input {
+  margin-top: 3px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.chip {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  border-color: var(--accent);
+}
+.regions input[type='search'] {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.region-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 4px 16px;
+}
+.region-groups h3 {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0 4px;
+}
+.region-groups label.check {
+  display: flex;
+  margin: 2px 0;
+}
+details > summary {
+  cursor: pointer;
+  color: var(--accent);
+  margin: 4px 0;
+}
+details.card > summary {
+  color: var(--text);
+  font-weight: 600;
+}
+details.card[open] > summary {
+  margin-bottom: 12px;
+}
+details.help {
+  margin: 8px 0 12px;
+}
+.stepper {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  counter-reset: etape;
+}
+.stepper li {
+  counter-increment: etape;
+  flex: 1;
+  padding: 8px 10px;
+  border-bottom: 3px solid var(--panel-border);
+  color: var(--muted);
+}
+.stepper li::before {
+  content: counter(etape) '. ';
+}
+.stepper li.current {
+  color: var(--text);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.stepper li.done {
+  border-color: var(--ok);
+}
+.stepper li.done::before {
+  content: '✓ ';
+  color: var(--ok);
+}
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  border: 2px dashed var(--panel-border);
+  border-radius: 10px;
+  padding: 24px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.dropzone.over {
+  border-color: var(--accent);
+  color: var(--text);
+}
+input.paste {
+  border-style: dashed;
+}

@@ -3,6 +3,11 @@ import { expect, test } from '@playwright/test';
 import { generate } from 'otplib';
 
 const ADMIN = { username: 'admin', password: 'Une-phrase-de-passe-solide-42' };
+// Codes de secours du premier test : le second s'en sert pour se reconnecter (un code TOTP déjà
+// utilisé est refusé pendant sa fenêtre, protection anti-rejeu).
+let recoveryCodes: string[] = [];
+
+test.describe.configure({ mode: 'serial' });
 
 test('parcours démo : connexion admin + TOTP, diagramme, panneau, filtre, export SVG', async ({ page }) => {
   const cspErrors: string[] = [];
@@ -22,6 +27,7 @@ test('parcours démo : connexion admin + TOTP, diagramme, panneau, filtre, expor
   await page.fill('input[name=code]', await generate({ secret }));
   await page.getByRole('button', { name: 'Activer' }).click();
   await expect(page.getByTestId('codes-secours').locator('span')).toHaveCount(10);
+  recoveryCodes = await page.getByTestId('codes-secours').locator('span').allTextContents();
   await page.getByRole('button', { name: "Continuer vers l'application" }).click();
 
   // Profil Démo et diagramme de la section 9.5.
@@ -106,4 +112,36 @@ test('parcours démo : connexion admin + TOTP, diagramme, panneau, filtre, expor
   expect(json.containers.length).toBe(9);
 
   expect(cspErrors).toEqual([]);
+});
+
+test('mise en route : nouveau profil, import du premier snapshot, diagramme', async ({ page }) => {
+  await page.goto('/');
+  await page.fill('input[name=username]', ADMIN.username);
+  await page.fill('input[name=password]', ADMIN.password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.fill('input[name=code]', recoveryCodes[0] ?? '');
+  await page.getByRole('button', { name: 'Vérifier' }).click();
+
+  // Aucun compte hors démo : carte d'accueil.
+  await page.getByRole('link', { name: 'Ajouter un compte AWS' }).click();
+  await page.getByLabel('Nom', { exact: true }).fill('Compte E2E');
+  const account = page.getByLabel('ID du compte AWS');
+  await account.fill('0000-0000-0000');
+  await expect(account).toHaveValue('000000000000');
+  await page.getByPlaceholder('Filtrer les régions…').fill('west-3');
+  await page.getByLabel('eu-west-3', { exact: true }).check();
+  await expect(page.getByRole('button', { name: 'eu-west-3 ✕' })).toBeVisible();
+  await page.getByRole('radio', { name: /Imports uniquement/ }).check();
+  await page.getByRole('button', { name: 'Créer et continuer' }).click();
+
+  // Assistant : import du snapshot puis ouverture automatique du diagramme.
+  await expect(page).toHaveURL(/\/profils\/[\w-]+\/demarrage$/);
+  await expect(page.getByTestId('etapes').locator('li.current')).toHaveText(/Import du snapshot/);
+  await page.getByLabel('Fichier snapshot (.json)').setInputFiles('fixtures/demo-snapshot.json');
+  await expect(page).toHaveURL(/\/diagramme$/);
+  await expect(page.locator('[data-testid=noeud][data-label="CloudFront"]')).toBeVisible();
+
+  // La carte du profil résume le dernier scan.
+  await page.getByRole('link', { name: '← Profils' }).click();
+  await expect(page.getByTestId('profil').filter({ hasText: 'Compte E2E' })).toContainText('Dernier scan');
 });

@@ -17,9 +17,23 @@ interface ScanError {
   code: string;
   message: string;
 }
+export interface ScanResult {
+  snapshotId?: string;
+  errorCount: number;
+}
 
-export function ScanPage({ profileId }: { profileId: string }) {
-  const profile = useLoad(() => get<{ profile: Profile }>(`/api/profiles/${profileId}`), [profileId]);
+const PERMISSION = 'Permission manquante : ';
+
+/** Lancement d'un scan et suivi en direct (SSE) ; les permissions manquantes sont résumées sans doublon. */
+export function ScanRunner({
+  profile,
+  first = false,
+  onDone,
+}: {
+  profile: Profile;
+  first?: boolean;
+  onDone?: (r: ScanResult) => void;
+}) {
   const services = useLoad(
     () => get<{ services: { key: string; label: string }[]; defaults: string[] }>('/api/config/services'),
     [],
@@ -34,7 +48,7 @@ export function ScanPage({ profileId }: { profileId: string }) {
   const source = useRef<EventSource | undefined>(undefined);
   const [run, error, busy] = useAction();
 
-  const regions = chosenRegions ?? profile.data?.profile.regions ?? [];
+  const regions = chosenRegions ?? profile.regions;
   const selected = chosenServices ?? services.data?.defaults ?? [];
   useEffect(() => () => source.current?.close(), []);
 
@@ -43,11 +57,12 @@ export function ScanPage({ profileId }: { profileId: string }) {
       setRows([]);
       setErrors([]);
       setFailure(undefined);
-      const { scanId } = await post<{ scanId: string }>(`/api/profiles/${profileId}/scans`, {
+      const { scanId } = await post<{ scanId: string }>(`/api/profiles/${profile.id}/scans`, {
         regions,
         services: selected,
       });
       setPhase('running');
+      const result: ScanResult = { errorCount: 0 };
       const es = new EventSource(`/api/scans/${scanId}/events`);
       source.current = es;
       const data = <T,>(e: Event) => JSON.parse((e as MessageEvent<string>).data) as T;
@@ -58,24 +73,39 @@ export function ScanPage({ profileId }: { profileId: string }) {
         setRows((r) => [...r, p]);
       });
       es.addEventListener('error', (e) => {
-        if ((e as MessageEvent).data) setErrors((x) => [...x, data<ScanError>(e)]);
+        if (!(e as MessageEvent).data) return;
+        result.errorCount++;
+        setErrors((x) => [...x, data<ScanError>(e)]);
       });
-      es.addEventListener('snapshot', () => setPhase('done'));
+      es.addEventListener('snapshot', (e) => {
+        result.snapshotId = data<{ snapshotId: string }>(e).snapshotId;
+        setPhase('done');
+      });
       es.addEventListener('failed', (e) => {
         setFailure(data<{ message: string }>(e).message);
         setPhase('failed');
       });
-      es.addEventListener('end', () => es.close());
+      es.addEventListener('end', () => {
+        es.close();
+        onDone?.(result);
+      });
     });
 
   const all = services.data?.services ?? [];
+  const permissions = [
+    ...new Set(
+      errors.filter((e) => e.message.startsWith(PERMISSION)).map((e) => e.message.slice(PERMISSION.length)),
+    ),
+  ].sort();
+  const others = errors.filter((e) => !e.message.startsWith(PERMISSION));
+
   return (
-    <div style={{ maxWidth: 980 }}>
-      <h1>{t('scan.titre')}</h1>
+    <>
       <div className="card">
+        {profile.regions.length === 0 && <Alert kind="warn">{t('scan.aucuneRegion')}</Alert>}
         <h2>{t('scan.regions')}</h2>
         <div className="row">
-          {(profile.data?.profile.regions ?? []).map((r) => (
+          {profile.regions.map((r) => (
             <Check
               key={r}
               label={r}
@@ -84,16 +114,16 @@ export function ScanPage({ profileId }: { profileId: string }) {
             />
           ))}
         </div>
-        <h2>{t('scan.services')}</h2>
-        <div className="row" style={{ marginBottom: 8 }}>
-          <button type="button" onClick={() => setSelected(all.map((s) => s.key))}>
-            {t('scan.tout')}
-          </button>
-          <button type="button" onClick={() => setSelected([])}>
-            {t('scan.rien')}
-          </button>
-        </div>
-        <div>
+        <details className="help">
+          <summary>{t('scan.servicesResume', { n: selected.length, total: all.length })}</summary>
+          <div className="row" style={{ margin: '8px 0' }}>
+            <button type="button" onClick={() => setSelected(all.map((s) => s.key))}>
+              {t('scan.tout')}
+            </button>
+            <button type="button" onClick={() => setSelected([])}>
+              {t('scan.rien')}
+            </button>
+          </div>
           {all.map((s) => (
             <Check
               key={s.key}
@@ -102,15 +132,15 @@ export function ScanPage({ profileId }: { profileId: string }) {
               onChange={(v) => setSelected(v ? [...selected, s.key] : selected.filter((x) => x !== s.key))}
             />
           ))}
-        </div>
+        </details>
         {error && <Alert kind="error">{error}</Alert>}
         <div className="row" style={{ marginTop: 12 }}>
           <button
             className="primary"
             onClick={() => void start()}
-            disabled={busy || phase === 'running' || regions.length === 0}
+            disabled={busy || phase === 'running' || regions.length === 0 || selected.length === 0}
           >
-            {t('scan.lancer')}
+            {first ? t('scan.lancerPremier') : t('scan.lancer')}
           </button>
         </div>
       </div>
@@ -128,7 +158,7 @@ export function ScanPage({ profileId }: { profileId: string }) {
             <span className="muted small">{t('scan.progression', counter)}</span>
             <span className="spacer" />
             {phase === 'done' && (
-              <Link to={`/profils/${profileId}/diagramme`} className="btn">
+              <Link to={`/profils/${profile.id}/diagramme`} className="btn">
                 {t('scan.voirDiagramme')}
               </Link>
             )}
@@ -137,12 +167,23 @@ export function ScanPage({ profileId }: { profileId: string }) {
             <div style={{ width: `${counter.total ? (100 * counter.done) / counter.total : 0}%` }} />
           </div>
           {failure && <Alert kind="error">{failure}</Alert>}
-          {errors.length > 0 && (
+          {permissions.length > 0 && (
+            <Alert kind="warn">
+              {t('scan.permissionsManquantes', { n: permissions.length })}
+              <ul className="mono">
+                {permissions.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+              <Link to={`/aide?profil=${profile.id}`}>{t('scan.voirPolitique')}</Link>
+            </Alert>
+          )}
+          {others.length > 0 && (
             <>
-              <h3>{t('scan.erreursAcces')}</h3>
+              <h3>{t('scan.autresErreurs')}</h3>
               <table className="data">
                 <tbody>
-                  {errors.map((e, i) => (
+                  {others.map((e, i) => (
                     <tr key={i}>
                       <td>{e.service}</td>
                       <td>{e.region}</td>
@@ -154,28 +195,42 @@ export function ScanPage({ profileId }: { profileId: string }) {
               </table>
             </>
           )}
-          <table className="data" style={{ marginTop: 10 }}>
-            <thead>
-              <tr>
-                <th>{t('scan.services')}</th>
-                <th>{t('scan.regions')}</th>
-                <th>{t('scan.trouves')}</th>
-                <th>{t('scan.erreurs')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.service}</td>
-                  <td>{r.region}</td>
-                  <td>{r.found}</td>
-                  <td>{r.errors || ''}</td>
+          <details className="help">
+            <summary>{t('scan.detail')}</summary>
+            <table className="data" style={{ marginTop: 10 }}>
+              <thead>
+                <tr>
+                  <th>{t('scan.services')}</th>
+                  <th>{t('scan.regions')}</th>
+                  <th>{t('scan.trouves')}</th>
+                  <th>{t('scan.erreurs')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.service}</td>
+                    <td>{r.region}</td>
+                    <td>{r.found}</td>
+                    <td>{r.errors || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         </div>
       )}
+    </>
+  );
+}
+
+export function ScanPage({ profileId }: { profileId: string }) {
+  const profile = useLoad(() => get<{ profile: Profile }>(`/api/profiles/${profileId}`), [profileId]);
+  return (
+    <div style={{ maxWidth: 980 }}>
+      <h1>{t('scan.titre')}</h1>
+      {profile.error && <Alert kind="error">{profile.error}</Alert>}
+      {profile.data && <ScanRunner profile={profile.data.profile} />}
     </div>
   );
 }

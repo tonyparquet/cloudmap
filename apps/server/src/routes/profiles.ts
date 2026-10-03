@@ -96,7 +96,21 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
     return {
       profiles: listProfiles(db)
         .filter((p) => canView(user, p, ctx.config.demoMode))
-        .map((p) => ({ ...p, canEdit: canEdit(user, p) })),
+        .map((p) => {
+          const last = ctx.storage.listSnapshots(p.id)[0];
+          return {
+            ...p,
+            canEdit: canEdit(user, p),
+            lastSnapshot: last
+              ? {
+                  id: last.id,
+                  createdAt: last.created_at,
+                  resourceCount: last.resource_count,
+                  errorCount: last.error_count,
+                }
+              : null,
+          };
+        }),
     };
   });
 

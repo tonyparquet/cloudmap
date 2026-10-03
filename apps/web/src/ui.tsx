@@ -150,6 +150,7 @@ export function ReauthDialog() {
   return (
     <Modal title={t('reauth.titre')}>
       <p className="muted">{t('reauth.aide')}</p>
+      <p className="muted small">{t('reauth.aideCode')}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -166,6 +167,7 @@ export function ReauthDialog() {
           <input
             type="password"
             autoComplete="current-password"
+            autoFocus
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

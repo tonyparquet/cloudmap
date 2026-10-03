@@ -26,7 +26,9 @@ function Block({ title, text }: { title: string; text: string }) {
 
 export function HelpPage() {
   const profiles = useLoad(() => get<{ profiles: ProfileView[] }>('/api/profiles'), []);
-  const [profileId, setProfileId] = useState('');
+  const [profileId, setProfileId] = useState(
+    () => new URLSearchParams(window.location.search).get('profil') ?? '',
+  );
   const help = useLoad(
     () => get<IamHelp>(`/api/help/iam${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`),
     [profileId],

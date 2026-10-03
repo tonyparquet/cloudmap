@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { get, put } from '../api.ts';
 import { t, tOr } from '../i18n/index.ts';
 import type { ProfileView } from '../pages/Profiles.tsx';
+import { Link } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, useLoad } from '../ui.tsx';
 import { edgeStyle, edgeTypes, type FlowEdgeType } from './edges.tsx';
@@ -322,7 +323,17 @@ function DiagramInner({ profileId }: { profileId: string }) {
   const toggle = (list: string[], v: string, on: boolean) =>
     on ? [...list, v] : list.filter((x) => x !== v);
 
-  if (snaps.data && snapshots.length === 0) return <div className="empty">{t('diag.aucunSnapshot')}</div>;
+  if (snaps.data && snapshots.length === 0)
+    return (
+      <div className="empty">
+        <p>{t('diag.aucunSnapshot')}</p>
+        {canEdit && (
+          <Link to={`/profils/${profileId}/demarrage`} className="btn primary">
+            {t('diag.miseEnRoute')}
+          </Link>
+        )}
+      </div>
+    );
 
   return (
     <>

@@ -128,6 +128,7 @@ describe('identifiants AWS saisis dans l’interface (section 4.3)', () => {
       secretAccessKey: SECRET,
     });
     expect(other.status).toBe(400);
+    expect(other.json().error).toMatchObject({ code: 'COMPTE_DIFFERENT' });
     expect(other.json().error.message).toMatch(/999999999999/);
   });
 

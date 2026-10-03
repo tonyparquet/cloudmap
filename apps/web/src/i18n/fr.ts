@@ -291,6 +291,77 @@ export const fr = {
   'aide.cli': 'Commandes AWS CLI',
   'aide.etapes':
     "1. Remplacez <ACCOUNT_ID_OUTIL> par le compte de l'outil. 2. Créez le rôle avec la politique de confiance. 3. Attachez la politique en lecture seule. 4. Saisissez l'ARN du rôle dans le profil.",
+  'onb.titre': 'Mise en route',
+  'onb.sousTitre': 'Compte {compte} · {regions}',
+  'onb.etape.identifiants': 'Identifiants',
+  'onb.etape.scan': 'Premier scan',
+  'onb.etape.import': 'Import du snapshot',
+  'onb.etape.diagramme': 'Diagramme',
+  'onb.hub': "L'outil assumera le rôle {role} : aucune clé n'est à saisir.",
+  'onb.scanIntro':
+    'Le scan est en lecture seule. Il dure en général une à quelques minutes selon le nombre de régions et de services.',
+  'onb.redirection': 'Scan terminé : ouverture du diagramme…',
+  'onb.importIntro':
+    'Ce profil fonctionne sans accès direct à AWS : importez un snapshot produit par « pnpm cli scan ».',
+  'profils.miseEnRoute': 'Mise en route',
+  'profils.jamaisScanne': 'Jamais scanné',
+  'profils.dernierScan': 'Dernier scan : {date} · {n} ressources',
+  'profils.bienvenueTitre': 'Ajoutez votre premier compte AWS',
+  'profils.bienvenueTexte':
+    "Trois étapes : décrire le compte, fournir des identifiants en lecture seule, lancer le scan. Le diagramme s'ouvre ensuite automatiquement.",
+  'profils.ajouterCompte': 'Ajouter un compte AWS',
+  'form.creerContinuer': 'Créer et continuer',
+  'form.compteAide':
+    '12 chiffres, visibles dans le menu du compte en haut à droite de la console AWS (tirets acceptés).',
+  'form.regionsAide':
+    'Cochez les régions où le compte héberge des ressources. Les services globaux (CloudFront, Route 53…) sont toujours inclus.',
+  'form.regionsFiltre': 'Filtrer les régions…',
+  'form.regionsChoisies': '{n} région(s) choisie(s)',
+  'form.groupesAide': 'Vide : profil visible des seuls administrateurs.',
+  'form.avance': 'Options avancées : description, nœuds externes, sondes, Flow Logs, filtres de tags',
+  'form.mode.access-keys':
+    'Je fournis des identifiants (clés temporaires de préférence) : le plus simple pour démarrer.',
+  'form.mode.assume-role-hub':
+    "L'outil assume un rôle du compte avec sa propre identité AWS : aucune clé à saisir.",
+  'form.mode.import-only': "Pas d'accès direct : j'importerai des snapshots produits hors-ligne par la CLI.",
+  'form.hubIndispo': "Indisponible : l'outil n'a pas d'identité AWS propre (HUB_CREDENTIALS).",
+  'regions.europe': 'Europe',
+  'regions.ameriques': 'Amériques',
+  'regions.asie': 'Asie-Pacifique',
+  'regions.autres': 'Moyen-Orient et Afrique',
+  'cred.saisie': "Type d'identifiants",
+  'cred.coller': 'Coller ici le bloc copié depuis le portail AWS ou la CLI',
+  'cred.collerAide':
+    'Par exemple les variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY et AWS_SESSION_TOKEN : les champs se remplissent seuls.',
+  'cred.colle': '{n} champ(s) rempli(s) depuis le bloc collé',
+  'cred.colleRien': 'Aucun identifiant reconnu dans le texte collé',
+  'cred.aideTitre': 'Comment obtenir des clés temporaires ?',
+  'cred.aideSso':
+    "Portail AWS (IAM Identity Center) : choisissez le compte, puis « Access keys », et copiez le bloc de variables d'environnement.",
+  'cred.aideCli':
+    'AWS CLI : aws configure export-credentials --profile <profil> --format env (ou aws sts get-session-token), puis collez la sortie.',
+  'cred.aideRole': 'Pour un accès durable, créez plutôt un rôle en lecture seule : voir la page « Aide ».',
+  'cred.desc.temporary':
+    'Identifiants de session (ASIA…) : ils expirent seuls, rien de durable n’est stocké.',
+  'cred.desc.user-role':
+    "Clés d'un utilisateur IAM qui assume un rôle en lecture seule du compte (External ID).",
+  'cred.desc.user': "Clés durables d'un utilisateur IAM : déconseillé, préférez un rôle.",
+  'cred.desc.hub-role': "L'outil assume le rôle avec sa propre identité AWS : aucune clé.",
+  'cred.verifies': 'Identifiants vérifiés pour le compte {compte}.',
+  'cred.compteDifferent': 'Ces identifiants appartiennent au compte {compte}.',
+  'cred.utiliserCompte': 'Utiliser le compte {compte} pour ce profil',
+  'cred.enregistrerVerifier': 'Vérifier et enregistrer',
+  'scan.servicesResume': 'Services analysés : {n} / {total} (personnaliser)',
+  'scan.lancerPremier': 'Lancer le premier scan',
+  'scan.aucuneRegion': 'Aucune région configurée : modifiez le profil.',
+  'scan.permissionsManquantes':
+    'Permissions manquantes ({n}) : le reste du diagramme est complet, ces éléments apparaissent « inconnus ».',
+  'scan.voirPolitique': 'Voir la politique IAM recommandée',
+  'scan.detail': 'Détail par service et région',
+  'scan.autresErreurs': 'Autres erreurs',
+  'import.deposer': 'Déposez le fichier ici ou cliquez pour le choisir',
+  'reauth.aideCode': 'Un code déjà utilisé ne peut pas resservir : attendez le suivant si nécessaire.',
+  'diag.miseEnRoute': 'Démarrer la mise en route',
 } as const;
 
 export type MessageKey = keyof typeof fr;

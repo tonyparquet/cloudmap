@@ -38,7 +38,11 @@ export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
 
   app.get('/api/config/services', async (req) => {
     requireUser(req);
-    return { services: SERVICES, defaults: config.app.scanner.defaultServices ?? SERVICES.map((s) => s.key) };
+    return {
+      services: SERVICES,
+      defaults: config.app.scanner.defaultServices ?? SERVICES.map((s) => s.key),
+      hubAvailable: config.hubCredentials === 'default-chain',
+    };
   });
 
   /** Aide « rôle IAM client » : documents de docs/iam/, External ID du profil choisi inséré. */

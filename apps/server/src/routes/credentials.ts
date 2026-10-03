@@ -73,7 +73,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     const input = parse(credentialInputSchema, req.body);
     const dur =
       ('durationSeconds' in input && input.durationSeconds) || config.app.credentials.defaultDurationSeconds;
-    const fail = (motif: string): never => {
+    const fail = (motif: string, code = 'IDENTIFIANTS_REFUSES'): never => {
       audit.log({
         user: user.username,
         ip: req.ip,
@@ -82,7 +82,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
         result: 'refus',
         details: { type: input.type, motif },
       });
-      throw badRequest(motif, 'IDENTIFIANTS_REFUSES');
+      throw badRequest(motif, code);
     };
 
     let temp: StaticCredentials;
@@ -111,6 +111,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
           if (caller.account !== profile.accountId)
             fail(
               `Ces identifiants appartiennent au compte ${caller.account}, le profil attend ${profile.accountId}`,
+              'COMPTE_DIFFERENT',
             );
           temp = input.type === 'user' ? await getSessionToken(given, dur) : given;
         }
@@ -125,6 +126,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
       if (identity.account !== profile.accountId)
         fail(
           `Le rôle assumé appartient au compte ${identity.account}, le profil attend ${profile.accountId}`,
+          'COMPTE_DIFFERENT',
         );
       identityArn = identity.arn;
     } catch (err) {

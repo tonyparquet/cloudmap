@@ -143,3 +143,23 @@ external`, `externalType`.
   latin) est fournie explicitement, et les URL `data:` sont converties localement : la CSP stricte
   (`base-uri 'none'`, `connect-src 'self'`) reste inchangée. PDF : écrit sans dépendance (une page,
   image JPEG). draw.io : conteneurs imbriqués, tuiles et arêtes orthogonales avec les couleurs du thème.
+
+## Mise en route d'un compte (enregistrement et premier scan)
+
+- Parcours guidé `/profils/:id/demarrage` : Identifiants → Premier scan → Diagramme (Import →
+  Diagramme pour un profil « Imports uniquement »). La création d'un profil y mène directement ;
+  l'étape de départ est déduite du mode d'accès et de `/credentials/available` (sans
+  ré-authentification). Le diagramme s'ouvre seul après un scan **sans erreur** ; sinon les
+  permissions manquantes restent affichées, avec le lien vers la politique IAM recommandée.
+- Collage d'un bloc d'identifiants (variables `AWS_*` bash / PowerShell / cmd, fichier
+  `credentials`, JSON de `sts get-session-token` ou `aws configure export-credentials`) : analyse
+  **locale au navigateur**, dans un champ `type="password"` qui ne garde jamais le texte collé ;
+  rien n'est envoyé avant « Vérifier et enregistrer », et la validation serveur (4.3) est inchangée.
+- Compte différent : l'API renvoie le code `COMPTE_DIFFERENT`. L'interface propose alors
+  « Utiliser le compte X pour ce profil » : modification explicite du profil (journalisée, efface
+  les identifiants mémorisés de l'ancien compte) puis nouvelle tentative. Jamais automatique.
+- Formulaire de profil : ID de compte normalisé (tirets et espaces retirés), régions groupées par
+  continent avec filtre, options avancées (description, nœuds externes, sondes, Flow Logs, tags)
+  repliées. Mode « Rôle assumé par l'outil » désactivé si `HUB_CREDENTIALS` n'est pas configuré.
+- La liste des profils expose un résumé du dernier snapshot (`lastSnapshot` : date, nombre de
+  ressources et d'erreurs), affiché sur chaque carte ; aucune donnée sensible.
