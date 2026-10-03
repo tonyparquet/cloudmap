@@ -175,3 +175,25 @@ external`, `externalType`.
   profil source ne casse pas le profil cible. Rôle à assumer facultatif ; External ID repris de la
   source seulement si le rôle est le même. Seules les clés d'utilisateur IAM peuvent être mémorisées :
   les clés temporaires restent en mémoire (section 4.3).
+
+## Vue Organisation (AWS Organizations, IAM Identity Center)
+
+- Deux services de scan, actifs par défaut : `organizations` (global : organisation, racine, OU
+  parcourues récursivement — séquentiellement, l'API étant fortement limitée en débit —, comptes,
+  politiques de chaque type activé sur la racine avec contenu et cibles, administrateurs délégués)
+  et `identitycenter` (par région : permission sets, affectations, groupes avec leur seul nombre de
+  membres, utilisateurs à affectation directe réduits à leur nom). Aucune autre donnée personnelle.
+- Compte membre : seule l'organisation est lisible ; elle est marquée `_scope: membre` et la vue
+  Organisation l'indique en avertissement. Ce n'est pas une erreur de scan (sinon chaque compte
+  membre afficherait une erreur et bloquerait l'ouverture automatique du diagramme).
+- `buildOrgGraph` (fonction pure, core) : conteneurs `org` > `ou` imbriquées > comptes ; politiques
+  non gérées par AWS en nœuds reliés à leurs cibles (FullAWSAccess, attachée partout, n'apparaît
+  que dans les détails : politiques directes / héritées) ; groupes et utilisateurs Identity Center
+  reliés aux comptes, étiquette = permission sets, visible à la sélection (`labelOnFocus`) pour
+  éviter le chevauchement d'étiquettes.
+- Ces ressources sont masquées du diagramme d'infrastructure par des règles déclaratives
+  (`config/rules/organizations.yaml`, `hidden: true`) ; le moteur de règles reste générique.
+- Les jetons de thème `org` / `ou` ont une valeur de repli : un CONFIG_DIR créé avant cette
+  version fonctionne sans modification. En revanche, copier `config/rules/organizations.yaml`
+  dans un CONFIG_DIR existant (les valeurs par défaut ne sont copiées qu'au premier démarrage).
+- Le port des E2E est surchargeable (`E2E_PORT`, défaut 8444).

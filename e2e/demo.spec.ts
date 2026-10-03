@@ -145,3 +145,55 @@ test('mise en route : nouveau profil, import du premier snapshot, diagramme', as
   await page.getByRole('link', { name: '← Profils' }).click();
   await expect(page.getByTestId('profil').filter({ hasText: 'Compte E2E' })).toContainText('Dernier scan');
 });
+
+test('vue Organisation : OU, comptes, panneau et export draw.io', async ({ page }) => {
+  await page.goto('/');
+  await page.fill('input[name=username]', ADMIN.username);
+  await page.fill('input[name=password]', ADMIN.password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.fill('input[name=code]', recoveryCodes[1] ?? '');
+  await page.getByRole('button', { name: 'Vérifier' }).click();
+
+  await page
+    .getByTestId('profil')
+    .filter({ hasText: 'Démo' })
+    .getByRole('link', { name: 'Diagramme' })
+    .click();
+  const node = (label: string) => page.locator(`[data-testid=noeud][data-label="${label}"]`);
+  await expect(node('CloudFront')).toBeVisible();
+  await page.getByRole('button', { name: 'Organisation' }).click();
+
+  await expect(page.locator('[data-testid=conteneur][data-kind=org]')).toHaveCount(1);
+  await expect(page.locator('[data-testid=conteneur][data-kind=ou]')).toHaveCount(4);
+  for (const label of [
+    'gestion',
+    'production',
+    'production-eu',
+    'Administrateurs',
+    'RegionsEurope',
+    'PerimetreDonnees',
+  ])
+    await expect(node(label)).toBeVisible();
+  await expect(node('CloudFront')).toHaveCount(0);
+  await expect(node('bac-a-sable')).toHaveAttribute('data-status', 'arrete');
+
+  await node('production-eu').click();
+  const panel = page.getByTestId('panneau');
+  await expect(panel).toContainText('Politiques héritées');
+  await expect(panel).toContainText('RegionsEurope (SCP)');
+  await expect(panel).toContainText('PerimetreDonnees (RCP)');
+  await panel.getByRole('button', { name: 'Fermer' }).click();
+
+  await page.getByRole('button', { name: 'Exporter' }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'draw.io', exact: true }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^Démo-organisation-\d{4}-\d{2}-\d{2}\.drawio$/);
+  const drawio = readFileSync(await download.path(), 'utf8');
+  expect(drawio).toContain('<mxfile');
+  for (const ou of ['Socle', 'Production', 'Europe', 'Bac à sable']) expect(drawio).toContain(ou);
+
+  await page.getByRole('button', { name: 'Infrastructure' }).click();
+  await expect(node('CloudFront')).toBeVisible();
+});

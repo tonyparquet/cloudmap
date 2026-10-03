@@ -1,5 +1,6 @@
 import {
   buildGraph,
+  buildOrgGraph,
   diff,
   rawSnapshotSchema,
   regionSchema,
@@ -71,6 +72,12 @@ export function registerSnapshotRoutes(app: FastifyInstance, ctx: Ctx): void {
       return { snapshot: row, meta: snapshot.meta, errors: snapshot.errors, graph };
     },
   );
+
+  /** Vue « Organisation » : `graph` nul si le snapshot ne contient ni Organizations ni Identity Center. */
+  app.get<{ Params: { id: string } }>('/api/snapshots/:id/org-graph', async (req) => {
+    const row = visibleSnapshot(req, req.params.id);
+    return { graph: buildOrgGraph(storage.loadSnapshot(row)) };
+  });
 
   app.get<{ Params: { a: string; b: string } }>('/api/snapshots/:a/diff/:b', async (req) => {
     const a = visibleSnapshot(req, req.params.a);

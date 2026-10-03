@@ -10,7 +10,8 @@ const libs = join(root, '.tmp', 'syslibs', 'usr', 'lib', 'x86_64-linux-gnu');
 if (existsSync(libs))
   process.env.LD_LIBRARY_PATH = [libs, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
 
-const PORT = 8444;
+// Port surchargeable (E2E_PORT) pour lancer deux suites en parallèle sans collision.
+const PORT = Number(process.env.E2E_PORT ?? 8444);
 
 export default defineConfig({
   testDir: 'e2e',

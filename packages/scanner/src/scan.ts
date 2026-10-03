@@ -31,6 +31,7 @@ import {
   sqsCollector,
 } from './collectors/integration.ts';
 import { ec2Collector, networkCollector } from './collectors/network.ts';
+import { identityCenterCollector, organizationsCollector } from './collectors/organizations.ts';
 import { acmCollector, kmsCollector, secretsCollector, ssmCollector } from './collectors/security.ts';
 import {
   clientConfig,
@@ -79,6 +80,8 @@ export const COLLECTORS: Collector[] = [
   ssmCollector,
   kmsCollector,
   acmCollector,
+  organizationsCollector,
+  identityCenterCollector,
 ];
 
 /** Services sélectionnables (page Scan). */
@@ -112,6 +115,8 @@ export const SERVICES: { key: string; label: string }[] = [
   { key: 'ssm', label: 'SSM Parameter Store (métadonnées)' },
   { key: 'kms', label: 'KMS (alias)' },
   { key: 'acm', label: 'ACM' },
+  { key: 'organizations', label: 'AWS Organizations (comptes, OU, SCP / RCP)' },
+  { key: 'identitycenter', label: 'IAM Identity Center (groupes, permission sets, affectations)' },
   { key: 'cloudwatch', label: 'CloudWatch (métriques de statut)' },
   { key: 'inventory', label: 'Inventaire générique (Resource Explorer / AWS Config)' },
 ];

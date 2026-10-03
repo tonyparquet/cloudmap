@@ -1,3 +1,5 @@
+import type { ContainerKind } from '@carto/core';
+
 /** Jetons de thème (section 9.2), fournis par CONFIG_DIR/theme.yaml via /api/config/theme. */
 
 export interface ContainerToken {
@@ -21,7 +23,9 @@ export interface Theme {
   muted: string;
   accent: string;
   font: string;
-  container: Record<'global' | 'region' | 'vpc' | 'az' | 'subnetPrivate' | 'subnetPublic', ContainerToken>;
+  /** `org` / `ou` peuvent manquer d'un theme.yaml antérieur à la vue Organisation : voir containerToken(). */
+  container: Record<'global' | 'region' | 'vpc' | 'az' | 'subnetPrivate' | 'subnetPublic', ContainerToken> &
+    Partial<Record<'org' | 'ou', ContainerToken>>;
   node: {
     tile: { size: number; radius: number; border: number; borderColor: string };
     label: { color: string; size: number; weight: number };
@@ -56,6 +60,8 @@ export const DEFAULT_THEME: Theme = {
     az: { color: '#6b7280', dash: '5 4', width: 1, radius: 8 },
     subnetPrivate: { color: '#14b8a6', dash: '', width: 1, radius: 8 },
     subnetPublic: { color: '#84cc16', dash: '', width: 1, radius: 8 },
+    org: { color: '#e7157b', dash: '', width: 1.5, radius: 12 },
+    ou: { color: '#f472b6', dash: '5 4', width: 1, radius: 10 },
   },
   node: {
     tile: { size: 44, radius: 8, border: 2, borderColor: '#e4e4e7' },
@@ -86,6 +92,15 @@ export const DEFAULT_THEME: Theme = {
     label: { color: '#ffffff', size: 11, weight: 700, background: '#16131f' },
   },
 };
+
+/** Jeton de conteneur d'un type de conteneur du graphe, avec repli sur les valeurs par défaut. */
+export function containerToken(theme: Theme, kind: ContainerKind): ContainerToken {
+  if (kind === 'subnet-public') return theme.container.subnetPublic;
+  if (kind === 'subnet-private') return theme.container.subnetPrivate;
+  if (kind === 'org' || kind === 'ou')
+    return theme.container[kind] ?? DEFAULT_THEME.container[kind] ?? theme.container.global;
+  return theme.container[kind];
+}
 
 /** Variables CSS globales dérivées du thème (le diagramme lit directement l'objet Theme). */
 export function applyTheme(theme: Theme): void {

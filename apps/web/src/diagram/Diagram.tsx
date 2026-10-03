@@ -104,7 +104,9 @@ function DiagramInner({ profileId }: { profileId: string }) {
   const [snapshotId, setSnapshotId] = useState<string>();
   const [compareId, setCompareId] = useState('');
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [graph, setGraph] = useState<Graph>();
+  const [infraGraph, setGraph] = useState<Graph>();
+  const [orgGraph, setOrgGraph] = useState<Graph | null>(null);
+  const [view, setView] = useState<'infra' | 'org'>('infra');
   const [marks, setMarks] = useState<{ nodes: Map<string, DiffMark>; edges: Map<string, DiffMark> }>();
   const [errors, setErrors] = useState<{ service: string; region: string; message: string }[]>([]);
   const [boxes, setBoxes] = useState<Map<string, Box>>();
@@ -119,6 +121,9 @@ function DiagramInner({ profileId }: { profileId: string }) {
   const saveTimer = useRef<number | undefined>(undefined);
   const canEdit = profile.data?.profile.canEdit ?? false;
   const current = snapshotId ?? snaps.data?.snapshots[0]?.id;
+  const orgView = view === 'org' && orgGraph !== null;
+  const graph = orgView ? orgGraph : infraGraph;
+  const fitPending = useRef(false);
 
   useEffect(() => {
     if (!current) return;
@@ -151,9 +156,22 @@ function DiagramInner({ profileId }: { profileId: string }) {
     };
   }, [current, compareId, expanded, profileId]);
 
+  // Vue « Organisation » : proposée seulement si le snapshot contient Organizations ou Identity Center.
+  useEffect(() => {
+    if (!current) return;
+    let alive = true;
+    get<{ graph: Graph | null }>(`/api/snapshots/${current}/org-graph`)
+      .then((r) => alive && setOrgGraph(r.graph))
+      .catch(() => alive && setOrgGraph(null));
+    return () => {
+      alive = false;
+    };
+  }, [current]);
+
   useEffect(() => {
     if (!graph) return;
     let alive = true;
+    fitPending.current = true;
     layoutGraph(graph)
       .then((b) => alive && setBoxes(b))
       .catch((err: Error) => alive && setLoadError(err.message));
@@ -237,7 +255,7 @@ function DiagramInner({ profileId }: { profileId: string }) {
         type: 'container',
         position: positions[c.id] ?? { x: box.x, y: box.y },
         ...(c.parentId ? { parentId: c.parentId } : {}),
-        data: { container: c, theme, diff: marks?.nodes.get(c.id) },
+        data: { container: c, theme, diff: orgView ? undefined : marks?.nodes.get(c.id) },
         style: { width: box.width, height: box.height },
         selectable: false,
         zIndex: 0,
@@ -259,18 +277,25 @@ function DiagramInner({ profileId }: { profileId: string }) {
           theme,
           dim: !!focus && !focus.nodes.has(n.id),
           match: visibility.matches.has(n.id),
-          diff: marks?.nodes.get(n.id),
+          diff: orgView ? undefined : marks?.nodes.get(n.id),
         },
         zIndex: 2,
       });
     }
     setNodes(out);
-  }, [graph, boxes, positions, theme, visibility, focus, marks, setNodes]);
+  }, [graph, boxes, positions, theme, visibility, focus, marks, orgView, setNodes]);
+
+  // Nouvelle mise en page (changement de vue ou de snapshot) : recadrage une fois les nœuds posés.
+  useEffect(() => {
+    if (!fitPending.current || nodes.length === 0) return;
+    fitPending.current = false;
+    window.requestAnimationFrame(() => void rf.fitView({ duration: 300 }));
+  }, [nodes, rf]);
 
   const edges: FlowEdgeType[] = useMemo(
     () =>
       (graph?.edges ?? []).map((e) => {
-        const diff = marks?.edges.get(e.id);
+        const diff = orgView ? undefined : marks?.edges.get(e.id);
         return {
           id: e.id,
           source: e.source,
@@ -284,10 +309,16 @@ function DiagramInner({ profileId }: { profileId: string }) {
             width: 16,
             height: 16,
           },
-          data: { edge: e, theme, dim: !!focus && !focus.edges.has(e.id), diff },
+          data: {
+            edge: e,
+            theme,
+            dim: !!focus && !focus.edges.has(e.id),
+            focused: !!focus?.edges.has(e.id),
+            diff,
+          },
         };
       }),
-    [graph, theme, visibility, focus, marks],
+    [graph, theme, visibility, focus, marks, orgView],
   );
 
   const savePositions = useCallback(
@@ -314,7 +345,7 @@ function DiagramInner({ profileId }: { profileId: string }) {
       graph: { ...graph, edges: graph.edges.filter((e) => visibility.visibleEdges.has(e.id)) },
       theme,
       profileId,
-      name: profile.data?.profile.name ?? 'diagramme',
+      name: `${profile.data?.profile.name ?? 'diagramme'}${orgView ? '-organisation' : ''}`,
     });
   };
 
@@ -350,20 +381,40 @@ function DiagramInner({ profileId }: { profileId: string }) {
               </option>
             ))}
           </select>
-          <select
-            aria-label={t('diag.comparer')}
-            value={compareId}
-            onChange={(e) => setCompareId(e.target.value)}
-          >
-            <option value="">{t('diag.comparer')}</option>
-            {snapshots
-              .filter((s) => s.id !== current)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {new Date(s.created_at).toLocaleString('fr-FR')}
-                </option>
+          {orgGraph && (
+            <div className="segmented" role="group" aria-label={t('diag.vue')}>
+              {(['infra', 'org'] as const).map((v) => (
+                <button
+                  key={v}
+                  aria-pressed={view === v}
+                  className={view === v ? 'active' : ''}
+                  onClick={() => {
+                    setView(v);
+                    setSelected(undefined);
+                    setCompareId('');
+                  }}
+                >
+                  {t(v === 'org' ? 'diag.vueOrg' : 'diag.vueInfra')}
+                </button>
               ))}
-          </select>
+            </div>
+          )}
+          {!orgView && (
+            <select
+              aria-label={t('diag.comparer')}
+              value={compareId}
+              onChange={(e) => setCompareId(e.target.value)}
+            >
+              <option value="">{t('diag.comparer')}</option>
+              {snapshots
+                .filter((s) => s.id !== current)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {new Date(s.created_at).toLocaleString('fr-FR')}
+                  </option>
+                ))}
+            </select>
+          )}
           <input
             aria-label={t('diag.recherche')}
             placeholder={t('diag.recherche')}
@@ -536,7 +587,7 @@ function DiagramInner({ profileId }: { profileId: string }) {
           />
           <Controls showInteractive={false} />
         </ReactFlow>
-        {marks && (
+        {marks && !orgView && (
           <div className="legend">
             <span style={{ color: theme.status.actif }}>■ {t('diag.legendeAjoute')}</span>
             <span style={{ color: theme.status.erreur }}>■ {t('diag.legendeSupprime')}</span>
