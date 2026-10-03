@@ -362,6 +362,22 @@ export const fr = {
   'import.deposer': 'Déposez le fichier ici ou cliquez pour le choisir',
   'reauth.aideCode': 'Un code déjà utilisé ne peut pas resservir : attendez le suivant si nécessaire.',
   'diag.miseEnRoute': 'Démarrer la mise en route',
+  'cred.type.stored': 'Clés déjà enregistrées (chiffrées)',
+  'cred.desc.stored':
+    "Réutiliser des clés d'utilisateur IAM mémorisées pour un autre profil : elles restent chiffrées côté serveur.",
+  'cred.aucuneMemorisee':
+    "Aucune clé mémorisée : lors d'une saisie de clés d'utilisateur IAM, cochez « Mémoriser (chiffré) » pour pouvoir les réutiliser.",
+  'cred.choisirCles': 'Clés mémorisées',
+  'cred.memoriseePour': 'Mémorisées pour « {profil} » (compte {compte}) le {date}',
+  'cred.roleOptionnel': 'Rôle à assumer dans ce compte (facultatif)',
+  'cred.roleOptionnelAide':
+    "Vide : les clés de l'utilisateur IAM sont utilisées directement. Indiquez le rôle en lecture seule du compte cible si l'utilisateur appartient à un autre compte.",
+  'cred.externalIdIdentique': 'Identique au profil source',
+  'form.identifiants': 'Identifiants AWS',
+  'form.plusTard': "Je fournirai les identifiants à l'étape suivante",
+  'form.nePasModifier': 'Ne pas modifier les identifiants actuels',
+  'form.profilCree':
+    'Profil créé. Corrigez les identifiants puis validez à nouveau (ou cochez « plus tard »).',
 } as const;
 
 export type MessageKey = keyof typeof fr;

@@ -716,3 +716,6 @@ details.help {
 input.paste {
   border-style: dashed;
 }
+fieldset fieldset {
+  margin-top: 10px;
+}

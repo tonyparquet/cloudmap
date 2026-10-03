@@ -5,6 +5,7 @@ import { t, type MessageKey } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, Field, useAction, useLoad } from '../ui.tsx';
+import { CredentialFields, credentialBody, emptyDraft, otherAccountOf } from './Credentials.tsx';
 
 /** Codes des régions publiques AWS (données génériques, pas des données client). */
 const AWS_REGIONS = [
@@ -110,6 +111,11 @@ export function ProfileForm({ id }: { id?: string }) {
   const [logGroups, setLogGroups] = useState('');
   const [lookback, setLookback] = useState(24);
   const [tagFilters, setTagFilters] = useState('');
+  // Identifiants saisis ou choisis dès la création (mode « Clés d'accès saisies »).
+  const [later, setLater] = useState(!!id);
+  const [draft, setDraft] = useState(emptyDraft);
+  const [createdId, setCreatedId] = useState<string>();
+  const [otherAccount, setOtherAccount] = useState<string>();
   const [run, error, busy] = useAction();
   const services = useLoad(() => get<{ hubAvailable: boolean }>('/api/config/services'), []);
   const hubAvailable = services.data?.hubAvailable ?? false;
@@ -148,13 +154,14 @@ export function ProfileForm({ id }: { id?: string }) {
       .map((x) => x.trim())
       .filter(Boolean);
 
-  const submit = () =>
+  const submit = (accountOverride?: string) =>
     run(async () => {
+      setOtherAccount(undefined);
       const body = {
         name,
         ...(client ? { client } : {}),
         ...(description ? { description } : {}),
-        accountId: accountId.trim(),
+        accountId: accountOverride ?? accountId.trim(),
         regions,
         auth:
           authKind === 'assume-role-hub'
@@ -181,14 +188,30 @@ export function ProfileForm({ id }: { id?: string }) {
           return { key: key.trim(), values: list(values) };
         }),
       };
-      const r = id
-        ? await put<{ profile: Profile }>(`/api/profiles/${id}`, body)
+      // Après un échec des identifiants, le profil déjà créé est mis à jour au lieu d'être recréé.
+      const target = id ?? createdId;
+      const r = target
+        ? await put<{ profile: Profile }>(`/api/profiles/${target}`, body)
         : await post<{ profile: Profile }>('/api/profiles', body);
+      if (!id) setCreatedId(r.profile.id);
+      if (authKind === 'access-keys' && !later) {
+        try {
+          const c = await put<{ warnings: string[] }>(
+            `/api/profiles/${r.profile.id}/credentials`,
+            credentialBody(draft),
+          );
+          if (c.warnings.length) useApp.getState().showToast(c.warnings.join(' · '));
+        } catch (err) {
+          setOtherAccount(otherAccountOf(err));
+          throw err;
+        }
+      }
       navigate(`/profils/${r.profile.id}/${id ? 'diagramme' : 'demarrage'}`);
     });
 
   return (
     <form
+      autoComplete="off"
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
@@ -262,6 +285,24 @@ export function ProfileForm({ id }: { id?: string }) {
               <input value={externalId} onChange={(e) => setExternalId(e.target.value)} />
             </Field>
           </>
+        )}
+        {authKind === 'access-keys' && (
+          <fieldset data-testid="identifiants-profil">
+            <legend>{t('form.identifiants')}</legend>
+            <Check
+              label={id ? t('form.nePasModifier') : t('form.plusTard')}
+              checked={later}
+              onChange={setLater}
+            />
+            {!later && (
+              <CredentialFields
+                draft={draft}
+                onChange={setDraft}
+                hubAvailable={false}
+                profileId={id ?? createdId}
+              />
+            )}
+          </fieldset>
         )}
         <Field label={t('form.groupes')}>
           <input value={groups} onChange={(e) => setGroups(e.target.value)} />
@@ -382,7 +423,20 @@ export function ProfileForm({ id }: { id?: string }) {
         </Field>
       </details>
 
+      {createdId && error && <Alert>{t('form.profilCree')}</Alert>}
       {error && <Alert kind="error">{error}</Alert>}
+      {otherAccount && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setAccountId(otherAccount);
+            void submit(otherAccount);
+          }}
+        >
+          {t('cred.utiliserCompte', { compte: otherAccount })}
+        </button>
+      )}
       <div className="row">
         <button
           className="primary"

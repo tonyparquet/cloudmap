@@ -6,7 +6,7 @@ import { t } from '../i18n/index.ts';
 import { Link } from '../router.tsx';
 import { Alert, Check, Field, fmtDate, useAction, useLoad } from '../ui.tsx';
 
-type CredType = 'temporary' | 'user-role' | 'user' | 'hub-role';
+type CredType = 'temporary' | 'stored' | 'user-role' | 'user' | 'hub-role';
 
 interface CredentialInfo {
   storage: 'memoire' | 'chiffre' | 'role-hub';
@@ -36,35 +36,170 @@ export function profileToInput(p: Profile) {
   };
 }
 
-/**
- * Formulaire de saisie : champs masqués, jamais relus depuis le serveur (écriture seule). Un bloc
- * copié depuis le portail AWS ou la CLI remplit les champs ; il est analysé localement puis oublié.
- */
-export function CredentialsForm({
-  profile,
-  hubAvailable,
-  onSaved,
-  onProfileChanged,
-}: {
-  profile: Profile;
-  hubAvailable: boolean;
-  onSaved: (warnings: string[]) => void;
-  onProfileChanged: () => void;
-}) {
-  const [type, setType] = useState<CredType>('temporary');
-  const [accessKeyId, setAccessKeyId] = useState('');
-  const [secretAccessKey, setSecret] = useState('');
-  const [sessionToken, setToken] = useState('');
-  const [roleArn, setRoleArn] = useState('');
-  const [externalId, setExternalId] = useState('');
-  const [remember, setRemember] = useState(false);
-  const [duration, setDuration] = useState(3600);
-  const [pasted, setPasted] = useState<string>();
-  const [otherAccount, setOtherAccount] = useState<string>();
-  const [run, error, busy] = useAction();
+export interface CredentialDraft {
+  type: CredType;
+  accessKeyId: string;
+  secretAccessKey: string;
+  sessionToken: string;
+  roleArn: string;
+  externalId: string;
+  remember: boolean;
+  duration: number;
+  sourceProfileId: string;
+}
 
+export const emptyDraft = (): CredentialDraft => ({
+  type: 'temporary',
+  accessKeyId: '',
+  secretAccessKey: '',
+  sessionToken: '',
+  roleArn: '',
+  externalId: '',
+  remember: false,
+  duration: 3600,
+  sourceProfileId: '',
+});
+
+/** Corps de PUT /api/profiles/:id/credentials selon le type choisi. */
+export function credentialBody(d: CredentialDraft) {
+  const { type, accessKeyId, secretAccessKey, remember } = d;
+  const durationSeconds = d.duration;
+  switch (type) {
+    case 'temporary':
+      return { type, accessKeyId, secretAccessKey, sessionToken: d.sessionToken };
+    case 'user-role':
+      return {
+        type,
+        accessKeyId,
+        secretAccessKey,
+        roleArn: d.roleArn,
+        externalId: d.externalId,
+        remember,
+        durationSeconds,
+      };
+    case 'user':
+      return { type, accessKeyId, secretAccessKey, remember, durationSeconds };
+    case 'hub-role':
+      return { type, roleArn: d.roleArn, externalId: d.externalId };
+    case 'stored':
+      return {
+        type,
+        sourceProfileId: d.sourceProfileId,
+        ...(d.roleArn ? { roleArn: d.roleArn } : {}),
+        ...(d.externalId ? { externalId: d.externalId } : {}),
+      };
+  }
+}
+
+/** Compte réellement associé aux identifiants, quand l'API signale un compte différent du profil. */
+export const otherAccountOf = (err: unknown) =>
+  err instanceof ApiError && err.code === 'COMPTE_DIFFERENT'
+    ? /compte (\d{12})/.exec(err.message)?.[1]
+    : undefined;
+
+interface StoredInfo {
+  profileId: string;
+  profileName: string;
+  accountId: string;
+  type: CredType;
+  maskedAccessKeyId?: string;
+  roleArn?: string;
+  addedAt: string;
+}
+
+/** Clés mémorisées (chiffrées côté serveur) des autres profils : seules les métadonnées masquées arrivent ici. */
+function StoredPicker({
+  draft,
+  set,
+  excludeProfileId,
+}: {
+  draft: CredentialDraft;
+  set: (patch: Partial<CredentialDraft>) => void;
+  excludeProfileId?: string;
+}) {
+  const list = useLoad(() => get<{ stored: StoredInfo[] }>('/api/credentials/stored'), []);
+  const stored = (list.data?.stored ?? []).filter((c) => c.profileId !== excludeProfileId);
+  const chosen = stored.find((c) => c.profileId === draft.sourceProfileId);
+  if (list.error) return <Alert kind="error">{list.error}</Alert>;
+  if (list.data && stored.length === 0) return <Alert>{t('cred.aucuneMemorisee')}</Alert>;
+  return (
+    <>
+      <fieldset className="choices" data-testid="cles-memorisees">
+        <legend>{t('cred.choisirCles')}</legend>
+        {stored.map((c) => (
+          <label key={c.profileId} className={`choice${c === chosen ? ' selected' : ''}`}>
+            <input
+              type="radio"
+              name="stored"
+              checked={c === chosen}
+              onChange={() => set({ sourceProfileId: c.profileId, roleArn: c.roleArn ?? '', externalId: '' })}
+              required
+            />
+            <span>
+              <strong>
+                <span className="mono">{c.maskedAccessKeyId ?? '—'}</span> · {t(`cred.type.${c.type}`)}
+              </strong>
+              <span className="muted small">
+                {t('cred.memoriseePour', {
+                  profil: c.profileName,
+                  compte: c.accountId,
+                  date: fmtDate(c.addedAt),
+                })}
+              </span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      {chosen && (
+        <>
+          <Field label={t('cred.roleOptionnel')}>
+            <input
+              autoComplete="off"
+              value={draft.roleArn}
+              onChange={(e) => set({ roleArn: e.target.value.trim() })}
+              placeholder="arn:aws:iam::<ACCOUNT_ID>:role/<NOM>"
+            />
+            <span className="small">{t('cred.roleOptionnelAide')}</span>
+          </Field>
+          {draft.roleArn && (
+            <Field label={t('cred.externalId')}>
+              <input
+                type="password"
+                autoComplete="off"
+                value={draft.externalId}
+                onChange={(e) => set({ externalId: e.target.value.trim() })}
+                required={draft.roleArn !== chosen.roleArn}
+                placeholder={draft.roleArn === chosen.roleArn ? t('cred.externalIdIdentique') : ''}
+              />
+            </Field>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+/**
+ * Champs de saisie : masqués, jamais relus depuis le serveur (écriture seule). Un bloc copié depuis
+ * le portail AWS ou la CLI remplit les champs ; il est analysé localement puis oublié.
+ */
+export function CredentialFields({
+  draft,
+  onChange,
+  hubAvailable,
+  profileId,
+}: {
+  draft: CredentialDraft;
+  onChange: (d: CredentialDraft) => void;
+  hubAvailable: boolean;
+  profileId?: string;
+}) {
+  const [pasted, setPasted] = useState<string>();
+  const set = (patch: Partial<CredentialDraft>) => onChange({ ...draft, ...patch });
+  const { type } = draft;
   const types: CredType[] = [
     'temporary',
+    'stored',
     'user-role',
     'user',
     ...(hubAvailable ? (['hub-role'] as const) : []),
@@ -73,52 +208,21 @@ export function CredentialsForm({
   const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const found = parseCredentialBlock(e.clipboardData.getData('text'));
-    if (found.accessKeyId) setAccessKeyId(found.accessKeyId);
-    if (found.secretAccessKey) setSecret(found.secretAccessKey);
-    if (found.sessionToken) setToken(found.sessionToken);
-    if (found.sessionToken) setType('temporary');
-    else if (found.accessKeyId && type === 'temporary') setType('user');
+    const patch: Partial<CredentialDraft> = { ...found };
+    if (found.sessionToken) patch.type = 'temporary';
+    else if (found.accessKeyId && type === 'temporary') patch.type = 'user';
+    set(patch);
     const n = Object.keys(found).length;
     setPasted(n ? t('cred.colle', { n }) : t('cred.colleRien'));
   };
 
-  const save = async () => {
-    const body =
-      type === 'temporary'
-        ? { type, accessKeyId, secretAccessKey, sessionToken }
-        : type === 'user-role'
-          ? { type, accessKeyId, secretAccessKey, roleArn, externalId, remember, durationSeconds: duration }
-          : type === 'user'
-            ? { type, accessKeyId, secretAccessKey, remember, durationSeconds: duration }
-            : { type, roleArn, externalId };
-    setOtherAccount(undefined);
-    try {
-      const r = await put<{ warnings: string[] }>(`/api/profiles/${profile.id}/credentials`, body);
-      setAccessKeyId('');
-      setSecret('');
-      setToken('');
-      setPasted(undefined);
-      onSaved(r.warnings);
-    } catch (err) {
-      if (err instanceof ApiError && err.code === 'COMPTE_DIFFERENT')
-        setOtherAccount(/compte (\d{12})/.exec(err.message)?.[1]);
-      throw err;
-    }
-  };
-
   return (
-    <form
-      autoComplete="off"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void run(save);
-      }}
-    >
+    <>
       <fieldset className="choices">
         <legend>{t('cred.saisie')}</legend>
         {types.map((x) => (
           <label key={x} className={`choice${type === x ? ' selected' : ''}`}>
-            <input type="radio" name="type" checked={type === x} onChange={() => setType(x)} />
+            <input type="radio" name="type" checked={type === x} onChange={() => set({ type: x })} />
             <span>
               <strong>{t(`cred.type.${x}`)}</strong>
               <span className="muted small">{t(`cred.desc.${x}`)}</span>
@@ -127,7 +231,8 @@ export function CredentialsForm({
         ))}
       </fieldset>
       {type === 'user' && <Alert kind="warn">{t('cred.avertUser')}</Alert>}
-      {type !== 'hub-role' && (
+      {type === 'stored' && <StoredPicker draft={draft} set={set} excludeProfileId={profileId} />}
+      {type !== 'hub-role' && type !== 'stored' && (
         <>
           <Field label={t('cred.coller')}>
             <input
@@ -147,7 +252,7 @@ export function CredentialsForm({
               <li>{t('cred.aideSso')}</li>
               <li>{t('cred.aideCli')}</li>
               <li>
-                <Link to={`/aide?profil=${profile.id}`}>{t('cred.aideRole')}</Link>
+                <Link to={profileId ? `/aide?profil=${profileId}` : '/aide'}>{t('cred.aideRole')}</Link>
               </li>
             </ul>
           </details>
@@ -155,8 +260,8 @@ export function CredentialsForm({
             <input
               type="password"
               autoComplete="off"
-              value={accessKeyId}
-              onChange={(e) => setAccessKeyId(e.target.value.trim())}
+              value={draft.accessKeyId}
+              onChange={(e) => set({ accessKeyId: e.target.value.trim() })}
               required
             />
           </Field>
@@ -164,8 +269,8 @@ export function CredentialsForm({
             <input
               type="password"
               autoComplete="off"
-              value={secretAccessKey}
-              onChange={(e) => setSecret(e.target.value.trim())}
+              value={draft.secretAccessKey}
+              onChange={(e) => set({ secretAccessKey: e.target.value.trim() })}
               required
             />
           </Field>
@@ -176,8 +281,8 @@ export function CredentialsForm({
           <input
             type="password"
             autoComplete="off"
-            value={sessionToken}
-            onChange={(e) => setToken(e.target.value.trim())}
+            value={draft.sessionToken}
+            onChange={(e) => set({ sessionToken: e.target.value.trim() })}
             required
           />
         </Field>
@@ -187,8 +292,8 @@ export function CredentialsForm({
           <Field label={t('form.roleArn')}>
             <input
               autoComplete="off"
-              value={roleArn}
-              onChange={(e) => setRoleArn(e.target.value.trim())}
+              value={draft.roleArn}
+              onChange={(e) => set({ roleArn: e.target.value.trim() })}
               placeholder="arn:aws:iam::<ACCOUNT_ID>:role/<NOM>"
               required
             />
@@ -197,8 +302,8 @@ export function CredentialsForm({
             <input
               type="password"
               autoComplete="off"
-              value={externalId}
-              onChange={(e) => setExternalId(e.target.value.trim())}
+              value={draft.externalId}
+              onChange={(e) => set({ externalId: e.target.value.trim() })}
               required
             />
           </Field>
@@ -211,13 +316,66 @@ export function CredentialsForm({
               type="number"
               min={900}
               max={43200}
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
+              value={draft.duration}
+              onChange={(e) => set({ duration: Number(e.target.value) })}
             />
           </Field>
-          <Check label={t('cred.memoriser')} checked={remember} onChange={setRemember} />
+          <Check
+            label={t('cred.memoriser')}
+            checked={draft.remember}
+            onChange={(v) => set({ remember: v })}
+          />
         </>
       )}
+    </>
+  );
+}
+
+/** Formulaire autonome (mise en route, page « Identifiants ») avec correction du compte du profil. */
+export function CredentialsForm({
+  profile,
+  hubAvailable,
+  onSaved,
+  onProfileChanged,
+}: {
+  profile: Profile;
+  hubAvailable: boolean;
+  onSaved: (warnings: string[]) => void;
+  onProfileChanged: () => void;
+}) {
+  const [draft, setDraft] = useState(emptyDraft);
+  const [otherAccount, setOtherAccount] = useState<string>();
+  const [run, error, busy] = useAction();
+
+  const save = async () => {
+    setOtherAccount(undefined);
+    try {
+      const r = await put<{ warnings: string[] }>(
+        `/api/profiles/${profile.id}/credentials`,
+        credentialBody(draft),
+      );
+      setDraft(emptyDraft());
+      onSaved(r.warnings);
+    } catch (err) {
+      setOtherAccount(otherAccountOf(err));
+      throw err;
+    }
+  };
+
+  return (
+    <form
+      autoComplete="off"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void run(save);
+      }}
+    >
+      <CredentialFields
+        draft={draft}
+        onChange={setDraft}
+        hubAvailable={hubAvailable}
+        profileId={profile.id}
+      />
       {error && <Alert kind="error">{error}</Alert>}
       {otherAccount && (
         <button

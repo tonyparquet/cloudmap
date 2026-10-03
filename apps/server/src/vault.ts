@@ -40,6 +40,16 @@ export interface CredentialInfo {
   expiresAt?: string;
 }
 
+export interface StoredInfo {
+  profileId: string;
+  profileName: string;
+  accountId: string;
+  type: CredentialType;
+  maskedAccessKeyId?: string;
+  roleArn?: string;
+  addedAt: string;
+}
+
 /**
  * Coffre d'identifiants AWS.
  * - Par défaut : en mémoire du serveur, liés à la session (famille), effacés à la déconnexion,
@@ -129,7 +139,8 @@ export class Vault {
       | undefined;
   }
 
-  private readEncrypted(profileId: string, ref: string): StoredSecret | undefined {
+  /** Clés mémorisées d'un profil, déchiffrées côté serveur uniquement (réutilisation, scans). */
+  readStored(profileId: string, ref: string): StoredSecret | undefined {
     const row = this.encryptedRow(profileId, ref);
     if (!row) return undefined;
     const env = envelopeSchema.parse(JSON.parse(row.envelope));
@@ -187,6 +198,26 @@ export class Vault {
     return out;
   }
 
+  /** Clés mémorisées (chiffrées) des profils donnés, pour les proposer à la réutilisation : jamais de secret. */
+  listStored(profiles: Profile[]): StoredInfo[] {
+    return profiles.flatMap((p) => {
+      if (p.auth.kind !== 'access-keys') return [];
+      const row = this.encryptedRow(p.id, p.auth.credentialRef);
+      if (!row) return [];
+      return [
+        {
+          profileId: p.id,
+          profileName: p.name,
+          accountId: p.accountId,
+          type: row.kind,
+          ...(row.masked_key_id ? { maskedAccessKeyId: row.masked_key_id } : {}),
+          ...(p.auth.roleArn ? { roleArn: p.auth.roleArn } : {}),
+          addedAt: row.created_at,
+        },
+      ];
+    });
+  }
+
   /** Identifiants temporaires utilisables pour un scan ou un test, côté serveur uniquement. */
   async resolve(family: string, profile: Profile): Promise<StaticCredentials> {
     const duration = this.settings.defaultDurationSeconds;
@@ -204,7 +235,7 @@ export class Vault {
     }
     const mem = this.getMemory(family, profile.id);
     if (mem) return mem.creds;
-    const stored = this.readEncrypted(profile.id, auth.credentialRef);
+    const stored = this.readStored(profile.id, auth.credentialRef);
     if (!stored) {
       throw badRequest(
         'Aucun identifiant disponible : saisissez-les dans « Identifiants »',

@@ -163,3 +163,15 @@ external`, `externalType`.
   repliées. Mode « Rôle assumé par l'outil » désactivé si `HUB_CREDENTIALS` n'est pas configuré.
 - La liste des profils expose un résumé du dernier snapshot (`lastSnapshot` : date, nombre de
   ressources et d'erreurs), affiché sur chaque carte ; aucune donnée sensible.
+- Formulaire de profil, mode « Clés d'accès saisies » : les identifiants se saisissent (ou se collent)
+  directement à la création, ou se choisissent parmi les clés **déjà mémorisées (chiffrées)** d'un autre
+  profil que l'utilisateur peut modifier. Case « plus tard » pour les fournir à l'étape suivante. Si les
+  identifiants sont refusés, le profil déjà créé est mis à jour (pas de doublon) au nouvel envoi.
+- Réutilisation (`type: 'stored'`) : la liste (`GET /api/credentials/stored`) exige une
+  ré-authentification et ne renvoie que des métadonnées masquées (`AKIA…7XQ2`, type, profil source,
+  compte, date, ARN de rôle). Le serveur déchiffre la source (AAD = profil source), applique les mêmes
+  contrôles qu'une saisie (racine refusée, compte vérifié, échange immédiat contre des identifiants
+  temporaires) puis **ré-chiffre une copie** pour le profil cible (AAD = profil cible) : supprimer le
+  profil source ne casse pas le profil cible. Rôle à assumer facultatif ; External ID repris de la
+  source seulement si le rôle est le même. Seules les clés d'utilisateur IAM peuvent être mémorisées :
+  les clés temporaires restent en mémoire (section 4.3).

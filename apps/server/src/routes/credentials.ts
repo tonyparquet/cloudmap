@@ -11,9 +11,9 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import { AppError, badRequest, parse } from '../errors.ts';
-import { requireElevated } from '../http.ts';
+import { canEdit, requireElevated, requireUser } from '../http.ts';
 import type { CredentialType, StaticCredentials } from '../vault.ts';
-import { editableProfile, saveProfile, visibleProfile } from './profiles.ts';
+import { editableProfile, listProfiles, saveProfile, visibleProfile } from './profiles.ts';
 
 const accessKeyId = z
   .string()
@@ -49,7 +49,16 @@ export const credentialInputSchema = z.discriminatedUnion('type', [
     durationSeconds: duration,
   }),
   z.strictObject({ type: z.literal('hub-role'), roleArn: roleArnSchema, externalId: externalIdSchema }),
+  // Réutilisation des clés mémorisées (chiffrées) d'un autre profil modifiable par l'utilisateur.
+  z.strictObject({
+    type: z.literal('stored'),
+    sourceProfileId: z.string().regex(/^[\w-]{1,64}$/),
+    roleArn: roleArnSchema.optional(),
+    externalId: externalIdSchema.optional(),
+    durationSeconds: duration,
+  }),
 ]);
+type CredentialInput = z.infer<typeof credentialInputSchema>;
 
 const stsFailure = (err: unknown) =>
   new AppError(
@@ -70,9 +79,8 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     if (!session) throw badRequest('Session absente');
     if (profile.auth.kind === 'import-only')
       throw badRequest('Ce profil n’accepte que des imports de snapshots', 'IMPORT_SEUL');
-    const input = parse(credentialInputSchema, req.body);
-    const dur =
-      ('durationSeconds' in input && input.durationSeconds) || config.app.credentials.defaultDurationSeconds;
+    const raw = parse(credentialInputSchema, req.body);
+    const source = raw.type === 'stored' ? { source: raw.sourceProfileId } : {};
     const fail = (motif: string, code = 'IDENTIFIANTS_REFUSES'): never => {
       audit.log({
         user: user.username,
@@ -80,10 +88,38 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
         action: 'identifiants.ajout',
         profileId: profile.id,
         result: 'refus',
-        details: { type: input.type, motif },
+        details: { type: raw.type, motif, ...source },
       });
       throw badRequest(motif, code);
     };
+    const input = raw.type === 'stored' ? fromStored(raw) : raw;
+    const dur =
+      ('durationSeconds' in input && input.durationSeconds) || config.app.credentials.defaultDurationSeconds;
+
+    /**
+     * Clés d'un autre profil : uniquement si l'utilisateur peut le modifier (cloisonnement), déchiffrées
+     * côté serveur puis traitées comme une saisie (vérifications identiques) et mémorisées pour ce profil.
+     */
+    function fromStored(
+      r: Extract<CredentialInput, { type: 'stored' }>,
+    ): Extract<CredentialInput, { type: 'user' | 'user-role' }> {
+      const { profile: src } = editableProfile(ctx, req, r.sourceProfileId);
+      const secret =
+        src.auth.kind === 'access-keys' ? vault.readStored(src.id, src.auth.credentialRef) : undefined;
+      if (!secret) return fail('Aucune clé mémorisée pour ce profil source', 'IDENTIFIANTS_ABSENTS');
+      const keys = { accessKeyId: secret.accessKeyId, secretAccessKey: secret.secretAccessKey };
+      if (!r.roleArn) return { type: 'user', ...keys, remember: true, durationSeconds: r.durationSeconds };
+      const externalId = r.externalId ?? (r.roleArn === secret.roleArn ? secret.externalId : undefined);
+      if (!externalId) return fail('External ID requis pour assumer ce rôle');
+      return {
+        type: 'user-role',
+        ...keys,
+        roleArn: r.roleArn,
+        externalId,
+        remember: true,
+        durationSeconds: r.durationSeconds,
+      };
+    }
 
     let temp: StaticCredentials;
     let identityArn: string;
@@ -137,7 +173,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
         action: 'identifiants.ajout',
         profileId: profile.id,
         result: 'echec',
-        details: { type: input.type },
+        details: { type: raw.type, ...source },
       });
       throw stsFailure(err);
     }
@@ -174,7 +210,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
       action: 'identifiants.ajout',
       profileId: profile.id,
       result: 'succes',
-      details: { type: input.type, memorise: 'remember' in input ? input.remember : false },
+      details: { type: raw.type, memorise: 'remember' in input ? input.remember : false, ...source },
     });
     return { credentials: vault.info(session.family, { ...profile, auth }), warnings };
   });
@@ -234,6 +270,13 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
       result: 'succes',
     });
     return { credentials: vault.info(req.session?.family ?? '', profile) };
+  });
+
+  /** Clés mémorisées réutilisables (profils modifiables par l'utilisateur) : métadonnées masquées seulement. */
+  app.get('/api/credentials/stored', async (req) => {
+    const user = requireUser(req);
+    requireElevated(req, reauth());
+    return { stored: vault.listStored(listProfiles(ctx.db).filter((p) => canEdit(user, p))) };
   });
 
   // Lecture de l'état par un simple lecteur : jamais de détail.

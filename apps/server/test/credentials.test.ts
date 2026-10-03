@@ -98,6 +98,8 @@ describe('identifiants AWS saisis dans l’interface (section 4.3)', () => {
     });
     expect(res.status).toBe(403);
     expect(res.json().error.code).toBe('REAUTH_REQUISE');
+    const stored = await admin.client.req('GET', '/api/credentials/stored');
+    expect(stored.json().error.code).toBe('REAUTH_REQUISE');
     await reauth(admin.client, s.ctx, admin.secret);
   });
 
@@ -167,6 +169,51 @@ describe('identifiants AWS saisis dans l’interface (section 4.3)', () => {
     expect(row.masked_key_id).toBe('AKIA…MPLE');
     expect(row.envelope).not.toContain(SECRET);
     expect(row.envelope).not.toContain(AKID);
+  });
+
+  it('réutilisation des clés mémorisées d’un autre profil : métadonnées masquées, secret jamais renvoyé', async () => {
+    const other = await admin.client.req('POST', '/api/profiles', {
+      name: 'Même compte, autres régions',
+      accountId: ACCOUNT,
+      regions: ['eu-west-1'],
+      auth: { kind: 'access-keys' },
+      allowedGroups: [],
+    });
+    const otherId = other.json().profile.id as string;
+    const list = await admin.client.req('GET', '/api/credentials/stored');
+    expect(list.status).toBe(200);
+    expect(list.json().stored).toEqual([
+      expect.objectContaining({
+        profileId,
+        accountId: ACCOUNT,
+        type: 'user',
+        maskedAccessKeyId: 'AKIA…MPLE',
+      }),
+    ]);
+    const missing = await admin.client.req('PUT', `/api/profiles/${otherId}/credentials`, {
+      type: 'stored',
+      sourceProfileId: 'inconnu',
+    });
+    expect(missing.status).toBe(404);
+    const noExternalId = await admin.client.req('PUT', `/api/profiles/${otherId}/credentials`, {
+      type: 'stored',
+      sourceProfileId: profileId,
+      roleArn: `arn:aws:iam::${ACCOUNT}:role/Autre`,
+    });
+    expect(noExternalId.status).toBe(400);
+    const reused = await admin.client.req('PUT', `/api/profiles/${otherId}/credentials`, {
+      type: 'stored',
+      sourceProfileId: profileId,
+    });
+    expect(reused.status).toBe(200);
+    expect(reused.json().credentials.map((c: { storage: string }) => c.storage)).toEqual(
+      expect.arrayContaining(['memoire', 'chiffre']),
+    );
+    // Copie chiffrée propre au profil cible (AAD = profil cible), puis nettoyage.
+    expect(
+      s.ctx.db.prepare('SELECT COUNT(*) AS n FROM credentials WHERE profile_id = ?').get(otherId),
+    ).toEqual({ n: 1 });
+    expect((await admin.client.req('DELETE', `/api/profiles/${otherId}/credentials`)).status).toBe(200);
   });
 
   it('rôle à assumer avec External ID', async () => {
