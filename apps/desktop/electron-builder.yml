@@ -1,0 +1,72 @@
+# Empaquetage de l'application de bureau : `pnpm desktop:dist` (Windows depuis Windows ou Linux,
+# macOS depuis macOS) ou la CI (.github/workflows/bureau.yml). Signature : fournie par l'environnement de construction
+# (CSC_LINK / CSC_KEY_PASSWORD, APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID), sinon
+# l'application est produite non signée.
+appId: app.cartographe.aws
+productName: Cartographe AWS
+copyright: Cartographe AWS
+electronVersion: 44.5.1
+directories:
+  app: dist/app
+  output: dist/release
+  buildResources: build
+files:
+  - '**/*'
+  - '!carto/**'
+# Interface, règles, fixtures et politiques IAM hors de l'archive : lus par le serveur (APP_ROOT).
+extraResources:
+  - from: dist/app/carto
+    to: carto
+asar: true
+# Modules natifs N-API (better-sqlite3, argon2) : binaires précompilés par plateforme, compatibles
+# avec Electron sans recompilation (aucun en-tête téléchargé, aucune chaîne de compilation requise).
+npmRebuild: false
+# Durcissement d'Electron : pas de mode « Node », pas d'inspecteur ni de NODE_OPTIONS, code chargé
+# uniquement depuis l'archive asar vérifiée, cookies chiffrés.
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  loadBrowserProcessSpecificV8Snapshot: false
+  grantFileProtocolExtraPrivileges: false
+
+win:
+  # NSIS : installeur (construit sous Windows ; depuis Linux il exigerait Wine). ZIP : version portable.
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+  artifactName: Cartographe-AWS-${version}-windows-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: Cartographe AWS
+  installerLanguages: [fr_FR]
+  language: '1036'
+
+mac:
+  # Apple Silicon (argon2 ne publie pas de binaire macOS Intel ; à compiler sur un Mac Intel si besoin).
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  artifactName: Cartographe-AWS-${version}-macos-${arch}.${ext}
+dmg:
+  title: Cartographe AWS
+
+# Linux : uniquement pour vérifier l'application en développement (dossier non empaqueté).
+linux:
+  target: [dir]
+  category: Development

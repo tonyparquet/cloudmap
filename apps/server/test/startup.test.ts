@@ -51,6 +51,17 @@ describe('contrôles de démarrage (section 4.1)', () => {
     );
   });
 
+  it('clé maître fournie en mémoire (application de bureau) : remplace MASTER_KEY_FILE, 32 octets exigés', () => {
+    const { env } = testEnv({ MASTER_KEY_FILE: '' });
+    const key = randomBytes(32);
+    expect(loadConfig(env, { masterKey: key }).masterKey.equals(key)).toBe(true);
+    expect(() => loadConfig(env, { masterKey: randomBytes(16) })).toThrow(/32 octets attendus/);
+    // Les autres contrôles restent bloquants.
+    expect(() => loadConfig({ ...env, PUBLIC_ORIGIN: 'http://127.0.0.1:1' }, { masterKey: key })).toThrow(
+      /https/,
+    );
+  });
+
   it('refuse une clé maître invalide ou différente de celle des données existantes', async () => {
     const { env, dir } = testEnv();
     const bad = join(dir, 'bad.key');

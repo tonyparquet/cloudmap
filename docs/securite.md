@@ -17,6 +17,17 @@
 | Compromission du conteneur                     | Non-root (UID 10001), système de fichiers en lecture seule, `cap_drop: ALL`, `no-new-privileges`, image minimale sans npm.                                                                    |
 | Répudiation                                    | Journal d'audit en ajout seul (triggers SQLite), sans valeur d'identifiant, export CSV.                                                                                                       |
 
+## Application de bureau (poste local)
+
+| Menace                                                                              | Mesures                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accès depuis le réseau                                                              | Serveur lié à `127.0.0.1` uniquement ; aucune règle de pare-feu ni port exposé.                                                                                                             |
+| Autre processus local qui se fait passer pour l'application, ou interception locale | TLS 1.3 avec certificat généré par installation et **épinglé** par la fenêtre ; authentification + TOTP inchangées : un processus local qui joint le port doit tout de même s'authentifier. |
+| Vol de la clé maître sur disque                                                     | Clé chiffrée par le système (DPAPI / Trousseau), liée à la session de l'utilisateur ; jamais écrite en clair (`loadConfig` la reçoit en mémoire).                                           |
+| Contenu web malveillant dans la fenêtre                                             | `contextIsolation`, `sandbox`, pas de Node, aucune permission, navigation et nouvelles fenêtres limitées à l'origine locale, CSP stricte du serveur.                                        |
+| Détournement du binaire Electron                                                    | Fusibles : pas de `ELECTRON_RUN_AS_NODE`, pas d'inspecteur ni de `NODE_OPTIONS`, archive à intégrité vérifiée ; signature Authenticode / Developer ID dès que fournie.                      |
+| Logiciel malveillant avec les droits de l'utilisateur                               | Hors périmètre (il peut lire la session du système) ; les identifiants AWS restent temporaires et en mémoire par défaut, les clés longues ne sont mémorisées que sur demande.               |
+
 ## Identifiants AWS
 
 - Types acceptés : clés temporaires (recommandé), clés d'utilisateur IAM + rôle + External ID,

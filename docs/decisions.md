@@ -271,3 +271,28 @@ external`, `externalType`.
   `Logo` ; signature « Le terrain, tel qu'il est. » (la carte reflète l'état réel, lu en lecture
   seule). Planche d'identité : `docs/identite/planche-identite.svg` (+ rendu PNG). Palette et
   typographie inchangées (section 9.2).
+
+## Application de bureau (Windows et macOS)
+
+- Electron (plan `docs/plan-application-bureau.md`) : le serveur Fastify tourne dans le processus
+  principal, sur `127.0.0.1` en TLS 1.3, l'interface existante s'affiche dans une fenêtre. Aucun code
+  métier dupliqué ; seule modification du serveur : `loadConfig` accepte une clé maître fournie en
+  mémoire (tous les autres contrôles bloquants inchangés) et le démarrage est factorisé (`start.ts`).
+- Choix les plus sûrs sur les questions ouvertes du plan : compte local + TOTP conservé (D1) ; pas de
+  lecture de `~/.aws` ni d'identité AWS de l'outil (`HUB_CREDENTIALS=none`), identifiants saisis dans
+  l'interface comme l'exige la spécification (D2) ; signature branchée sur des secrets de CI,
+  artefacts non signés sinon (D3) ; pas de mise à jour automatique (D4).
+- Certificat local généré en Node (`selfsigned`, EC P-256, 90 jours, renouvelé à 7 jours de
+  l'échéance) et épinglé dans la fenêtre ; jamais ajouté au magasin du système.
+- Clé maître : `safeStorage` (DPAPI, Trousseau). Linux sans trousseau (développement seulement) :
+  fichier en 0600, comme `MASTER_KEY_FILE` en version serveur.
+- Modules natifs : `better-sqlite3` 13 et `argon2` sont en N-API avec binaires précompilés ; aucune
+  recompilation pour Electron (`npmRebuild: false`), ce qui permet aussi de produire la version
+  Windows depuis Linux. L'installeur NSIS exige Windows (Wine sous Linux) : depuis Linux, ZIP portable.
+- macOS : Apple Silicon seulement en v1 (argon2 sans binaire Intel) ; signature ad hoc à défaut de
+  certificat Developer ID (obligatoire pour lancer une application arm64).
+- Le pack d'icônes AWS téléchargé n'est pas redistribué dans l'application (licence) : icônes
+  génériques.
+- Caches de construction dans `.tmp/` (Electron, electron-builder, npm) : rien n'est écrit dans le
+  dossier personnel ; le cache d'electron-builder reçoit un `package.json` CommonJS (le projet est en
+  ESM).

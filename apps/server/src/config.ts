@@ -123,7 +123,15 @@ export function loadAppSettings(configDir: string): AppSettings {
  * Contrôles bloquants de la section 4.1 : TLS, clé maître et origine publique HTTPS obligatoires,
  * certificat non expiré. Aucune variable ne permet de désactiver TLS, l'authentification ou le MFA.
  */
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
+/**
+ * Configuration du serveur. `options.masterKey` : clé maître fournie en mémoire par l'application de
+ * bureau (déchiffrée depuis le trousseau du système) ; elle remplace MASTER_KEY_FILE, sans écriture
+ * en clair sur disque. Tous les autres contrôles bloquants sont identiques.
+ */
+export function loadConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  options: { masterKey?: Buffer } = {},
+): ServerConfig {
   const problems: string[] = [];
   const required = (name: string, why: string) => {
     const v = env[name]?.trim();
@@ -132,10 +140,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   };
   const certFile = required('TLS_CERT_FILE', "l'application ne démarre qu'en HTTPS (TLS 1.3)");
   const keyFile = required('TLS_KEY_FILE', "l'application ne démarre qu'en HTTPS (TLS 1.3)");
-  const masterKeyFile = required(
-    'MASTER_KEY_FILE',
-    'clé maître de chiffrement des identifiants (32 octets en base64)',
-  );
+  const masterKeyFile = options.masterKey
+    ? ''
+    : required('MASTER_KEY_FILE', 'clé maître de chiffrement des identifiants (32 octets en base64)');
   const originText = required('PUBLIC_ORIGIN', 'origine publique HTTPS, ex. https://carto.exemple.fr');
 
   let publicOrigin = '';
@@ -163,7 +170,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   }
 
   let masterKey: Buffer | undefined;
-  if (masterKeyFile) {
+  if (options.masterKey) {
+    if (options.masterKey.length === 32) masterKey = options.masterKey;
+    else problems.push('Clé maître fournie invalide : 32 octets attendus');
+  } else if (masterKeyFile) {
     try {
       masterKey = parseMasterKey(readFileSync(masterKeyFile, 'utf8'));
     } catch (err) {
