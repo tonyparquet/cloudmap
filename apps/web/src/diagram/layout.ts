@@ -17,7 +17,7 @@ export interface Box {
  * Mise en page ELK (section 9.1) : `layered`, direction DOWN, conteneurs hiérarchiques
  * (`INCLUDE_CHILDREN`), routage orthogonal. La structure attendue est imposée par des arêtes
  * factices d'ordonnancement (les partitions ELK ne sont pas appliquées en mode hiérarchique) :
- * externes → Global → Régions ; services entrants au-dessus du VPC, cibles de sortie en dessous ;
+ * externes → (Comptes →) Global → Régions ; services entrants au-dessus du VPC, cibles de sortie en dessous ;
  * zones de disponibilité → bordure du VPC (IGW, endpoints) ; sous-réseaux privés → publics.
  * Dans un VPC, seules les arêtes internes à un sous-réseau influencent la mise en page :
  * les zones restent côte à côte quels que soient les flux qui les traversent.
@@ -84,14 +84,19 @@ export async function layoutGraph(graph: Graph): Promise<Map<string, Box>> {
     edges.push({ id: `e${edges.length}`, sources: [source], targets: [target] });
   };
 
-  // Arêtes factices de structure.
-  const top = graph.containers.filter((c) => !c.parentId);
-  const global = top.find((c) => c.kind === 'global');
-  const regions = top.filter((c) => c.kind === 'region');
-  for (const n of graph.nodes.filter((x) => !x.containerId))
-    for (const c of global ? [global] : regions) add(n.id, c.id);
-  if (global) for (const r of regions) add(global.id, r.id);
-  for (const r of regions) {
+  // Arêtes factices de structure, à la racine et dans chaque cadre « Compte » (vue multi-comptes) :
+  // nœuds libres → Global → Régions ; à la racine, les externes restent au-dessus des comptes.
+  const scopes = [undefined, ...graph.containers.filter((c) => c.kind === 'account').map((c) => c.id)];
+  for (const scope of scopes) {
+    const top = graph.containers.filter((c) => c.parentId === scope);
+    const global = top.find((c) => c.kind === 'global');
+    const regions = top.filter((c) => c.kind === 'region');
+    const accounts = top.filter((c) => c.kind === 'account');
+    for (const n of graph.nodes.filter((x) => x.containerId === scope))
+      for (const c of global ? [global] : regions.length ? regions : accounts) add(n.id, c.id);
+    if (global) for (const r of regions) add(global.id, r.id);
+  }
+  for (const r of graph.containers.filter((c) => c.kind === 'region')) {
     const vpcs = graph.containers.filter((c) => c.parentId === r.id && c.kind === 'vpc');
     for (const n of graph.nodes.filter((x) => x.containerId === r.id)) {
       const fromVpc = graph.edges.some((e) => e.target === n.id && vpcOf(e.source));
@@ -112,10 +117,15 @@ export async function layoutGraph(graph: Graph): Promise<Map<string, Box>> {
       for (const q of subnets.filter((s) => s.kind === 'subnet-public')) add(p.id, q.id);
     }
   }
-  // Arêtes réelles, sauf celles qui traversent la structure interne d'un VPC.
+  // Arêtes réelles, sauf celles qui traversent la structure interne d'un VPC ou relient deux comptes
+  // (vue multi-comptes : les comptes restent côte à côte, les liens sont dessinés quand même).
+  const accountOf = (id: string) => ancestor(id, (k) => k === 'account');
   for (const e of graph.edges) {
     const sv = vpcOf(e.source);
     if (sv && sv === vpcOf(e.target) && subnetOf(e.source) !== subnetOf(e.target)) continue;
+    const sa = accountOf(e.source);
+    const ta = accountOf(e.target);
+    if (sa && ta && sa !== ta) continue;
     add(e.source, e.target);
   }
   root.edges = edges;

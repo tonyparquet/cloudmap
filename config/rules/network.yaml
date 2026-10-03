@@ -94,6 +94,17 @@
     - { when: "$lowercase($r.raw.State) in ['failed', 'rejected']", value: erreur }
     - { default: inconnu }
 
+- type: AWS::EC2::TransitGateway
+  typeLabel: Transit Gateway
+  label: '$r.tags.Name ? $r.tags.Name : $r.raw.TransitGatewayId'
+  sublabel: "$r.raw.OwnerId = ($r.account ? $r.account : $all.meta.accountId) ? 'Transit Gateway' : 'partagé par ' & $r.raw.OwnerId"
+  icon: transit-gateway
+  category: network
+  status:
+    - { when: "$r.raw.State = 'available'", value: actif }
+    - { when: "$r.raw.State in ['pending', 'modifying']", value: en-veille }
+    - { default: arrete }
+
 - type: AWS::EC2::TransitGatewayAttachment
   typeLabel: Attachement Transit Gateway
   label: "$r.tags.Name ? $r.tags.Name : 'TGW ' & $r.raw.TransitGatewayId"
@@ -101,6 +112,8 @@
   icon: transit-gateway
   category: network
   placement: { container: vpc, ref: '$r.raw.ResourceId' }
+  relations:
+    - { kind: network, to: '$r.raw.TransitGatewayId', resolve: id, label: TGW }
   status:
     - { when: "$r.raw.State = 'available'", value: actif }
     - {

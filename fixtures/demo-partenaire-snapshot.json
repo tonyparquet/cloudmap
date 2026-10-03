@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "profileId": "demo-partenaire",
+    "accountId": "111111111111",
+    "regions": ["eu-west-3"],
+    "startedAt": "2026-10-01T08:00:00Z",
+    "finishedAt": "2026-10-01T08:00:41Z",
+    "scannerVersion": "demo"
+  },
+  "resources": [
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:vpc/vpc-0b00000000000001",
+      "id": "vpc-0b00000000000001",
+      "type": "AWS::EC2::VPC",
+      "region": "eu-west-3",
+      "tags": {
+        "Name": "partenaire"
+      },
+      "raw": {
+        "VpcId": "vpc-0b00000000000001",
+        "CidrBlock": "10.30.0.0/16"
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:subnet/subnet-0b000000000000a1",
+      "id": "subnet-0b000000000000a1",
+      "type": "AWS::EC2::Subnet",
+      "region": "eu-west-3",
+      "tags": {
+        "Name": "privé-a"
+      },
+      "raw": {
+        "SubnetId": "subnet-0b000000000000a1",
+        "VpcId": "vpc-0b00000000000001",
+        "CidrBlock": "10.30.1.0/24",
+        "AvailabilityZone": "eu-west-3a"
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:route-table/rtb-0b00000000000001",
+      "id": "rtb-0b00000000000001",
+      "type": "AWS::EC2::RouteTable",
+      "region": "eu-west-3",
+      "raw": {
+        "RouteTableId": "rtb-0b00000000000001",
+        "VpcId": "vpc-0b00000000000001",
+        "Associations": [
+          {
+            "Main": true,
+            "RouteTableId": "rtb-0b00000000000001"
+          }
+        ],
+        "Routes": [
+          {
+            "DestinationCidrBlock": "10.30.0.0/16",
+            "GatewayId": "local",
+            "State": "active"
+          },
+          {
+            "DestinationCidrBlock": "10.20.0.0/16",
+            "VpcPeeringConnectionId": "pcx-0ab0000000000001",
+            "State": "active"
+          }
+        ]
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:security-group/sg-0b00000000000001",
+      "id": "sg-0b00000000000001",
+      "type": "AWS::EC2::SecurityGroup",
+      "region": "eu-west-3",
+      "raw": {
+        "GroupId": "sg-0b00000000000001",
+        "GroupName": "service-interne",
+        "VpcId": "vpc-0b00000000000001",
+        "IpPermissions": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "UserIdGroupPairs": [
+              {
+                "GroupId": "sg-0de00000000000ec5",
+                "UserId": "000000000000"
+              }
+            ]
+          }
+        ],
+        "IpPermissionsEgress": [
+          {
+            "IpProtocol": "-1",
+            "IpRanges": [
+              {
+                "CidrIp": "0.0.0.0/0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:instance/i-0b00000000000001",
+      "id": "i-0b00000000000001",
+      "type": "AWS::EC2::Instance",
+      "region": "eu-west-3",
+      "tags": {
+        "Name": "service-partenaire"
+      },
+      "raw": {
+        "InstanceId": "i-0b00000000000001",
+        "InstanceType": "t3.small",
+        "State": {
+          "Name": "running"
+        },
+        "SubnetId": "subnet-0b000000000000a1",
+        "VpcId": "vpc-0b00000000000001",
+        "PrivateIpAddress": "10.30.1.10",
+        "SecurityGroups": [
+          {
+            "GroupId": "sg-0b00000000000001",
+            "GroupName": "service-interne"
+          }
+        ]
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:000000000000:transit-gateway/tgw-0de0000000000001",
+      "id": "tgw-0de0000000000001",
+      "type": "AWS::EC2::TransitGateway",
+      "region": "eu-west-3",
+      "tags": {
+        "Name": "tgw-central"
+      },
+      "raw": {
+        "TransitGatewayId": "tgw-0de0000000000001",
+        "OwnerId": "000000000000",
+        "State": "available"
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:transit-gateway-attachment/tgw-attach-0b00000000001",
+      "id": "tgw-attach-0b00000000001",
+      "type": "AWS::EC2::TransitGatewayAttachment",
+      "region": "eu-west-3",
+      "raw": {
+        "TransitGatewayAttachmentId": "tgw-attach-0b00000000001",
+        "TransitGatewayId": "tgw-0de0000000000001",
+        "TransitGatewayOwnerId": "000000000000",
+        "ResourceId": "vpc-0b00000000000001",
+        "ResourceType": "vpc",
+        "State": "available"
+      }
+    },
+    {
+      "arn": "arn:aws:ec2:eu-west-3:111111111111:vpc-peering-connection/pcx-0ab0000000000001",
+      "id": "pcx-0ab0000000000001",
+      "type": "AWS::EC2::VPCPeeringConnection",
+      "region": "eu-west-3",
+      "raw": {
+        "VpcPeeringConnectionId": "pcx-0ab0000000000001",
+        "Status": {
+          "Code": "active"
+        },
+        "RequesterVpcInfo": {
+          "VpcId": "vpc-0de0000000000001",
+          "CidrBlock": "10.20.0.0/16",
+          "OwnerId": "000000000000"
+        },
+        "AccepterVpcInfo": {
+          "VpcId": "vpc-0b00000000000001",
+          "CidrBlock": "10.30.0.0/16",
+          "OwnerId": "111111111111"
+        }
+      }
+    }
+  ],
+  "errors": []
+}

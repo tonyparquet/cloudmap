@@ -4,6 +4,7 @@ export const STATUSES = ['actif', 'en-veille', 'arrete', 'erreur', 'inconnu'] as
 export const EDGE_KINDS = ['network', 'cicd', 'data', 'dependency'] as const;
 export const EDGE_STATES = ['autorise', 'observe', 'bloque', 'non-explique', 'inutilise'] as const;
 export const CONTAINER_KINDS = [
+  'account',
   'global',
   'region',
   'vpc',
@@ -34,6 +35,11 @@ export const resourceSchema = z.strictObject({
   region: z.string().min(1).max(64),
   raw: z.unknown(),
   tags: z.record(z.string(), z.string()).optional(),
+  /** Compte d'origine : renseigné uniquement dans une vue multi-comptes (snapshots fusionnés). */
+  account: z
+    .string()
+    .regex(/^\d{12}$/)
+    .optional(),
 });
 export type Resource = z.infer<typeof resourceSchema>;
 

@@ -103,7 +103,7 @@ export function requireElevated(req: FastifyRequest, reauthMinutes: number): Aut
 /** Cloisonnement par groupes (section 4.4). Le profil Démo est visible de tous en mode démo. */
 export function canView(user: AuthUser, profile: Profile, demoMode: boolean): boolean {
   if (user.role === 'admin') return true;
-  if (demoMode && profile.id === 'demo') return true;
+  if (demoMode && isDemoProfile(profile.id)) return true;
   return profile.allowedGroups.some((g) => user.groups.includes(g));
 }
 
@@ -113,3 +113,6 @@ export function canEdit(user: AuthUser, profile: Profile): boolean {
 }
 
 export const clientIp = (req: FastifyRequest) => req.ip;
+
+/** Profils de démonstration chargés depuis fixtures/ (identifiants `demo`, `demo-…`), en lecture seule. */
+export const isDemoProfile = (id: string): boolean => /^demo(-|$)/.test(id);

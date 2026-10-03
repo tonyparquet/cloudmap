@@ -3,6 +3,7 @@ export const fr = {
   'app.titre': 'Cartographe AWS',
   'app.chargement': 'Chargement…',
   'nav.profils': 'Profils',
+  'nav.multi': 'Multi-comptes',
   'nav.import': 'Import',
   'nav.configuration': 'Configuration',
   'nav.utilisateurs': 'Utilisateurs',
@@ -390,6 +391,15 @@ export const fr = {
   'form.nePasModifier': 'Ne pas modifier les identifiants actuels',
   'form.profilCree':
     'Profil créé. Corrigez les identifiants puis validez à nouveau (ou cochez « plus tard »).',
+  'multi.titre': 'Vue multi-comptes',
+  'multi.intro':
+    "Réunit dans un même diagramme le dernier snapshot de plusieurs profils : un cadre par compte, et les liens d'un compte à l'autre.",
+  'multi.choisir': 'Comptes à réunir',
+  'multi.liens':
+    'Liens détectés entre comptes : appairages VPC, Transit Gateways partagés, groupes de sécurité et plages d’adresses des VPC appairés, et toute relation des règles qui vise une ressource d’un autre compte (ARN, ID).',
+  'multi.afficher': 'Afficher le diagramme ({n} profil(s))',
+  'multi.comptes': '{n} compte(s) · modifier',
+  'multi.sansSnapshot': 'Sans snapshot, non affichés : {profils}',
 } as const;
 
 export type MessageKey = keyof typeof fr;

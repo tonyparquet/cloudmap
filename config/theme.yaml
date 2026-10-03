@@ -18,6 +18,7 @@ themes:
       subnetPrivate: { color: '#14b8a6', dash: '', width: 1, radius: 8 }
       subnetPublic: { color: '#84cc16', dash: '', width: 1, radius: 8 }
       org: { color: '#e7157b', dash: '', width: 1.5, radius: 12 }
+      account: { color: '#e7157b', dash: '', width: 2, radius: 14 }
       ou: { color: '#f472b6', dash: '5 4', width: 1, radius: 10 }
     node:
       tile: { size: 44, radius: 8, border: 2, borderColor: '#e4e4e7' }

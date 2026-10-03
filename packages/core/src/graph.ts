@@ -32,6 +32,8 @@ export interface BuildOptions {
   groupingThreshold?: number;
   /** Identifiants de groupes à déplier. */
   expandedGroups?: string[];
+  /** Vue multi-comptes : libellé du cadre de chaque compte (nom du profil). */
+  accountLabels?: Record<string, string>;
 }
 
 export type GraphProfile = Partial<Pick<Profile, 'externalNodes' | 'probes' | 'tagFilters'>>;
@@ -59,7 +61,8 @@ interface EdgeAcc {
   bytes?: number;
 }
 
-export const resourceKey = (r: Resource): string => r.arn ?? `${r.type}:${r.region}:${r.id}`;
+export const resourceKey = (r: Resource): string =>
+  r.arn ?? (r.account ? `${r.type}:${r.account}:${r.region}:${r.id}` : `${r.type}:${r.region}:${r.id}`);
 
 export function resourceName(r: Resource): string {
   const raw = (r.raw ?? {}) as Record<string, unknown>;
@@ -181,6 +184,7 @@ class GraphBuilder {
     this.decideGroups();
     for (const meta of [...this.metas.values()]) await this.addRelations(meta);
     this.addFlows();
+    this.addPeerings();
     this.applyObservations();
     for (const e of this.snapshot.errors) {
       this.warnings.add(`${e.service} (${e.region}) : ${e.code} — ${e.message}`);
@@ -190,16 +194,40 @@ class GraphBuilder {
 
   // ------------------------------------------------------------------ conteneurs
 
-  private ensureGlobal(): string {
-    if (!this.containers.has('global'))
-      this.containers.set('global', { id: 'global', kind: 'global', label: 'Global' });
-    return 'global';
+  /** Vue multi-comptes : un cadre par compte, qui contient son « Global » et ses régions. */
+  private ensureAccount(account: string): string {
+    const id = `account:${account}`;
+    if (!this.containers.has(id)) {
+      const label = this.options.accountLabels?.[account] ?? account;
+      this.containers.set(id, { id, kind: 'account', label, sublabel: account });
+    }
+    return id;
   }
 
-  private ensureRegion(region: string): string {
-    if (region === 'global') return this.ensureGlobal();
-    const id = `region:${region}`;
-    if (!this.containers.has(id)) this.containers.set(id, { id, kind: 'region', label: region });
+  private ensureGlobal(account?: string): string {
+    const id = account ? `account:${account}/global` : 'global';
+    if (!this.containers.has(id)) {
+      this.containers.set(id, {
+        id,
+        kind: 'global',
+        label: 'Global',
+        ...(account ? { parentId: this.ensureAccount(account) } : {}),
+      });
+    }
+    return id;
+  }
+
+  private ensureRegion(region: string, account?: string): string {
+    if (region === 'global') return this.ensureGlobal(account);
+    const id = account ? `account:${account}/region:${region}` : `region:${region}`;
+    if (!this.containers.has(id)) {
+      this.containers.set(id, {
+        id,
+        kind: 'region',
+        label: region,
+        ...(account ? { parentId: this.ensureAccount(account) } : {}),
+      });
+    }
     return id;
   }
 
@@ -210,7 +238,7 @@ class GraphBuilder {
         kind: 'vpc',
         label: vpc.name ?? vpc.id,
         sublabel: vpc.cidrs.join(', '),
-        parentId: this.ensureRegion(vpc.region),
+        parentId: this.ensureRegion(vpc.region, vpc.account),
       });
     }
     const kindText = {
@@ -235,14 +263,14 @@ class GraphBuilder {
   }
 
   private async placement(rule: Rule | undefined, r: Resource): Promise<(string | undefined)[]> {
-    const fallback = this.ensureRegion(r.region);
+    const fallback = this.ensureRegion(r.region, r.account);
     const p = rule?.placement;
     if (!p) return [fallback];
     switch (p.container) {
       case 'none':
         return [undefined];
       case 'global':
-        return [this.ensureGlobal()];
+        return [this.ensureGlobal(r.account)];
       case 'region':
         return [fallback];
       case 'vpc': {
@@ -633,6 +661,22 @@ class GraphBuilder {
       ...(m.subnetId ? { subnetId: m.subnetId } : {}),
       ...(m.vpcId ? { vpcId: m.vpcId } : {}),
     };
+  }
+
+  /** Appairages actifs dont les deux VPC sont connus (même compte ou vue multi-comptes). */
+  private addPeerings(): void {
+    for (const p of this.net.peerings) {
+      const [a, b] = [...new Set(p.vpcIds)].map((v) => `vpc:${v}`);
+      if (!p.active || !a || !b || !this.containers.has(a) || !this.containers.has(b)) continue;
+      this.addEdge({
+        source: a,
+        target: b,
+        kind: 'network',
+        state: 'autorise',
+        label: 'appairage',
+        evidence: [`appairage VPC ${p.id}`],
+      });
+    }
   }
 
   private cidrSource(cidr: string, vpcId: string | undefined): string | undefined {

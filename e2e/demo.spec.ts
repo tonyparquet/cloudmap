@@ -197,3 +197,38 @@ test('vue Organisation : OU, comptes, panneau et export draw.io', async ({ page 
   await page.getByRole('button', { name: 'Infrastructure' }).click();
   await expect(node('CloudFront')).toBeVisible();
 });
+
+test('vue multi-comptes : deux comptes fictifs, appairage, Transit Gateway partagé, export draw.io', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.fill('input[name=username]', ADMIN.username);
+  await page.fill('input[name=password]', ADMIN.password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.fill('input[name=code]', recoveryCodes[2] ?? '');
+  await page.getByRole('button', { name: 'Vérifier' }).click();
+
+  await page.getByRole('link', { name: 'Multi-comptes' }).click();
+  const choix = page.getByTestId('choix-comptes');
+  await choix.getByRole('checkbox', { name: /^Démo/ }).check();
+  await choix.getByRole('checkbox', { name: /^Partenaire/ }).check();
+  await page.getByRole('button', { name: 'Afficher le diagramme (2 profil(s))' }).click();
+
+  await expect(page.locator('[data-testid=conteneur][data-kind=account]')).toHaveCount(2);
+  await expect(page.locator('[data-testid=conteneur][data-kind=vpc]')).toHaveCount(2);
+  const node = (label: string) => page.locator(`[data-testid=noeud][data-label="${label}"]`);
+  await expect(node('service-partenaire')).toBeVisible();
+  await expect(node('tgw-central')).toHaveCount(1);
+  await expect(node('CloudFront')).toBeVisible();
+  await expect(page.getByTestId('etiquette-arete').filter({ hasText: 'appairage' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Exporter' }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', { name: 'draw.io', exact: true }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^multi-comptes-.*\.drawio$/);
+  const drawio = readFileSync(await download.path(), 'utf8');
+  expect(drawio).toContain('Partenaire');
+  expect(drawio).toContain('appairage');
+});

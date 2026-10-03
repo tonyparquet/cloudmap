@@ -7,7 +7,15 @@ import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import type { Db } from '../db/index.ts';
 import { badRequest, forbidden, notFound, parse } from '../errors.ts';
-import { canEdit, canView, requireElevated, requireRole, requireUser, type AuthUser } from '../http.ts';
+import {
+  canEdit,
+  canView,
+  isDemoProfile,
+  requireElevated,
+  requireRole,
+  requireUser,
+  type AuthUser,
+} from '../http.ts';
 
 export function getProfile(db: Db, id: string): Profile | undefined {
   const row = db.prepare('SELECT data FROM profiles WHERE id = ?').get(id) as { data: string } | undefined;
@@ -137,7 +145,8 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
 
   app.put<{ Params: { id: string } }>('/api/profiles/:id', async (req) => {
     const { profile: previous, user } = editableProfile(ctx, req, req.params.id);
-    if (previous.id === 'demo' && ctx.config.demoMode) throw forbidden('Le profil Démo est en lecture seule');
+    if (isDemoProfile(previous.id) && ctx.config.demoMode)
+      throw forbidden('Les profils de démonstration sont en lecture seule');
     const input = parse(profileInputSchema, req.body);
     checkGroups(user, input.allowedGroups);
     if (input.accountId !== previous.accountId) {
@@ -174,15 +183,18 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
   });
 }
 
-/** Mode démo : profil « Démo » et son snapshot chargés depuis fixtures/. */
+/** Mode démo : profils « Démo » et « Partenaire » (comptes fictifs reliés) chargés depuis fixtures/. */
 export function seedDemo(ctx: Ctx): void {
   const dir = join(ctx.config.appRoot, 'fixtures');
-  const profile = profileSchema.parse(JSON.parse(readFileSync(join(dir, 'demo-profile.json'), 'utf8')));
-  saveProfile(ctx.db, profile);
-  // Nouveau snapshot si la fixture a changé depuis le dernier démarrage (mise à jour de l'application).
-  const snapshot = rawSnapshotSchema.parse(JSON.parse(readFileSync(join(dir, 'demo-snapshot.json'), 'utf8')));
-  const latest = ctx.storage.listSnapshots(profile.id).find((r) => r.source === 'demo');
-  if (!latest || JSON.stringify(ctx.storage.loadSnapshot(latest)) !== JSON.stringify(snapshot)) {
-    ctx.storage.saveSnapshot(profile.id, snapshot, 'demo');
+  const json = (name: string): unknown => JSON.parse(readFileSync(join(dir, name), 'utf8'));
+  for (const prefix of ['demo', 'demo-partenaire']) {
+    const profile = profileSchema.parse(json(`${prefix}-profile.json`));
+    saveProfile(ctx.db, profile);
+    // Nouveau snapshot si la fixture a changé depuis le dernier démarrage (mise à jour de l'application).
+    const snapshot = rawSnapshotSchema.parse(json(`${prefix}-snapshot.json`));
+    const latest = ctx.storage.listSnapshots(profile.id).find((r) => r.source === 'demo');
+    if (!latest || JSON.stringify(ctx.storage.loadSnapshot(latest)) !== JSON.stringify(snapshot)) {
+      ctx.storage.saveSnapshot(profile.id, snapshot, 'demo');
+    }
   }
 }

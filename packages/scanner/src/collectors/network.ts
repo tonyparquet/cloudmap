@@ -9,6 +9,7 @@ import {
   paginateDescribeSecurityGroups,
   paginateDescribeSubnets,
   paginateDescribeTransitGatewayAttachments,
+  paginateDescribeTransitGateways,
   paginateDescribeVpcEndpoints,
   paginateDescribeVpcPeeringConnections,
   paginateDescribeVpcs,
@@ -80,6 +81,20 @@ export const networkCollector: Collector = {
       peerings,
       (x) => x.VpcPeeringConnectionId,
     );
+    // Transit Gateways, y compris ceux partagés par un autre compte (RAM) : ARN d'origine conservé,
+    // ce qui les fusionne en un seul nœud dans la vue multi-comptes.
+    const tgws = await ctx.tryCall('ec2:DescribeTransitGateways', () =>
+      collect(paginateDescribeTransitGateways(c, {})),
+    );
+    for (const t of (tgws ?? []).flatMap((p) => p.TransitGateways ?? [])) {
+      if (!t.TransitGatewayId) continue;
+      ctx.emit(
+        resource('AWS::EC2::TransitGateway', t.TransitGatewayId, ctx.region, t, {
+          arn: t.TransitGatewayArn ?? ec2Arn(ctx, 'transit-gateway', t.TransitGatewayId),
+          tags: tagsOf(t.Tags),
+        }),
+      );
+    }
     const tgwa = await ctx.tryCall('ec2:DescribeTransitGatewayAttachments', () =>
       collect(paginateDescribeTransitGatewayAttachments(c, {})),
     );

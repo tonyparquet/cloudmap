@@ -81,6 +81,30 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
     expect((await viewerA.req('GET', `/api/profiles/${profileB}/layout`)).status).toBe(404);
   });
 
+  it('vue multi-comptes : cloisonnement, profils sans snapshot signalés, mise en page réservée', async () => {
+    const both = `/api/multi/graph?profiles=${profileA},${profileB}`;
+    const res = await admin.req('GET', both);
+    expect(res.status).toBe(200);
+    const body = res.json() as { accounts: { profileId: string }[]; missing: string[]; canEdit: boolean };
+    expect(body.accounts.map((a) => a.profileId)).toEqual([profileB]);
+    expect(body.missing).toEqual(['A']);
+    expect(body.canEdit).toBe(true);
+    // Un profil d'un autre groupe dans la sélection : 404, comme pour un accès direct.
+    expect((await viewerA.req('GET', both)).status).toBe(404);
+    expect((await viewerA.req('GET', `/api/multi/graph?profiles=${profileA}`)).json().error.code).toBe(
+      'AUCUN_SNAPSHOT',
+    );
+    expect((await viewerA.req('GET', '/api/multi/graph?profiles=../etc')).status).toBe(400);
+    const layout = { positions: { x: { x: 1, y: 2 } } };
+    expect((await viewerA.req('PUT', `/api/multi/layout?profiles=${profileA}`, layout)).status).toBe(403);
+    expect(
+      (await admin.req('PUT', `/api/multi/layout?profiles=${profileB},${profileA}`, layout)).status,
+    ).toBe(200);
+    expect((await admin.req('GET', `/api/multi/layout?profiles=${profileA},${profileB}`)).json()).toEqual(
+      layout,
+    );
+  });
+
   it('un viewer ne peut rien modifier ni administrer', async () => {
     expect((await viewerA.req('PUT', `/api/profiles/${profileA}/layout`, { positions: {} })).status).toBe(
       403,

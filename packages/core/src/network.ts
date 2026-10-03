@@ -63,6 +63,7 @@ export interface VpcInfo {
   cidrs: string[];
   name?: string;
   region: string;
+  account?: string;
   hasNat: boolean;
 }
 export interface EndpointInfo {
@@ -76,6 +77,7 @@ export interface PeeringInfo {
   id: string;
   vpcIds: string[];
   cidrs: string[];
+  active: boolean;
 }
 
 export interface NetworkModel {
@@ -139,6 +141,7 @@ export function buildNetworkModel(resources: Resource[]): NetworkModel {
       cidrs,
       name: nameTag(r),
       region: r.region,
+      ...(r.account ? { account: r.account } : {}),
       hasNat: model.natByVpc.has(r.id),
     });
   }
@@ -203,6 +206,7 @@ export function buildNetworkModel(resources: Resource[]): NetworkModel {
       id: r.id,
       vpcIds: sides.map((s) => s?.VpcId).filter(Boolean) as string[],
       cidrs: sides.map((s) => s?.CidrBlock).filter(Boolean) as string[],
+      active: (raw.Status as { Code?: string } | undefined)?.Code === 'active',
     });
   }
   return model;

@@ -23,9 +23,9 @@ export interface Theme {
   muted: string;
   accent: string;
   font: string;
-  /** `org` / `ou` peuvent manquer d'un theme.yaml antérieur à la vue Organisation : voir containerToken(). */
+  /** `org` / `ou` / `account` peuvent manquer d'un theme.yaml antérieur : voir containerToken(). */
   container: Record<'global' | 'region' | 'vpc' | 'az' | 'subnetPrivate' | 'subnetPublic', ContainerToken> &
-    Partial<Record<'org' | 'ou', ContainerToken>>;
+    Partial<Record<'org' | 'ou' | 'account', ContainerToken>>;
   node: {
     tile: { size: number; radius: number; border: number; borderColor: string };
     label: { color: string; size: number; weight: number };
@@ -61,6 +61,7 @@ export const DEFAULT_THEME: Theme = {
     subnetPrivate: { color: '#14b8a6', dash: '', width: 1, radius: 8 },
     subnetPublic: { color: '#84cc16', dash: '', width: 1, radius: 8 },
     org: { color: '#e7157b', dash: '', width: 1.5, radius: 12 },
+    account: { color: '#e7157b', dash: '', width: 2, radius: 14 },
     ou: { color: '#f472b6', dash: '5 4', width: 1, radius: 10 },
   },
   node: {
@@ -97,7 +98,7 @@ export const DEFAULT_THEME: Theme = {
 export function containerToken(theme: Theme, kind: ContainerKind): ContainerToken {
   if (kind === 'subnet-public') return theme.container.subnetPublic;
   if (kind === 'subnet-private') return theme.container.subnetPrivate;
-  if (kind === 'org' || kind === 'ou')
+  if (kind === 'org' || kind === 'ou' || kind === 'account')
     return theme.container[kind] ?? DEFAULT_THEME.container[kind] ?? theme.container.global;
   return theme.container[kind];
 }

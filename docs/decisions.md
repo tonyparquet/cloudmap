@@ -197,3 +197,28 @@ external`, `externalType`.
   version fonctionne sans modification. En revanche, copier `config/rules/organizations.yaml`
   dans un CONFIG_DIR existant (les valeurs par défaut ne sont copiées qu'au premier démarrage).
 - Le port des E2E est surchargeable (`E2E_PORT`, défaut 8444).
+
+## Vue infra multi-comptes
+
+- Composition de profils existants (chacun garde ses identifiants et ses droits) : page
+  « Multi-comptes », sélection portée par l'URL (`/multi-comptes/<id>,<id>`), dernier snapshot de
+  chaque profil. Chaque profil doit être visible par l'utilisateur (sinon 404, comme partout) ; la
+  mise en page manuelle (`DATA_DIR/layouts/multi-<hash>.json`) n'est enregistrable que si
+  l'utilisateur peut modifier tous les profils de la sélection.
+- `mergeSnapshots` (core, pure) fusionne les snapshots en marquant chaque ressource de son compte
+  (`account`, champ optionnel du schéma, absent hors vue multi-comptes : rien ne change pour un
+  profil seul). `buildGraph` ajoute alors un cadre `account` contenant le « Global » et les régions
+  du compte. Les liens inter-comptes viennent du moteur existant, sans code par service : relations
+  des règles résolues par ARN/ID, groupes de sécurité référencés d'un compte à l'autre, CIDR des VPC
+  appairés. Une ressource vue depuis plusieurs comptes (même ARN : Transit Gateway partagé…) n'est
+  gardée qu'une fois, de préférence chez son propriétaire (compte de l'ARN).
+- Ajouts génériques utiles aussi à un seul compte : collecte des Transit Gateways
+  (`ec2:DescribeTransitGateways`, ARN d'origine conservé, « partagé par <compte> » s'il vient
+  d'ailleurs), relation attachement → Transit Gateway, arête « appairage » entre deux VPC connus
+  quand l'appairage est actif.
+- Mise en page : les arêtes entre comptes ne contraignent pas ELK (elles sont dessinées mais les
+  comptes restent côte à côte), comme les arêtes internes d'un VPC.
+- Filtres de tags des profils non appliqués dans la vue multi-comptes (elle montre les comptes
+  entiers) ; nœuds externes et sondes des profils réunis.
+- Mode démo : second profil fictif « Partenaire » (`demo-partenaire`, compte 111111111111) relié à
+  la démo ; les profils `demo`/`demo-…` sont en lecture seule.

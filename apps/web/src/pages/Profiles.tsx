@@ -27,7 +27,7 @@ export function ProfilesPage() {
       </div>
       {error && <Alert kind="error">{error}</Alert>}
       {actionError && <Alert kind="error">{actionError}</Alert>}
-      {data && role !== 'viewer' && data.profiles.every((p) => p.id === 'demo') && (
+      {data && role !== 'viewer' && data.profiles.every((p) => /^demo(-|$)/.test(p.id)) && (
         <div className="card welcome">
           <h2>{t('profils.bienvenueTitre')}</h2>
           <p className="muted">{t('profils.bienvenueTexte')}</p>

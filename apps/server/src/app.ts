@@ -17,6 +17,7 @@ import { registerAdminRoutes } from './routes/admin.ts';
 import { registerConfigRoutes } from './routes/config.ts';
 import { registerCredentialRoutes } from './routes/credentials.ts';
 import { registerProfileRoutes, seedDemo } from './routes/profiles.ts';
+import { registerMultiRoutes } from './routes/multi.ts';
 import { registerSnapshotRoutes } from './routes/snapshots.ts';
 import { registerStaticRoutes } from './routes/static.ts';
 import { ScanManager } from './scans.ts';
@@ -177,6 +178,7 @@ export async function buildApp(
   registerProfileRoutes(app, ctx);
   registerCredentialRoutes(app, ctx);
   registerSnapshotRoutes(app, ctx);
+  registerMultiRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
   registerConfigRoutes(app, ctx);
   await registerStaticRoutes(app, ctx);

@@ -93,14 +93,33 @@ function depth(id: string | undefined, graph: Graph): number {
   return d;
 }
 
-function DiagramInner({ profileId }: { profileId: string }) {
+interface MultiAccount {
+  profileId: string;
+  name: string;
+  accountId: string;
+  createdAt: string;
+}
+
+/** Diagramme d'un profil, ou vue multi-comptes (`multi` : profils dont les derniers snapshots sont fusionnés). */
+function DiagramInner({ profileId, multi }: { profileId: string; multi?: string[] }) {
   const theme = useApp((s) => s.theme);
   const rf = useReactFlow();
-  const profile = useLoad(() => get<{ profile: ProfileView }>(`/api/profiles/${profileId}`), [profileId]);
-  const snaps = useLoad(
-    () => get<{ snapshots: SnapshotRow[] }>(`/api/profiles/${profileId}/snapshots`),
-    [profileId],
+  const multiKey = multi?.join(',');
+  const profile = useLoad(
+    () =>
+      multi
+        ? Promise.resolve<{ profile?: ProfileView }>({})
+        : get<{ profile?: ProfileView }>(`/api/profiles/${profileId}`),
+    [profileId, multiKey],
   );
+  const snaps = useLoad(
+    () =>
+      multi
+        ? Promise.resolve({ snapshots: [] as SnapshotRow[] })
+        : get<{ snapshots: SnapshotRow[] }>(`/api/profiles/${profileId}/snapshots`),
+    [profileId, multiKey],
+  );
+  const [accounts, setAccounts] = useState<{ list: MultiAccount[]; missing: string[]; canEdit: boolean }>();
   const [snapshotId, setSnapshotId] = useState<string>();
   const [compareId, setCompareId] = useState('');
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -119,8 +138,11 @@ function DiagramInner({ profileId }: { profileId: string }) {
   const [loadError, setLoadError] = useState<string>();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const saveTimer = useRef<number | undefined>(undefined);
-  const canEdit = profile.data?.profile.canEdit ?? false;
-  const current = snapshotId ?? snaps.data?.snapshots[0]?.id;
+  const canEdit = multi ? (accounts?.canEdit ?? false) : (profile.data?.profile?.canEdit ?? false);
+  const current = multi ? 'multi' : (snapshotId ?? snaps.data?.snapshots[0]?.id);
+  const layoutUrl = multi
+    ? `/api/multi/layout?profiles=${encodeURIComponent(multiKey ?? '')}`
+    : `/api/profiles/${profileId}/layout`;
   const orgView = view === 'org' && orgGraph !== null;
   const graph = orgView ? orgGraph : infraGraph;
   const fitPending = useRef(false);
@@ -129,8 +151,22 @@ function DiagramInner({ profileId }: { profileId: string }) {
     if (!current) return;
     let alive = true;
     (async () => {
-      const layout = await get<{ positions: Positions }>(`/api/profiles/${profileId}/layout`);
-      if (compareId) {
+      const layout = await get<{ positions: Positions }>(layoutUrl);
+      if (multi) {
+        const q = expanded.length ? `&expand=${encodeURIComponent(expanded.join(','))}` : '';
+        const r = await get<{
+          graph: Graph;
+          errors: { service: string; region: string; message: string }[];
+          accounts: MultiAccount[];
+          missing: string[];
+          canEdit: boolean;
+        }>(`/api/multi/graph?profiles=${encodeURIComponent(multiKey ?? '')}${q}`);
+        if (!alive) return;
+        setGraph(r.graph);
+        setErrors(r.errors);
+        setMarks(undefined);
+        setAccounts({ list: r.accounts, missing: r.missing, canEdit: r.canEdit });
+      } else if (compareId) {
         const d = await get<{ before: Graph; after: Graph; diff: GraphDiff }>(
           `/api/snapshots/${compareId}/diff/${current}`,
         );
@@ -154,11 +190,12 @@ function DiagramInner({ profileId }: { profileId: string }) {
     return () => {
       alive = false;
     };
-  }, [current, compareId, expanded, profileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- multiKey et layoutUrl résument `multi`
+  }, [current, compareId, expanded, profileId, multiKey]);
 
   // Vue « Organisation » : proposée seulement si le snapshot contient Organizations ou Identity Center.
   useEffect(() => {
-    if (!current) return;
+    if (!current || multi) return;
     let alive = true;
     get<{ graph: Graph | null }>(`/api/snapshots/${current}/org-graph`)
       .then((r) => alive && setOrgGraph(r.graph))
@@ -166,7 +203,7 @@ function DiagramInner({ profileId }: { profileId: string }) {
     return () => {
       alive = false;
     };
-  }, [current]);
+  }, [current, multi]);
 
   useEffect(() => {
     if (!graph) return;
@@ -327,12 +364,12 @@ function DiagramInner({ profileId }: { profileId: string }) {
       if (!canEdit) return;
       window.clearTimeout(saveTimer.current);
       saveTimer.current = window.setTimeout(() => {
-        void put(`/api/profiles/${profileId}/layout`, { positions: next }).then(() =>
+        void put(layoutUrl, { positions: next }).then(() =>
           useApp.getState().showToast(t('diag.miseEnPageEnregistree')),
         );
       }, 600);
     },
-    [canEdit, profileId],
+    [canEdit, layoutUrl],
   );
 
   const exportAs = async (format: ExportFormat) => {
@@ -344,8 +381,10 @@ function DiagramInner({ profileId }: { profileId: string }) {
       nodes: rf.getNodes(),
       graph: { ...graph, edges: graph.edges.filter((e) => visibility.visibleEdges.has(e.id)) },
       theme,
-      profileId,
-      name: `${profile.data?.profile.name ?? 'diagramme'}${orgView ? '-organisation' : ''}`,
+      profileId: multi?.[0] ?? profileId,
+      name: multi
+        ? 'multi-comptes'
+        : `${profile.data?.profile?.name ?? 'diagramme'}${orgView ? '-organisation' : ''}`,
     });
   };
 
@@ -354,7 +393,7 @@ function DiagramInner({ profileId }: { profileId: string }) {
   const toggle = (list: string[], v: string, on: boolean) =>
     on ? [...list, v] : list.filter((x) => x !== v);
 
-  if (snaps.data && snapshots.length === 0)
+  if (!multi && snaps.data && snapshots.length === 0)
     return (
       <div className="empty">
         <p>{t('diag.aucunSnapshot')}</p>
@@ -370,18 +409,24 @@ function DiagramInner({ profileId }: { profileId: string }) {
     <>
       <div className="diagram" data-testid="diagramme">
         <div className="toolbar">
-          <select
-            aria-label={t('diag.snapshot')}
-            value={current ?? ''}
-            onChange={(e) => setSnapshotId(e.target.value)}
-          >
-            {snapshots.map((s) => (
-              <option key={s.id} value={s.id}>
-                {new Date(s.created_at).toLocaleString('fr-FR')} · {s.resource_count}
-              </option>
-            ))}
-          </select>
-          {orgGraph && (
+          {multi ? (
+            <Link to={`/multi-comptes?profils=${multiKey ?? ''}`} className="btn">
+              {t('multi.comptes', { n: accounts?.list.length ?? multi.length })}
+            </Link>
+          ) : (
+            <select
+              aria-label={t('diag.snapshot')}
+              value={current ?? ''}
+              onChange={(e) => setSnapshotId(e.target.value)}
+            >
+              {snapshots.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {new Date(s.created_at).toLocaleString('fr-FR')} · {s.resource_count}
+                </option>
+              ))}
+            </select>
+          )}
+          {orgGraph && !multi && (
             <div className="segmented" role="group" aria-label={t('diag.vue')}>
               {(['infra', 'org'] as const).map((v) => (
                 <button
@@ -399,7 +444,7 @@ function DiagramInner({ profileId }: { profileId: string }) {
               ))}
             </div>
           )}
-          {!orgView && (
+          {!orgView && !multi && (
             <select
               aria-label={t('diag.comparer')}
               value={compareId}
@@ -535,9 +580,12 @@ function DiagramInner({ profileId }: { profileId: string }) {
             </div>
           )}
         </div>
-        {loadError && (
+        {(loadError || (accounts?.missing.length ?? 0) > 0) && (
           <div style={{ position: 'absolute', top: 56, left: 10, zIndex: 6 }}>
-            <Alert kind="error">{loadError}</Alert>
+            {loadError && <Alert kind="error">{loadError}</Alert>}
+            {accounts && accounts.missing.length > 0 && (
+              <Alert kind="warn">{t('multi.sansSnapshot', { profils: accounts.missing.join(', ') })}</Alert>
+            )}
           </div>
         )}
         <ReactFlow
@@ -635,10 +683,10 @@ function DiagramInner({ profileId }: { profileId: string }) {
   );
 }
 
-export function Diagram({ profileId }: { profileId: string }) {
+export function Diagram({ profileId, multi }: { profileId: string; multi?: string[] }) {
   return (
     <ReactFlowProvider>
-      <DiagramInner profileId={profileId} />
+      <DiagramInner profileId={profileId} multi={multi} />
     </ReactFlowProvider>
   );
 }

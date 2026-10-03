@@ -9,6 +9,7 @@ import { HelpPage } from './pages/Help.tsx';
 import { ImportPage } from './pages/Import.tsx';
 import { InventoryPage } from './pages/Inventory.tsx';
 import { LoginPage } from './pages/Login.tsx';
+import { MultiPage } from './pages/Multi.tsx';
 import { OnboardingPage } from './pages/Onboarding.tsx';
 import { ProfileForm } from './pages/ProfileForm.tsx';
 import { ProfilesPage } from './pages/Profiles.tsx';
@@ -67,6 +68,9 @@ function route(path: string): { node: ReactNode; full?: boolean; profile?: strin
   if ((m = p('/profils/:id/scan'))) return { node: <ScanPage profileId={m.id ?? ''} />, profile: m.id };
   if ((m = p('/profils/:id/identifiants')))
     return { node: <CredentialsPage profileId={m.id ?? ''} />, profile: m.id };
+  if (p('/multi-comptes')) return { node: <MultiPage /> };
+  if ((m = p('/multi-comptes/:ids')))
+    return { node: <Diagram profileId="" multi={(m.ids ?? '').split(',').filter(Boolean)} />, full: true };
   if (p('/import')) return { node: <ImportPage /> };
   if (p('/configuration')) return { node: <ConfigPage /> };
   if (p('/utilisateurs')) return { node: <UsersPage /> };
@@ -110,6 +114,7 @@ export function App() {
   const user = auth.user;
   const nav: [string, string, boolean][] = [
     ['/profils', t('nav.profils'), true],
+    ['/multi-comptes', t('nav.multi'), true],
     ['/import', t('nav.import'), user?.role !== 'viewer'],
     ['/configuration', t('nav.configuration'), user?.role === 'admin'],
     ['/utilisateurs', t('nav.utilisateurs'), user?.role === 'admin'],
