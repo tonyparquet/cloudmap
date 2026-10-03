@@ -83,6 +83,7 @@ export const fr = {
   'auth.assume-role-hub': "Rôle assumé par l'outil",
   'auth.access-keys': "Clés d'accès saisies",
   'auth.import-only': 'Imports uniquement',
+  'auth.assume-role-profile': 'Rôle via un profil hub',
 
   'form.titreNouveau': 'Nouveau profil',
   'form.titreEdition': 'Modifier le profil',
@@ -118,6 +119,7 @@ export const fr = {
   'cred.stockage.memoire': 'En mémoire (session)',
   'cred.stockage.chiffre': 'Mémorisé (chiffré)',
   'cred.stockage.role-hub': "Rôle assumé par l'outil",
+  'cred.stockage.via-profil': 'Via le profil hub',
   'cred.type.temporary': 'Clés temporaires (recommandé)',
   'cred.type.user-role': "Clés d'utilisateur IAM + rôle à assumer",
   'cred.type.user': "Clés d'utilisateur IAM seules",
@@ -400,6 +402,41 @@ export const fr = {
   'multi.afficher': 'Afficher le diagramme ({n} profil(s))',
   'multi.comptes': '{n} compte(s) · modifier',
   'multi.sansSnapshot': 'Sans snapshot, non affichés : {profils}',
+  'form.mode.assume-role-profile':
+    "Compte membre d'une organisation : le rôle en lecture seule est assumé avec les identifiants d'un autre profil (hub).",
+  'form.hub': 'Profil hub',
+  'form.hubAide':
+    "Profil qui porte les identifiants (clés ou rôle de l'outil) et peut assumer le rôle de ce compte.",
+  'cred.type.profile-role': 'Rôle assumé depuis le hub',
+  'cred.viaProfil': 'Ce profil utilise les identifiants de son profil hub : fournissez-les sur le hub.',
+  'cred.ouvrirHub': 'Identifiants du profil hub',
+  'diag.profilsComptes': 'Profils des comptes…',
+  'org.titre': "Comptes de l'organisation",
+  'org.intro':
+    "Créez un profil par compte membre : chacun assume un rôle en lecture seule avec les identifiants de « {hub} » (compte {compte}). Déployez d'abord ce rôle dans les comptes avec le StackSet ci-dessous.",
+  'org.etapeRole': '1. Déployer le rôle en lecture seule (StackSet)',
+  'org.etapeComptes': '2. Choisir les comptes',
+  'org.etapeScan': '3. Scanner et réunir',
+  'org.nomRole': 'Nom du rôle',
+  'org.externalIdAide':
+    'Généré pour cette organisation : le même pour tous les comptes, à passer au StackSet.',
+  'org.modele': 'Modèle CloudFormation',
+  'org.commandes': 'Commandes AWS CLI (depuis le compte de gestion)',
+  'org.aucunCompte':
+    "Aucun compte d'organisation dans le dernier snapshot de ce profil : scannez-le avec le service « organizations » depuis le compte de gestion.",
+  'org.hub': 'hub',
+  'org.dejaProfil': 'Profil existant : {profils}',
+  'org.creer': 'Créer {n} profil(s)',
+  'org.crees': '{n} profil(s) créé(s).',
+  'org.hubImpossible':
+    "Ce profil ne peut pas servir de hub : il doit porter ses propres identifiants (clés d'accès ou rôle de l'outil) et vous devez pouvoir le modifier.",
+  'org.scanner': 'Scanner les {n} comptes',
+  'org.scanAttente': 'en attente',
+  'org.scanEnCours': 'scan en cours…',
+  'org.scanOk': '{n} ressources',
+  'org.scanErreurs': 'terminé, {n} erreur(s)',
+  'org.ouvrirMulti': 'Ouvrir la vue multi-comptes',
+  'commun.telecharger': 'Télécharger',
 } as const;
 
 export type MessageKey = keyof typeof fr;

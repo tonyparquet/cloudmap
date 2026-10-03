@@ -17,6 +17,7 @@ import { requireUser, securityHeaders } from '../http.ts';
 import type { ServerScanEvent } from '../scans.ts';
 import type { SnapshotRow } from '../storage.ts';
 import { layoutSchema } from '../storage.ts';
+import { resolveCredentials } from './credentials.ts';
 import { editableProfile, visibleProfile } from './profiles.ts';
 
 const scanInputSchema = z.strictObject({
@@ -184,7 +185,7 @@ export function registerSnapshotRoutes(app: FastifyInstance, ctx: Ctx): void {
         throw conflict('Un scan est déjà en cours pour ce profil', 'SCAN_EN_COURS');
       const regions = input.regions ?? profile.regions;
       if (regions.length === 0) throw badRequest('Aucune région sélectionnée');
-      const credentials = await ctx.vault.resolve(req.session?.family ?? '', profile);
+      const credentials = await resolveCredentials(ctx, req, profile);
       const scanId = ctx.scans.start(
         profile,
         credentials,

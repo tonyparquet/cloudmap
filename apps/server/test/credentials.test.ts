@@ -216,6 +216,63 @@ describe('identifiants AWS saisis dans l’interface (section 4.3)', () => {
     expect((await admin.client.req('DELETE', `/api/profiles/${otherId}/credentials`)).status).toBe(200);
   });
 
+  it('hub d’organisation : profils membres créés en lot, rôle assumé avec les identifiants du hub', async () => {
+    const body = {
+      accountIds: ['222222222222', ACCOUNT],
+      roleName: 'CartographeLectureSeule',
+      externalId: 'ext-org-0123456789',
+      regions: ['eu-west-3'],
+      allowedGroups: [],
+    };
+    const res = await admin.client.req('POST', `/api/profiles/${profileId}/org-accounts`, body);
+    expect(res.status).toBe(200);
+    // Le compte du hub lui-même est ignoré ; un second envoi ne recrée rien.
+    const created = res.json().created as { id: string; accountId: string }[];
+    expect(created.map((c) => c.accountId)).toEqual(['222222222222']);
+    expect(
+      (await admin.client.req('POST', `/api/profiles/${profileId}/org-accounts`, body)).json().created,
+    ).toEqual([]);
+    const child = created[0]?.id ?? '';
+    const childUrl = `/api/profiles/${child}/credentials`;
+    expect((await admin.client.req('GET', `${childUrl}/available`)).json().available).toBe(true);
+    const direct = await admin.client.req('PUT', childUrl, {
+      type: 'user',
+      accessKeyId: AKID,
+      secretAccessKey: SECRET,
+    });
+    expect(direct.json().error.code).toBe('VIA_PROFIL');
+
+    identities.push({
+      Account: '222222222222',
+      Arn: 'arn:aws:sts::222222222222:assumed-role/x/y',
+      UserId: 'U',
+    });
+    const test = await admin.client.req('POST', `${childUrl}/test`);
+    expect(test.json()).toMatchObject({ account: '222222222222', matches: true });
+    expect(sts.commandCalls(AssumeRoleCommand).at(-1)?.args[0].input).toMatchObject({
+      RoleArn: 'arn:aws:iam::222222222222:role/CartographeLectureSeule',
+      ExternalId: 'ext-org-0123456789',
+    });
+
+    // Un profil sans identifiants propres (imports uniquement) ne peut pas servir de hub.
+    const importOnly = await admin.client.req('POST', '/api/profiles', {
+      name: 'Imports',
+      accountId: '333333333333',
+      regions: ['eu-west-3'],
+      auth: { kind: 'import-only' },
+      allowedGroups: [],
+    });
+    const bad = await admin.client.req(
+      'POST',
+      `/api/profiles/${importOnly.json().profile.id}/org-accounts`,
+      body,
+    );
+    expect(bad.json().error.code).toBe('HUB_INVALIDE');
+    for (const id of [child, importOnly.json().profile.id as string]) {
+      expect((await admin.client.req('DELETE', `/api/profiles/${id}`)).status).toBe(200);
+    }
+  });
+
   it('rôle à assumer avec External ID', async () => {
     identities.push(
       { Account: '210987654321', Arn: 'arn:aws:iam::210987654321:user/hub', UserId: 'U' },

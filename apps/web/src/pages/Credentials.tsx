@@ -25,8 +25,8 @@ export function profileToInput(p: Profile) {
     accountId: p.accountId,
     regions: p.regions,
     auth:
-      p.auth.kind === 'assume-role-hub'
-        ? { kind: p.auth.kind, roleArn: p.auth.roleArn, externalId: p.auth.externalId }
+      p.auth.kind === 'assume-role-hub' || p.auth.kind === 'assume-role-profile'
+        ? { ...p.auth }
         : { kind: p.auth.kind },
     tagFilters: p.tagFilters,
     externalNodes: p.externalNodes,
@@ -404,6 +404,15 @@ export function CredentialsForm({
   );
 }
 
+/** Profil « via un profil hub » : les identifiants se fournissent sur le hub. */
+export function ViaHub({ parentId }: { parentId: string }) {
+  return (
+    <Alert>
+      {t('cred.viaProfil')} <Link to={`/profils/${parentId}/identifiants`}>{t('cred.ouvrirHub')}</Link>
+    </Alert>
+  );
+}
+
 /** Page « Identifiants » : état des identifiants (après ré-authentification), test, suppression, saisie. */
 export function CredentialsPage({ profileId }: { profileId: string }) {
   const profile = useLoad(() => get<{ profile: Profile }>(`/api/profiles/${profileId}`), [profileId]);
@@ -418,7 +427,9 @@ export function CredentialsPage({ profileId }: { profileId: string }) {
   const [message, setMessage] = useState<string>();
   const [run, error] = useAction();
 
-  if (profile.data?.profile.auth.kind === 'import-only') return <Alert>{t('cred.importSeul')}</Alert>;
+  const auth = profile.data?.profile.auth;
+  if (auth?.kind === 'import-only') return <Alert>{t('cred.importSeul')}</Alert>;
+  if (auth?.kind === 'assume-role-profile') return <ViaHub parentId={auth.parentProfileId} />;
 
   return (
     <div style={{ maxWidth: 760 }}>

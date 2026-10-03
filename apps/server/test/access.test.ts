@@ -105,6 +105,22 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
     );
   });
 
+  it('hub d’organisation : un profil d’un autre groupe ne peut pas servir de hub', async () => {
+    const res = await editorB.req('POST', '/api/profiles', {
+      name: 'Membre',
+      accountId: '444444444444',
+      regions: ['eu-west-3'],
+      auth: {
+        kind: 'assume-role-profile',
+        parentProfileId: profileA,
+        roleArn: 'arn:aws:iam::444444444444:role/Lecture',
+      },
+      allowedGroups: ['equipe-b'],
+    });
+    expect(res.status).toBe(404);
+    expect((await editorB.req('GET', `/api/profiles/${profileA}/org-accounts`)).status).toBe(404);
+  });
+
   it('un viewer ne peut rien modifier ni administrer', async () => {
     expect((await viewerA.req('PUT', `/api/profiles/${profileA}/layout`, { positions: {} })).status).toBe(
       403,

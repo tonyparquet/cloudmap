@@ -1,6 +1,6 @@
 import type { Profile } from '@carto/core';
 import { useEffect, useRef, useState } from 'react';
-import { get, post } from '../api.ts';
+import { ApiError, get, post } from '../api.ts';
 import { t } from '../i18n/index.ts';
 import { Link } from '../router.tsx';
 import { Alert, Check, useAction, useLoad } from '../ui.tsx';
@@ -23,6 +23,42 @@ export interface ScanResult {
 }
 
 const PERMISSION = 'Permission manquante : ';
+
+/**
+ * Lance le scan d'un profil (régions du profil) et attend sa fin : scans en série de plusieurs comptes.
+ * Le débit de lancement est limité côté serveur : en cas de 429, nouvel essai après une pause.
+ */
+export async function scanAndWait(
+  profileId: string,
+  services: string[],
+): Promise<ScanResult & { failure?: string; resources?: number }> {
+  let scanId = '';
+  for (let attempt = 0; !scanId; attempt++) {
+    try {
+      scanId = (await post<{ scanId: string }>(`/api/profiles/${profileId}/scans`, { services })).scanId;
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 429) || attempt >= 5) throw err;
+      await new Promise((r) => setTimeout(r, 15_000));
+    }
+  }
+  return new Promise((resolve) => {
+    const result: ScanResult & { failure?: string; resources?: number } = { errorCount: 0 };
+    const es = new EventSource(`/api/scans/${scanId}/events`);
+    const data = <T,>(e: Event) => JSON.parse((e as MessageEvent<string>).data) as T;
+    es.addEventListener('error', (e) => {
+      if ((e as MessageEvent).data) result.errorCount++;
+    });
+    es.addEventListener('progress', (e) => {
+      result.resources = (result.resources ?? 0) + data<{ found: number }>(e).found;
+    });
+    es.addEventListener('snapshot', (e) => (result.snapshotId = data<{ snapshotId: string }>(e).snapshotId));
+    es.addEventListener('failed', (e) => (result.failure = data<{ message: string }>(e).message));
+    es.addEventListener('end', () => {
+      es.close();
+      resolve(result);
+    });
+  });
+}
 
 /** Lancement d'un scan et suivi en direct (SSE) ; les permissions manquantes sont résumées sans doublon. */
 export function ScanRunner({

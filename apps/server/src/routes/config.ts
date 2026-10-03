@@ -55,12 +55,14 @@ export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
       const { profile } = visibleProfile(ctx, req, req.query.profileId);
       if (profile.auth.kind === 'assume-role-hub') externalId = profile.auth.externalId;
       else if (profile.auth.kind === 'access-keys') externalId = profile.auth.externalId;
+      else if (profile.auth.kind === 'assume-role-profile') externalId = profile.auth.externalId;
     }
     const fill = (s: string) => (externalId ? s.replaceAll('<EXTERNAL_ID>', externalId) : s);
     return {
       trustPolicy: fill(read('trust-policy.json')),
       readonlyPolicy: read('readonly-policy.json'),
       cliExample: fill(read('creer-role.sh')),
+      stackSet: read('stackset-lecture-seule.yaml'),
       externalId,
     };
   });

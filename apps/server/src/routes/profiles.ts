@@ -1,7 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { profileSchema, rawSnapshotSchema, type Profile } from '@carto/core';
+import {
+  accountIdSchema,
+  externalIdSchema,
+  profileSchema,
+  rawSnapshotSchema,
+  regionSchema,
+  roleArnSchema,
+  type Profile,
+} from '@carto/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
@@ -70,8 +78,25 @@ const profileInputSchema = profileSchema.omit({ id: true, auth: true }).extend({
     }),
     z.strictObject({ kind: z.literal('access-keys') }),
     z.strictObject({ kind: z.literal('import-only') }),
+    z.strictObject({
+      kind: z.literal('assume-role-profile'),
+      parentProfileId: z.string().regex(/^[\w-]{1,64}$/),
+      roleArn: roleArnSchema,
+      externalId: externalIdSchema.optional(),
+    }),
   ]),
 });
+
+const orgAccountsSchema = z.strictObject({
+  accountIds: z.array(accountIdSchema).min(1).max(500),
+  roleName: z.string().regex(/^[\w+=,.@-]{1,64}$/, 'Nom de rôle IAM invalide'),
+  externalId: externalIdSchema,
+  regions: z.array(regionSchema).min(1).max(40),
+  allowedGroups: profileSchema.shape.allowedGroups,
+});
+
+/** Profils pouvant servir de hub : ils portent eux-mêmes des identifiants (pas de chaîne de hubs). */
+export const canBeHub = (p: Profile) => p.auth.kind === 'access-keys' || p.auth.kind === 'assume-role-hub';
 
 export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
   const { db, audit } = ctx;
@@ -83,7 +108,22 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
     }
   };
 
+  /** Hub d'un profil « via un autre profil » : modifiable par l'utilisateur et porteur d'identifiants. */
+  const checkParent = (req: FastifyRequest, parentId: string, selfId?: string) => {
+    const { profile: parent } = editableProfile(ctx, req, parentId);
+    if (parent.id === selfId || !canBeHub(parent))
+      throw badRequest(
+        'Ce profil ne peut pas servir de hub : il doit porter ses propres identifiants',
+        'HUB_INVALIDE',
+      );
+    return parent;
+  };
+
   const withAuth = (input: z.infer<typeof profileInputSchema>, previous?: Profile): Profile['auth'] => {
+    if (input.auth.kind === 'assume-role-profile') {
+      const prevExt = previous?.auth.kind === 'assume-role-profile' ? previous.auth.externalId : undefined;
+      return { ...input.auth, externalId: input.auth.externalId ?? prevExt ?? newExternalId() };
+    }
     if (input.auth.kind === 'assume-role-hub') {
       const prevExt = previous?.auth.kind === 'assume-role-hub' ? previous.auth.externalId : undefined;
       return {
@@ -131,6 +171,7 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
     const user = requireRole(req, 'admin', 'editor');
     const input = parse(profileInputSchema, req.body);
     checkGroups(user, input.allowedGroups);
+    if (input.auth.kind === 'assume-role-profile') checkParent(req, input.auth.parentProfileId);
     const profile = profileSchema.parse({ ...input, id: randomUUID(), auth: withAuth(input) });
     saveProfile(db, profile);
     audit.log({
@@ -149,6 +190,7 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
       throw forbidden('Les profils de démonstration sont en lecture seule');
     const input = parse(profileInputSchema, req.body);
     checkGroups(user, input.allowedGroups);
+    if (input.auth.kind === 'assume-role-profile') checkParent(req, input.auth.parentProfileId, previous.id);
     if (input.accountId !== previous.accountId) {
       // Changer de compte invalide les identifiants mémorisés pour l'ancien compte.
       ctx.vault.wipeProfile(previous.id);
@@ -164,6 +206,93 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
     });
     return { profile };
   });
+
+  // ------------------------------------------------------------------ comptes de l'organisation
+
+  /** Comptes de l'organisation vus dans le dernier snapshot du hub, avec les profils qui les couvrent déjà. */
+  app.get<{ Params: { id: string } }>('/api/profiles/:id/org-accounts', async (req) => {
+    const { profile, user } = visibleProfile(ctx, req, req.params.id);
+    const visible = listProfiles(db).filter((p) => canView(user, p, ctx.config.demoMode));
+    const row = ctx.storage.listSnapshots(profile.id)[0];
+    const root = row
+      ? ctx.storage.loadSnapshot(row).resources.find((r) => r.type === 'AWS::Organizations::Root')
+      : undefined;
+    return {
+      hubAccountId: profile.accountId,
+      ...(root ? { rootId: root.id } : {}),
+      canCreate: user.role !== 'viewer' && canEdit(user, profile) && canBeHub(profile),
+      accounts: orgAccounts(profile).map((a) => ({
+        ...a,
+        profiles: visible.filter((p) => p.accountId === a.id).map((p) => ({ id: p.id, name: p.name })),
+      })),
+    };
+  });
+
+  /** Un profil par compte membre choisi : rôle `roleName` assumé avec les identifiants du hub. */
+  app.post<{ Params: { id: string } }>('/api/profiles/:id/org-accounts', async (req) => {
+    const user = requireRole(req, 'admin', 'editor');
+    const parent = checkParent(req, req.params.id);
+    const input = parse(orgAccountsSchema, req.body);
+    checkGroups(user, input.allowedGroups);
+    const known = new Map(orgAccounts(parent).map((a) => [a.id, a]));
+    const covered = new Set(
+      listProfiles(db)
+        .filter((p) => p.auth.kind === 'assume-role-profile' && p.auth.parentProfileId === parent.id)
+        .map((p) => p.accountId),
+    );
+    const created: Profile[] = [];
+    for (const accountId of new Set(input.accountIds)) {
+      if (accountId === parent.accountId || covered.has(accountId)) continue;
+      const account = known.get(accountId);
+      const profile = profileSchema.parse({
+        id: randomUUID(),
+        name: account?.name ?? accountId,
+        ...(parent.client ? { client: parent.client } : {}),
+        accountId,
+        regions: input.regions,
+        auth: {
+          kind: 'assume-role-profile',
+          parentProfileId: parent.id,
+          roleArn: `arn:${account?.partition ?? 'aws'}:iam::${accountId}:role/${input.roleName}`,
+          externalId: input.externalId,
+        },
+        allowedGroups: input.allowedGroups,
+      });
+      saveProfile(db, profile);
+      audit.log({
+        user: user.username,
+        ip: req.ip,
+        action: 'profil.creation',
+        profileId: profile.id,
+        result: 'succes',
+        details: { hub: parent.id },
+      });
+      created.push(profile);
+    }
+    return { created: created.map((p) => ({ id: p.id, name: p.name, accountId: p.accountId })) };
+  });
+
+  const orgAccounts = (profile: Profile) => {
+    const row = ctx.storage.listSnapshots(profile.id)[0];
+    const resources = row ? ctx.storage.loadSnapshot(row).resources : [];
+    return resources
+      .filter((r) => r.type === 'AWS::Organizations::Account')
+      .map((r) => {
+        const raw = (r.raw ?? {}) as {
+          Id?: string;
+          Name?: string;
+          Status?: string;
+          State?: string;
+          Arn?: string;
+        };
+        return {
+          id: raw.Id ?? r.id,
+          name: raw.Name ?? r.id,
+          status: raw.State ?? raw.Status ?? 'inconnu',
+          partition: /^arn:(aws[a-z-]*):/.exec(raw.Arn ?? r.arn ?? '')?.[1] ?? 'aws',
+        };
+      });
+  };
 
   app.delete<{ Params: { id: string } }>('/api/profiles/:id', async (req) => {
     const { profile, user } = editableProfile(ctx, req, req.params.id);

@@ -112,6 +112,13 @@ export const profileAuthSchema = z.discriminatedUnion('kind', [
     externalId: externalIdSchema.optional(),
   }),
   z.strictObject({ kind: z.literal('import-only') }),
+  // Rôle d'un compte membre assumé avec les identifiants d'un autre profil (hub d'organisation).
+  z.strictObject({
+    kind: z.literal('assume-role-profile'),
+    parentProfileId: z.string().regex(/^[\w-]{1,64}$/),
+    roleArn: roleArnSchema,
+    externalId: externalIdSchema,
+  }),
 ]);
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);

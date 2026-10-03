@@ -7,13 +7,20 @@ import {
   hubCredentials,
   isRootArn,
 } from '@carto/scanner';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
-import { AppError, badRequest, parse } from '../errors.ts';
+import { AppError, badRequest, forbidden, parse } from '../errors.ts';
 import { canEdit, requireElevated, requireUser } from '../http.ts';
-import type { CredentialType, StaticCredentials } from '../vault.ts';
-import { editableProfile, listProfiles, saveProfile, visibleProfile } from './profiles.ts';
+import type { CredentialInfo, CredentialType, StaticCredentials } from '../vault.ts';
+import {
+  canBeHub,
+  editableProfile,
+  getProfile,
+  listProfiles,
+  saveProfile,
+  visibleProfile,
+} from './profiles.ts';
 
 const accessKeyId = z
   .string()
@@ -67,8 +74,45 @@ const stsFailure = (err: unknown) =>
     `AWS a refusé ces identifiants (${(err as { name?: string })?.name ?? 'erreur'}) : vérifiez-les et réessayez`,
   );
 
+/**
+ * Identifiants d'un profil pour un scan ou un test, côté serveur. Un profil « via un autre profil »
+ * assume son rôle avec les identifiants du hub, à condition que l'utilisateur puisse modifier ce hub.
+ */
+export async function resolveCredentials(
+  ctx: Ctx,
+  req: FastifyRequest,
+  profile: Profile,
+): Promise<StaticCredentials> {
+  const family = req.session?.family ?? '';
+  if (profile.auth.kind !== 'assume-role-profile') return ctx.vault.resolve(family, profile);
+  const user = requireUser(req);
+  const parent = getProfile(ctx.db, profile.auth.parentProfileId);
+  if (!parent || !canBeHub(parent)) throw badRequest('Profil hub introuvable ou invalide', 'HUB_INVALIDE');
+  if (!canEdit(user, parent)) throw forbidden('Droits insuffisants sur le profil hub');
+  const base = await ctx.vault.resolve(family, parent);
+  try {
+    // Chaînage de rôles : AWS limite la session à une heure.
+    const duration = Math.min(ctx.config.app.credentials.defaultDurationSeconds, 3600);
+    return await assumeRole(base, profile.auth.roleArn, profile.auth.externalId, duration);
+  } catch (err) {
+    throw badRequest(
+      `Impossible d’assumer ${profile.auth.roleArn} depuis « ${parent.name} » (${(err as { name?: string })?.name ?? 'erreur'}) : vérifiez que le rôle est déployé dans le compte et l’External ID`,
+      'ROLE_INACCESSIBLE',
+    );
+  }
+}
+
 export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
   const { audit, vault, config } = ctx;
+
+  /** État des identifiants ; un profil « via un autre profil » dépend de ceux de son hub. */
+  const infoFor = (family: string, profile: Profile): CredentialInfo[] => {
+    if (profile.auth.kind !== 'assume-role-profile') return vault.info(family, profile);
+    const parent = getProfile(ctx.db, profile.auth.parentProfileId);
+    return parent && vault.info(family, parent).length > 0
+      ? [{ storage: 'via-profil', type: 'profile-role', addedAt: '' }]
+      : [];
+  };
   const reauth = () => config.app.session.reauthMinutes;
 
   /** Saisie : validation, GetCallerIdentity, refus du compte racine et d'un compte différent, échange immédiat. */
@@ -79,6 +123,8 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     if (!session) throw badRequest('Session absente');
     if (profile.auth.kind === 'import-only')
       throw badRequest('Ce profil n’accepte que des imports de snapshots', 'IMPORT_SEUL');
+    if (profile.auth.kind === 'assume-role-profile')
+      throw badRequest('Ce profil utilise les identifiants de son profil hub', 'VIA_PROFIL');
     const raw = parse(credentialInputSchema, req.body);
     const source = raw.type === 'stored' ? { source: raw.sourceProfileId } : {};
     const fail = (motif: string, code = 'IDENTIFIANTS_REFUSES'): never => {
@@ -219,7 +265,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     const { profile } = editableProfile(ctx, req, req.params.id);
     requireElevated(req, reauth());
     return {
-      credentials: vault.info(req.session?.family ?? '', profile),
+      credentials: infoFor(req.session?.family ?? '', profile),
       hubAvailable: config.hubCredentials === 'default-chain',
     };
   });
@@ -227,7 +273,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
   app.post<{ Params: { id: string } }>('/api/profiles/:id/credentials/test', async (req) => {
     const { profile, user } = editableProfile(ctx, req, req.params.id);
     requireElevated(req, reauth());
-    const creds = await vault.resolve(req.session?.family ?? '', profile);
+    const creds = await resolveCredentials(ctx, req, profile);
     try {
       const identity = await getCallerIdentity(creds);
       audit.log({
@@ -282,6 +328,6 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
   // Lecture de l'état par un simple lecteur : jamais de détail.
   app.get<{ Params: { id: string } }>('/api/profiles/:id/credentials/available', async (req) => {
     const { profile } = visibleProfile(ctx, req, req.params.id);
-    return { available: vault.info(req.session?.family ?? '', profile).length > 0 };
+    return { available: infoFor(req.session?.family ?? '', profile).length > 0 };
   });
 }

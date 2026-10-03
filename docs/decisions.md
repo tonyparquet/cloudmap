@@ -222,3 +222,26 @@ external`, `externalType`.
   entiers) ; nœuds externes et sondes des profils réunis.
 - Mode démo : second profil fictif « Partenaire » (`demo-partenaire`, compte 111111111111) relié à
   la démo ; les profils `demo`/`demo-…` sont en lecture seule.
+
+## Scan de toute une organisation (profil hub)
+
+- Nouveau mode d'accès `assume-role-profile` (« Rôle via un profil hub ») : le profil d'un compte
+  membre assume son rôle en lecture seule avec les identifiants d'un autre profil (le hub, en
+  général le compte de gestion). Un hub doit porter ses propres identifiants (clés d'accès ou rôle
+  de l'outil) : pas de chaîne de hubs. Créer ou modifier un tel profil exige de pouvoir modifier le
+  hub ; scanner ou tester un profil membre aussi (vérifié à chaque résolution), sinon les droits
+  d'un groupe pourraient servir à un autre. Aucune clé n'est saisie pour un profil membre.
+- Chaînage de rôles : session limitée à une heure (limite AWS). Échec d'AssumeRole → erreur
+  explicite `ROLE_INACCESSIBLE` (rôle non déployé, External ID différent).
+- Page « Comptes de l'organisation » (bouton « Profils des comptes… » de la vue Organisation) :
+  comptes lus dans le dernier snapshot du hub, un profil créé par compte coché (nom du compte,
+  régions et groupes choisis, idempotent : un compte déjà couvert par ce hub est ignoré, le compte
+  du hub aussi). Un même External ID pour toute l'organisation (généré dans le navigateur) : c'est
+  la valeur passée au StackSet, identique dans tous les comptes ; il reste propre à l'organisation.
+- Rôle déployé par StackSet (`docs/iam/stackset-lecture-seule.yaml`) : `ReadOnlyAccess` géré par
+  AWS + refus explicite de toute lecture de valeur secrète (Secrets Manager, SSM, objets S3),
+  confiance au compte du hub avec condition `sts:ExternalId`. Les commandes AWS CLI affichées sont
+  préremplies (compte hub, External ID, racine de l'organisation).
+- Scan de tous les comptes : en série depuis le navigateur (un compte après l'autre, nouvel essai
+  après une pause si la limite de lancement de scans est atteinte), puis ouverture de la vue
+  multi-comptes avec le hub et ses comptes membres. La page doit rester ouverte pendant la série.

@@ -444,6 +444,11 @@ function DiagramInner({ profileId, multi }: { profileId: string; multi?: string[
               ))}
             </div>
           )}
+          {orgView && canEdit && (
+            <Link to={`/profils/${profileId}/organisation`} className="btn">
+              {t('diag.profilsComptes')}
+            </Link>
+          )}
           {!orgView && !multi && (
             <select
               aria-label={t('diag.comparer')}

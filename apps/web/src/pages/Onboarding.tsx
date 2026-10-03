@@ -3,7 +3,7 @@ import { get } from '../api.ts';
 import { t } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { Alert, useLoad } from '../ui.tsx';
-import { CredentialsForm } from './Credentials.tsx';
+import { CredentialsForm, ViaHub } from './Credentials.tsx';
 import { ImportForm } from './Import.tsx';
 import type { ProfileView } from './Profiles.tsx';
 import { ScanRunner, type ScanResult } from './Scan.tsx';
@@ -58,7 +58,10 @@ export function OnboardingPage({ profileId }: { profileId: string }) {
         ))}
       </ol>
 
-      {step === 'identifiants' && (
+      {step === 'identifiants' && p.auth.kind === 'assume-role-profile' && (
+        <ViaHub parentId={p.auth.parentProfileId} />
+      )}
+      {step === 'identifiants' && p.auth.kind !== 'assume-role-profile' && (
         <div className="card">
           <CredentialsForm
             profile={p}

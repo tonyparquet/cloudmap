@@ -194,6 +194,14 @@ test('vue Organisation : OU, comptes, panneau et export draw.io', async ({ page 
   expect(drawio).toContain('<mxfile');
   for (const ou of ['Socle', 'Production', 'Europe', 'Bac à sable']) expect(drawio).toContain(ou);
 
+  // Comptes de l'organisation : liste issue du snapshot ; la démo (imports uniquement) ne peut pas servir de hub.
+  await page.getByRole('link', { name: 'Profils des comptes…' }).click();
+  await expect(page.getByTestId('comptes-org').locator('label')).toHaveCount(5);
+  await expect(page.getByText('Ce profil ne peut pas servir de hub')).toBeVisible();
+  await expect(page.getByText('OrganizationalUnitIds=r-')).toBeVisible();
+  await page.getByRole('link', { name: 'Diagramme' }).click();
+  await page.getByRole('button', { name: 'Organisation' }).click();
+
   await page.getByRole('button', { name: 'Infrastructure' }).click();
   await expect(node('CloudFront')).toBeVisible();
 });

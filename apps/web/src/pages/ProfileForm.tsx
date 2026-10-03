@@ -6,6 +6,7 @@ import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, Field, useAction, useLoad } from '../ui.tsx';
 import { CredentialFields, credentialBody, emptyDraft, otherAccountOf } from './Credentials.tsx';
+import type { ProfileView } from './Profiles.tsx';
 
 /** Codes des régions publiques AWS (données génériques, pas des données client). */
 const AWS_REGIONS = [
@@ -51,7 +52,7 @@ const REGION_GROUPS: [string, RegExp][] = [
 ];
 
 /** Régions groupées par continent, filtrables, sélection résumée en pastilles retirables. */
-function RegionPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+export function RegionPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const [filter, setFilter] = useState('');
   const shown = AWS_REGIONS.filter((r) => r.includes(filter.trim().toLowerCase()));
   const toggle = (r: string, on: boolean) => onChange(on ? [...value, r] : value.filter((x) => x !== r));
@@ -104,6 +105,7 @@ export function ProfileForm({ id }: { id?: string }) {
   const [authKind, setAuthKind] = useState<AuthKind>('access-keys');
   const [roleArn, setRoleArn] = useState('');
   const [externalId, setExternalId] = useState('');
+  const [parentId, setParentId] = useState('');
   const [groups, setGroups] = useState(myGroups.join(', '));
   const [externals, setExternals] = useState<ExternalNode[]>([]);
   const [probes, setProbes] = useState<Probe[]>([]);
@@ -118,6 +120,11 @@ export function ProfileForm({ id }: { id?: string }) {
   const [otherAccount, setOtherAccount] = useState<string>();
   const [run, error, busy] = useAction();
   const services = useLoad(() => get<{ hubAvailable: boolean }>('/api/config/services'), []);
+  const allProfiles = useLoad(() => get<{ profiles: ProfileView[] }>('/api/profiles'), []);
+  // Hubs possibles : profils modifiables qui portent leurs propres identifiants.
+  const hubs = (allProfiles.data?.profiles ?? []).filter(
+    (p) => p.canEdit && p.id !== id && (p.auth.kind === 'access-keys' || p.auth.kind === 'assume-role-hub'),
+  );
   const hubAvailable = services.data?.hubAvailable ?? false;
 
   useEffect(() => {
@@ -129,10 +136,11 @@ export function ProfileForm({ id }: { id?: string }) {
       setAccountId(p.accountId);
       setRegions(p.regions);
       setAuthKind(p.auth.kind);
-      if (p.auth.kind === 'assume-role-hub') {
+      if (p.auth.kind === 'assume-role-hub' || p.auth.kind === 'assume-role-profile') {
         setRoleArn(p.auth.roleArn);
         setExternalId(p.auth.externalId);
       }
+      if (p.auth.kind === 'assume-role-profile') setParentId(p.auth.parentProfileId);
       setGroups(p.allowedGroups.join(', '));
       setExternals(p.externalNodes ?? []);
       setProbes(p.probes ?? []);
@@ -164,9 +172,10 @@ export function ProfileForm({ id }: { id?: string }) {
         accountId: accountOverride ?? accountId.trim(),
         regions,
         auth:
-          authKind === 'assume-role-hub'
+          authKind === 'assume-role-hub' || authKind === 'assume-role-profile'
             ? {
                 kind: authKind,
+                ...(authKind === 'assume-role-profile' ? { parentProfileId: parentId } : {}),
                 roleArn: roleArn.trim(),
                 ...(externalId.trim() ? { externalId: externalId.trim() } : {}),
               }
@@ -249,7 +258,7 @@ export function ProfileForm({ id }: { id?: string }) {
       <div className="card">
         <fieldset className="choices">
           <legend>{t('form.mode')}</legend>
-          {(['access-keys', 'assume-role-hub', 'import-only'] as const).map((k) => {
+          {(['access-keys', 'assume-role-profile', 'assume-role-hub', 'import-only'] as const).map((k) => {
             const disabled = k === 'assume-role-hub' && !hubAvailable && authKind !== k;
             return (
               <label
@@ -271,7 +280,20 @@ export function ProfileForm({ id }: { id?: string }) {
             );
           })}
         </fieldset>
-        {authKind === 'assume-role-hub' && (
+        {authKind === 'assume-role-profile' && (
+          <Field label={t('form.hub')}>
+            <select value={parentId} onChange={(e) => setParentId(e.target.value)} required>
+              <option value="">—</option>
+              {hubs.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.accountId})
+                </option>
+              ))}
+            </select>
+            <span className="small">{t('form.hubAide')}</span>
+          </Field>
+        )}
+        {(authKind === 'assume-role-hub' || authKind === 'assume-role-profile') && (
           <>
             <Field label={t('form.roleArn')}>
               <input

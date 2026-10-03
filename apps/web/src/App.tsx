@@ -11,6 +11,7 @@ import { InventoryPage } from './pages/Inventory.tsx';
 import { LoginPage } from './pages/Login.tsx';
 import { MultiPage } from './pages/Multi.tsx';
 import { OnboardingPage } from './pages/Onboarding.tsx';
+import { OrgAccountsPage } from './pages/OrgAccounts.tsx';
 import { ProfileForm } from './pages/ProfileForm.tsx';
 import { ProfilesPage } from './pages/Profiles.tsx';
 import { ScanPage } from './pages/Scan.tsx';
@@ -63,6 +64,8 @@ function route(path: string): { node: ReactNode; full?: boolean; profile?: strin
     return { node: <Diagram profileId={m.id ?? ''} />, full: true, profile: m.id };
   if ((m = p('/profils/:id/inventaire')))
     return { node: <InventoryPage profileId={m.id ?? ''} />, profile: m.id };
+  if ((m = p('/profils/:id/organisation')))
+    return { node: <OrgAccountsPage profileId={m.id ?? ''} />, profile: m.id };
   if ((m = p('/profils/:id/demarrage')))
     return { node: <OnboardingPage profileId={m.id ?? ''} />, profile: m.id };
   if ((m = p('/profils/:id/scan'))) return { node: <ScanPage profileId={m.id ?? ''} />, profile: m.id };

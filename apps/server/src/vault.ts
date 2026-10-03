@@ -6,7 +6,7 @@ import type { AppSettings } from './config.ts';
 import { keyVersion, type Db } from './db/index.ts';
 import { badRequest } from './errors.ts';
 
-export type CredentialType = 'temporary' | 'user' | 'user-role' | 'hub-role';
+export type CredentialType = 'temporary' | 'user' | 'user-role' | 'hub-role' | 'profile-role';
 
 export interface StaticCredentials {
   accessKeyId: string;
@@ -33,7 +33,7 @@ export type StoredSecret = z.infer<typeof storedSecretSchema>;
 
 /** Métadonnées renvoyées au navigateur : jamais de secret (section 4.3). */
 export interface CredentialInfo {
-  storage: 'memoire' | 'chiffre' | 'role-hub';
+  storage: 'memoire' | 'chiffre' | 'role-hub' | 'via-profil';
   type: CredentialType;
   maskedAccessKeyId?: string;
   addedAt: string;
@@ -233,6 +233,8 @@ export class Vault {
       }
       return assumeRole(hubCredentials(), auth.roleArn, auth.externalId, duration);
     }
+    if (auth.kind === 'assume-role-profile')
+      throw badRequest('Ce profil utilise les identifiants de son profil hub', 'VIA_PROFIL');
     const mem = this.getMemory(family, profile.id);
     if (mem) return mem.creds;
     const stored = this.readStored(profile.id, auth.credentialRef);
