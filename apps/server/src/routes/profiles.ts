@@ -179,10 +179,10 @@ export function seedDemo(ctx: Ctx): void {
   const dir = join(ctx.config.appRoot, 'fixtures');
   const profile = profileSchema.parse(JSON.parse(readFileSync(join(dir, 'demo-profile.json'), 'utf8')));
   saveProfile(ctx.db, profile);
-  if (ctx.storage.listSnapshots(profile.id).length === 0) {
-    const snapshot = rawSnapshotSchema.parse(
-      JSON.parse(readFileSync(join(dir, 'demo-snapshot.json'), 'utf8')),
-    );
+  // Nouveau snapshot si la fixture a changé depuis le dernier démarrage (mise à jour de l'application).
+  const snapshot = rawSnapshotSchema.parse(JSON.parse(readFileSync(join(dir, 'demo-snapshot.json'), 'utf8')));
+  const latest = ctx.storage.listSnapshots(profile.id).find((r) => r.source === 'demo');
+  if (!latest || JSON.stringify(ctx.storage.loadSnapshot(latest)) !== JSON.stringify(snapshot)) {
     ctx.storage.saveSnapshot(profile.id, snapshot, 'demo');
   }
 }
