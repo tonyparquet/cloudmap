@@ -4,7 +4,7 @@ import { memo, type CSSProperties } from 'react';
 import type { Theme } from '../theme.ts';
 import type { DiffMark } from './nodes.tsx';
 
-export type FlowEdgeData = { edge: GraphEdge; theme: Theme; dim: boolean; diff: DiffMark };
+export type FlowEdgeData = { edge: GraphEdge; theme: Theme; dim: boolean; focused: boolean; diff: DiffMark };
 export type FlowEdgeType = Edge<FlowEdgeData, 'flow'>;
 
 /** Style d'une arête selon son type et son état (section 9.2). */
@@ -59,7 +59,7 @@ export const FlowEdge = memo(function FlowEdge(props: EdgeProps<FlowEdgeType>) {
         className={animated ? 'edge-cicd' : undefined}
         style={{ ...style, opacity: Number(style.opacity ?? 1) * (data.dim ? 0.15 : 1) }}
       />
-      {data.edge.label && !data.dim && (
+      {data.edge.label && !data.dim && (!data.edge.labelOnFocus || data.focused) && (
         <EdgeLabelRenderer>
           <div
             className="elabel nodrag nopan"

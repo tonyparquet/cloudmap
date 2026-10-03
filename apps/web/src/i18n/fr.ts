@@ -172,6 +172,18 @@ export const fr = {
   'diag.legendeModifie': 'modifié',
   'diag.groupeAide': 'Double-cliquez pour déplier le groupe',
   'diag.miseEnPageEnregistree': 'Disposition enregistrée',
+  // Organisation
+  'diag.vue': 'Vue',
+  'diag.vueInfra': 'Infrastructure',
+  'diag.vueOrg': 'Organisation',
+  'detail.email': 'E-mail',
+  'detail.adhesion': 'Adhésion',
+  'detail.politiquesDirectes': 'Politiques attachées',
+  'detail.politiquesHeritees': 'Politiques héritées',
+  'detail.servicesDelegues': 'Administrateur délégué pour',
+  'detail.acces': 'Accès Identity Center',
+  'detail.description': 'Description',
+  'detail.contenu': 'Contenu',
 
   'kind.network': 'Réseau',
   'kind.cicd': 'CI/CD',

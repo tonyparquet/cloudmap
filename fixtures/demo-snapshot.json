@@ -521,6 +521,369 @@
         "_status": "inconnu",
         "_statusReason": "accès refusé : secretsmanager:ListSecrets (ressource issue de l'inventaire AWS Config)"
       }
+    },
+    {
+      "arn": "arn:aws:organizations::000000000000:organization/o-demo000000",
+      "id": "o-demo000000",
+      "type": "AWS::Organizations::Organization",
+      "region": "global",
+      "raw": { "Id": "o-demo000000", "FeatureSet": "ALL", "MasterAccountId": "000000000000" }
+    },
+    {
+      "id": "r-de00",
+      "type": "AWS::Organizations::Root",
+      "region": "global",
+      "raw": {
+        "Id": "r-de00",
+        "Name": "Root",
+        "PolicyTypes": [
+          { "Type": "SERVICE_CONTROL_POLICY", "Status": "ENABLED" },
+          { "Type": "RESOURCE_CONTROL_POLICY", "Status": "ENABLED" }
+        ]
+      }
+    },
+    {
+      "arn": "arn:aws:organizations::000000000000:account/o-demo000000/000000000000",
+      "id": "000000000000",
+      "type": "AWS::Organizations::Account",
+      "region": "global",
+      "raw": {
+        "Id": "000000000000",
+        "Name": "gestion",
+        "Email": "gestion@exemple.invalid",
+        "Status": "ACTIVE",
+        "State": "ACTIVE",
+        "JoinedMethod": "CREATED",
+        "JoinedTimestamp": "2025-01-15T09:00:00.000Z",
+        "_parentId": "r-de00",
+        "_delegatedServices": []
+      }
+    },
+    {
+      "id": "ou-de00-socle",
+      "type": "AWS::Organizations::OrganizationalUnit",
+      "region": "global",
+      "raw": { "Id": "ou-de00-socle", "Name": "Socle", "_parentId": "r-de00" }
+    },
+    {
+      "arn": "arn:aws:organizations::000000000000:account/o-demo000000/000000000011",
+      "id": "000000000011",
+      "type": "AWS::Organizations::Account",
+      "region": "global",
+      "raw": {
+        "Id": "000000000011",
+        "Name": "outils-partages",
+        "Email": "outils-partages@exemple.invalid",
+        "Status": "ACTIVE",
+        "State": "ACTIVE",
+        "JoinedMethod": "CREATED",
+        "JoinedTimestamp": "2025-01-15T09:00:00.000Z",
+        "_parentId": "ou-de00-socle",
+        "_delegatedServices": ["securityhub.amazonaws.com"]
+      }
+    },
+    {
+      "id": "ou-de00-prod",
+      "type": "AWS::Organizations::OrganizationalUnit",
+      "region": "global",
+      "raw": { "Id": "ou-de00-prod", "Name": "Production", "_parentId": "r-de00" }
+    },
+    {
+      "arn": "arn:aws:organizations::000000000000:account/o-demo000000/000000000021",
+      "id": "000000000021",
+      "type": "AWS::Organizations::Account",
+      "region": "global",
+      "raw": {
+        "Id": "000000000021",
+        "Name": "production",
+        "Email": "production@exemple.invalid",
+        "Status": "ACTIVE",
+        "State": "ACTIVE",
+        "JoinedMethod": "CREATED",
+        "JoinedTimestamp": "2025-01-15T09:00:00.000Z",
+        "_parentId": "ou-de00-prod",
+        "_delegatedServices": []
+      }
+    },
+    {
+      "id": "ou-de00-prodeu",
+      "type": "AWS::Organizations::OrganizationalUnit",
+      "region": "global",
+      "raw": { "Id": "ou-de00-prodeu", "Name": "Europe", "_parentId": "ou-de00-prod" }
+    },
+    {
+      "arn": "arn:aws:organizations::000000000000:account/o-demo000000/000000000022",
+      "id": "000000000022",
+      "type": "AWS::Organizations::Account",
+      "region": "global",
+      "raw": {
+        "Id": "000000000022",
+        "Name": "production-eu",
+        "Email": "production-eu@exemple.invalid",
+        "Status": "ACTIVE",
+        "State": "ACTIVE",
+        "JoinedMethod": "CREATED",
+        "JoinedTimestamp": "2025-01-15T09:00:00.000Z",
+        "_parentId": "ou-de00-prodeu",
+        "_delegatedServices": []
+      }
+    },
+    {
+      "id": "ou-de00-sandbox",
+      "type": "AWS::Organizations::OrganizationalUnit",
+      "region": "global",
+      "raw": { "Id": "ou-de00-sandbox", "Name": "Bac à sable", "_parentId": "r-de00" }
+    },
+    {
+      "arn": "arn:aws:organizations::000000000000:account/o-demo000000/000000000031",
+      "id": "000000000031",
+      "type": "AWS::Organizations::Account",
+      "region": "global",
+      "raw": {
+        "Id": "000000000031",
+        "Name": "bac-a-sable",
+        "Email": "bac-a-sable@exemple.invalid",
+        "Status": "SUSPENDED",
+        "State": "SUSPENDED",
+        "JoinedMethod": "CREATED",
+        "JoinedTimestamp": "2025-01-15T09:00:00.000Z",
+        "_parentId": "ou-de00-sandbox",
+        "_delegatedServices": []
+      }
+    },
+    {
+      "id": "p-FullAWSAccess",
+      "type": "AWS::Organizations::Policy",
+      "region": "global",
+      "raw": {
+        "Id": "p-FullAWSAccess",
+        "Name": "FullAWSAccess",
+        "Type": "SERVICE_CONTROL_POLICY",
+        "AwsManaged": true,
+        "Description": "Politique fictive de démonstration",
+        "Content": "{\"Version\":\"2012-10-17\",\"Statement\":[]}",
+        "_targets": [{ "TargetId": "r-de00", "Type": "ROOT", "Name": "Root" }]
+      }
+    },
+    {
+      "id": "p-de00regions",
+      "type": "AWS::Organizations::Policy",
+      "region": "global",
+      "raw": {
+        "Id": "p-de00regions",
+        "Name": "RegionsEurope",
+        "Type": "SERVICE_CONTROL_POLICY",
+        "AwsManaged": false,
+        "Description": "Politique fictive de démonstration",
+        "Content": "{\"Version\":\"2012-10-17\",\"Statement\":[]}",
+        "_targets": [{ "TargetId": "ou-de00-prod", "Type": "ORGANIZATIONAL_UNIT", "Name": "Production" }]
+      }
+    },
+    {
+      "id": "p-de00sortie",
+      "type": "AWS::Organizations::Policy",
+      "region": "global",
+      "raw": {
+        "Id": "p-de00sortie",
+        "Name": "InterdireSortieOrganisation",
+        "Type": "SERVICE_CONTROL_POLICY",
+        "AwsManaged": false,
+        "Description": "Politique fictive de démonstration",
+        "Content": "{\"Version\":\"2012-10-17\",\"Statement\":[]}",
+        "_targets": [{ "TargetId": "r-de00", "Type": "ROOT", "Name": "Root" }]
+      }
+    },
+    {
+      "id": "p-de00donnees",
+      "type": "AWS::Organizations::Policy",
+      "region": "global",
+      "raw": {
+        "Id": "p-de00donnees",
+        "Name": "PerimetreDonnees",
+        "Type": "RESOURCE_CONTROL_POLICY",
+        "AwsManaged": false,
+        "Description": "Politique fictive de démonstration",
+        "Content": "{\"Version\":\"2012-10-17\",\"Statement\":[]}",
+        "_targets": [{ "TargetId": "000000000022", "Type": "ACCOUNT", "Name": "production-eu" }]
+      }
+    },
+    {
+      "arn": "arn:aws:sso:::instance/ssoins-de00000000000000",
+      "id": "arn:aws:sso:::instance/ssoins-de00000000000000",
+      "type": "AWS::SSO::Instance",
+      "region": "eu-west-3",
+      "raw": {
+        "InstanceArn": "arn:aws:sso:::instance/ssoins-de00000000000000",
+        "IdentityStoreId": "d-de00000000",
+        "Status": "ACTIVE"
+      }
+    },
+    {
+      "arn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+      "id": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+      "type": "AWS::SSO::PermissionSet",
+      "region": "eu-west-3",
+      "raw": {
+        "Name": "AdministratorAccess",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "SessionDuration": "PT4H",
+        "_managedPolicies": [{ "Name": "AdministratorAccess" }],
+        "_accounts": ["000000000000", "000000000011", "000000000021", "000000000022", "000000000031"]
+      }
+    },
+    {
+      "arn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture",
+      "id": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture",
+      "type": "AWS::SSO::PermissionSet",
+      "region": "eu-west-3",
+      "raw": {
+        "Name": "LectureSeule",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture",
+        "SessionDuration": "PT4H",
+        "_managedPolicies": [{ "Name": "ReadOnlyAccess" }],
+        "_accounts": ["000000000021", "000000000022"]
+      }
+    },
+    {
+      "id": "000000000000|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin|GROUP|g-de00admins",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000000",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00admins",
+        "_permissionSetName": "AdministratorAccess"
+      }
+    },
+    {
+      "id": "000000000011|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin|GROUP|g-de00admins",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000011",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00admins",
+        "_permissionSetName": "AdministratorAccess"
+      }
+    },
+    {
+      "id": "000000000021|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin|GROUP|g-de00admins",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000021",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00admins",
+        "_permissionSetName": "AdministratorAccess"
+      }
+    },
+    {
+      "id": "000000000022|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin|GROUP|g-de00admins",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000022",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00admins",
+        "_permissionSetName": "AdministratorAccess"
+      }
+    },
+    {
+      "id": "000000000031|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin|GROUP|g-de00admins",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000031",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00admins",
+        "_permissionSetName": "AdministratorAccess"
+      }
+    },
+    {
+      "id": "000000000021|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture|GROUP|g-de00devs",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000021",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00devs",
+        "_permissionSetName": "LectureSeule"
+      }
+    },
+    {
+      "id": "000000000022|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture|GROUP|g-de00devs",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000022",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00devs",
+        "_permissionSetName": "LectureSeule"
+      }
+    },
+    {
+      "id": "000000000031|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin|GROUP|g-de00devs",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000031",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00admin",
+        "PrincipalType": "GROUP",
+        "PrincipalId": "g-de00devs",
+        "_permissionSetName": "AdministratorAccess"
+      }
+    },
+    {
+      "id": "000000000021|arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture|USER|u-de00astreinte",
+      "type": "AWS::SSO::AccountAssignment",
+      "region": "eu-west-3",
+      "raw": {
+        "AccountId": "000000000021",
+        "PermissionSetArn": "arn:aws:sso:::permissionSet/ssoins-de00000000000000/ps-de00lecture",
+        "PrincipalType": "USER",
+        "PrincipalId": "u-de00astreinte",
+        "_permissionSetName": "LectureSeule"
+      }
+    },
+    {
+      "id": "g-de00admins",
+      "type": "AWS::IdentityStore::Group",
+      "region": "eu-west-3",
+      "raw": {
+        "GroupId": "g-de00admins",
+        "DisplayName": "Administrateurs",
+        "IdentityStoreId": "d-de00000000",
+        "_memberCount": 3
+      }
+    },
+    {
+      "id": "g-de00devs",
+      "type": "AWS::IdentityStore::Group",
+      "region": "eu-west-3",
+      "raw": {
+        "GroupId": "g-de00devs",
+        "DisplayName": "Développeurs",
+        "IdentityStoreId": "d-de00000000",
+        "_memberCount": 8
+      }
+    },
+    {
+      "id": "u-de00astreinte",
+      "type": "AWS::IdentityStore::User",
+      "region": "eu-west-3",
+      "raw": {
+        "UserId": "u-de00astreinte",
+        "UserName": "astreinte",
+        "DisplayName": "Astreinte",
+        "IdentityStoreId": "d-de00000000"
+      }
     }
   ],
   "probes": [

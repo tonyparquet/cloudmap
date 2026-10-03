@@ -3,7 +3,16 @@ import { z } from 'zod';
 export const STATUSES = ['actif', 'en-veille', 'arrete', 'erreur', 'inconnu'] as const;
 export const EDGE_KINDS = ['network', 'cicd', 'data', 'dependency'] as const;
 export const EDGE_STATES = ['autorise', 'observe', 'bloque', 'non-explique', 'inutilise'] as const;
-export const CONTAINER_KINDS = ['global', 'region', 'vpc', 'az', 'subnet-public', 'subnet-private'] as const;
+export const CONTAINER_KINDS = [
+  'global',
+  'region',
+  'vpc',
+  'az',
+  'subnet-public',
+  'subnet-private',
+  'org',
+  'ou',
+] as const;
 
 export const statusSchema = z.enum(STATUSES);
 export const edgeKindSchema = z.enum(EDGE_KINDS);
@@ -177,6 +186,8 @@ export interface GraphEdge {
   evidence: string[];
   /** Volume observé (Flow Logs), utilisé pour l'épaisseur du trait. */
   bytes?: number;
+  /** Étiquette affichée seulement quand une extrémité est sélectionnée (arêtes très nombreuses). */
+  labelOnFocus?: boolean;
 }
 
 export interface Graph {

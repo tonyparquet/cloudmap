@@ -17,6 +17,8 @@ themes:
       az: { color: '#6b7280', dash: '5 4', width: 1, radius: 8 }
       subnetPrivate: { color: '#14b8a6', dash: '', width: 1, radius: 8 }
       subnetPublic: { color: '#84cc16', dash: '', width: 1, radius: 8 }
+      org: { color: '#e7157b', dash: '', width: 1.5, radius: 12 }
+      ou: { color: '#f472b6', dash: '5 4', width: 1, radius: 10 }
     node:
       tile: { size: 44, radius: 8, border: 2, borderColor: '#e4e4e7' }
       label: { color: '#ffffff', size: 13, weight: 700 }
@@ -56,6 +58,8 @@ themes:
       tile: { borderColor: '#cbd5e1' }
       label: { color: '#0f172a' }
       sublabel: { color: '#475569' }
+    container:
+      ou: { color: '#db2777' }
     category:
       external: '#64748b'
     edge:
@@ -69,6 +73,8 @@ themes:
     container:
       region: { color: '#38bdf8' }
       vpc: { color: '#f59e0b' }
+      org: { color: '#38bdf8' }
+      ou: { color: '#7dd3fc' }
     edge:
       network: { color: '#7dd3fc' }
       label: { background: '#0b1f33' }

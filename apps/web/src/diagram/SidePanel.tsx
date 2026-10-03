@@ -26,6 +26,7 @@ const SHOWN = new Set([
 
 function value(v: unknown): string {
   if (v === undefined || v === null || v === '') return '—';
+  if (Array.isArray(v) && v.every((x) => typeof x === 'string')) return v.join(', ') || '—';
   return typeof v === 'object' ? JSON.stringify(v) : String(v);
 }
 
@@ -169,7 +170,7 @@ export function SidePanel({
           <dl>
             {extra.map(([k, v]) => (
               <div key={k} style={{ display: 'contents' }}>
-                <dt>{k}</dt>
+                <dt>{tOr(`detail.${k}`, k)}</dt>
                 <dd className="mono">{value(v)}</dd>
               </div>
             ))}

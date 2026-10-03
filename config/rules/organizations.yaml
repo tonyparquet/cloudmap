@@ -1,0 +1,22 @@
+# AWS Organizations et IAM Identity Center : représentés dans la vue « Organisation »
+# (buildOrgGraph), jamais dans le diagramme d'infrastructure.
+- type: AWS::Organizations::*
+  typeLabel: Organizations
+  label: '$r.id'
+  icon: account
+  category: management
+  hidden: true
+
+- type: AWS::SSO::*
+  typeLabel: IAM Identity Center
+  label: '$r.id'
+  icon: group
+  category: security
+  hidden: true
+
+- type: AWS::IdentityStore::*
+  typeLabel: Identity Store
+  label: '$r.id'
+  icon: group
+  category: security
+  hidden: true

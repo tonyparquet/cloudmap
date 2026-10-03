@@ -76,6 +76,7 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
     expect((await viewerA.req('GET', `/api/profiles/${profileB}`)).status).toBe(404);
     expect((await viewerA.req('GET', `/api/profiles/${profileB}/snapshots`)).status).toBe(404);
     expect((await viewerA.req('GET', `/api/snapshots/${snapshotB}/graph`)).status).toBe(404);
+    expect((await viewerA.req('GET', `/api/snapshots/${snapshotB}/org-graph`)).status).toBe(404);
     expect((await viewerA.req('GET', `/api/snapshots/${snapshotB}/inventory`)).status).toBe(404);
     expect((await viewerA.req('GET', `/api/profiles/${profileB}/layout`)).status).toBe(404);
   });
@@ -161,6 +162,14 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
     const d = await editorB.req('GET', `/api/snapshots/${snapshotB}/diff/${second.json().snapshot.id}`);
     expect(d.status).toBe(200);
     expect(d.json().diff.nodes).toEqual({ added: [], removed: [], modified: [] });
+    const org = (await editorB.req('GET', `/api/snapshots/${snapshotB}/org-graph`)).json().graph as {
+      containers: { kind: string }[];
+    };
+    expect(org.containers.filter((c) => c.kind === 'ou')).toHaveLength(4);
+    const infra = (await editorB.req('GET', `/api/snapshots/${snapshotB}/graph`)).json().graph as {
+      nodes: { type: string }[];
+    };
+    expect(infra.nodes.filter((n) => /^AWS::(Organizations|SSO|IdentityStore)::/.test(n.type))).toEqual([]);
     const inv = await editorB.req('GET', `/api/snapshots/${snapshotB}/inventory`);
     expect(inv.json().resources.length).toBe(
       (fixture as unknown as { resources: unknown[] }).resources.length,

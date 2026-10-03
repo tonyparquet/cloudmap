@@ -2,7 +2,7 @@ import type { Graph } from '@carto/core';
 import type { Node, Rect } from '@xyflow/react';
 import { toPng, toSvg } from 'html-to-image';
 import { download, post } from '../api.ts';
-import type { Theme } from '../theme.ts';
+import { containerToken, type Theme } from '../theme.ts';
 import { NODE_W } from './layout.ts';
 import { statusColor, type ContainerNodeData, type ResourceNodeData } from './nodes.tsx';
 import { edgeStyle } from './edges.tsx';
@@ -180,9 +180,7 @@ export function toDrawio(nodes: Node[], graph: Graph, theme: Theme): string {
     const parent = n.parentId ? cid(n.parentId) : '1';
     if (n.type === 'container') {
       const c = (n.data as ContainerNodeData).container;
-      const key =
-        c.kind === 'subnet-public' ? 'subnetPublic' : c.kind === 'subnet-private' ? 'subnetPrivate' : c.kind;
-      const tok = theme.container[key];
+      const tok = containerToken(theme, c.kind);
       const w = Number(n.style?.width ?? n.measured?.width ?? 200);
       const h = Number(n.style?.height ?? n.measured?.height ?? 110);
       const style = `rounded=1;arcSize=${Math.round((tok.radius / Math.min(w, h)) * 100)};fillColor=none;strokeColor=${tok.color};strokeWidth=${tok.width};${tok.dash ? `dashed=1;dashPattern=${tok.dash};` : ''}verticalAlign=${c.kind === 'subnet-public' ? 'bottom' : 'top'};align=left;spacingLeft=10;fontColor=${tok.color};fontStyle=1;container=1;collapsible=0;`;

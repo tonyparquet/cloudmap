@@ -2,7 +2,7 @@ import type { GraphContainer, GraphNode } from '@carto/core';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { memo } from 'react';
 import { tOr } from '../i18n/index.ts';
-import type { Theme } from '../theme.ts';
+import { containerToken, type Theme } from '../theme.ts';
 
 export type DiffMark = 'added' | 'removed' | 'modified' | undefined;
 
@@ -116,9 +116,7 @@ export const ContainerNode = memo(function ContainerNode({
   height,
 }: NodeProps<ContainerFlowNode>) {
   const { container: c, theme, diff } = data;
-  const key =
-    c.kind === 'subnet-public' ? 'subnetPublic' : c.kind === 'subnet-private' ? 'subnetPrivate' : c.kind;
-  const tok = theme.container[key];
+  const tok = containerToken(theme, c.kind);
   const w = width ?? 200;
   const h = height ?? 110;
   const stroke = diff === 'added' ? theme.status.actif : diff === 'removed' ? theme.status.erreur : tok.color;

@@ -43,6 +43,8 @@ scanner:
     - ssm
     - kms
     - acm
+    - organizations
+    - identitycenter
     - cloudwatch
     - inventory
 
