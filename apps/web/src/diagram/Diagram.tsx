@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { get, put } from '../api.ts';
 import { t, tOr } from '../i18n/index.ts';
 import type { ProfileView } from '../pages/Profiles.tsx';
+import { Icon } from '../icons.tsx';
 import { Link } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, useLoad } from '../ui.tsx';
@@ -571,7 +572,7 @@ function DiagramInner({ profileId, multi }: { profileId: string; multi?: string[
           {(graph?.warnings.length ?? 0) + errors.length > 0 && (
             <div className="rel">
               <button onClick={() => setPanel(panel === 'avert' ? undefined : 'avert')}>
-                ⚠ {t('diag.avertissements')} ({graph?.warnings.length ?? 0})
+                <Icon name="alert" /> {t('diag.avertissements')} ({graph?.warnings.length ?? 0})
               </button>
               {panel === 'avert' && (
                 <div className="popover" style={{ width: 460 }}>
@@ -585,68 +586,70 @@ function DiagramInner({ profileId, multi }: { profileId: string; multi?: string[
             </div>
           )}
         </div>
-        {(loadError || (accounts?.missing.length ?? 0) > 0) && (
-          <div style={{ position: 'absolute', top: 56, left: 10, zIndex: 6 }}>
-            {loadError && <Alert kind="error">{loadError}</Alert>}
-            {accounts && accounts.missing.length > 0 && (
-              <Alert kind="warn">{t('multi.sansSnapshot', { profils: accounts.missing.join(', ') })}</Alert>
-            )}
-          </div>
-        )}
-        <ReactFlow
-          nodes={nodes}
-          edges={edges as Edge[]}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onNodeClick={(_e, n) => n.type === 'resource' && setSelected(n.id)}
-          onNodeDoubleClick={(_e, n) => {
-            if (n.id.startsWith('group:')) setExpanded((x) => [...x, n.id]);
-          }}
-          onPaneClick={() => {
-            setSelected(undefined);
-            setPanel(undefined);
-          }}
-          onNodeDragStop={(_e, _n, dragged) => {
-            const next = { ...positions };
-            for (const d of dragged)
-              next[d.id] = { x: Math.round(d.position.x), y: Math.round(d.position.y) };
-            savePositions(next);
-          }}
-          onEdgeMouseEnter={(e, edge) => {
-            const g = graph?.edges.find((x) => x.id === edge.id);
-            if (g) setHover({ edge: g, x: e.clientX, y: e.clientY });
-          }}
-          onEdgeMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
-          onEdgeMouseLeave={() => setHover(undefined)}
-          fitView
-          minZoom={0.05}
-          maxZoom={2.5}
-          nodesConnectable={false}
-          proOptions={{ hideAttribution: true }}
-          colorMode={theme.bg.toLowerCase() > '#888888' ? 'light' : 'dark'}
-        >
-          <Background color={theme.panelBorder} gap={24} />
-          <MiniMap
-            pannable
-            zoomable
-            style={{ background: theme.panel }}
-            nodeColor={(n) =>
-              n.type === 'container'
-                ? 'transparent'
-                : (theme.category[(n.data as { node: GraphNode }).node.category] ?? '#666')
-            }
-            nodeStrokeColor={(n) => (n.type === 'container' ? theme.panelBorder : 'transparent')}
-          />
-          <Controls showInteractive={false} />
-        </ReactFlow>
-        {marks && !orgView && (
-          <div className="legend">
-            <span style={{ color: theme.status.actif }}>■ {t('diag.legendeAjoute')}</span>
-            <span style={{ color: theme.status.erreur }}>■ {t('diag.legendeSupprime')}</span>
-            <span style={{ color: theme.edge.unexplained.color }}>■ {t('diag.legendeModifie')}</span>
-          </div>
-        )}
+        <div className="canvas">
+          {(loadError || (accounts?.missing.length ?? 0) > 0) && (
+            <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 6 }}>
+              {loadError && <Alert kind="error">{loadError}</Alert>}
+              {accounts && accounts.missing.length > 0 && (
+                <Alert kind="warn">{t('multi.sansSnapshot', { profils: accounts.missing.join(', ') })}</Alert>
+              )}
+            </div>
+          )}
+          <ReactFlow
+            nodes={nodes}
+            edges={edges as Edge[]}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onNodeClick={(_e, n) => n.type === 'resource' && setSelected(n.id)}
+            onNodeDoubleClick={(_e, n) => {
+              if (n.id.startsWith('group:')) setExpanded((x) => [...x, n.id]);
+            }}
+            onPaneClick={() => {
+              setSelected(undefined);
+              setPanel(undefined);
+            }}
+            onNodeDragStop={(_e, _n, dragged) => {
+              const next = { ...positions };
+              for (const d of dragged)
+                next[d.id] = { x: Math.round(d.position.x), y: Math.round(d.position.y) };
+              savePositions(next);
+            }}
+            onEdgeMouseEnter={(e, edge) => {
+              const g = graph?.edges.find((x) => x.id === edge.id);
+              if (g) setHover({ edge: g, x: e.clientX, y: e.clientY });
+            }}
+            onEdgeMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
+            onEdgeMouseLeave={() => setHover(undefined)}
+            fitView
+            minZoom={0.05}
+            maxZoom={2.5}
+            nodesConnectable={false}
+            proOptions={{ hideAttribution: true }}
+            colorMode={theme.bg.toLowerCase() > '#888888' ? 'light' : 'dark'}
+          >
+            <Background color={theme.panelBorder} gap={24} />
+            <MiniMap
+              pannable
+              zoomable
+              style={{ background: theme.panel }}
+              nodeColor={(n) =>
+                n.type === 'container'
+                  ? 'transparent'
+                  : (theme.category[(n.data as { node: GraphNode }).node.category] ?? '#666')
+              }
+              nodeStrokeColor={(n) => (n.type === 'container' ? theme.panelBorder : 'transparent')}
+            />
+            <Controls showInteractive={false} />
+          </ReactFlow>
+          {marks && !orgView && (
+            <div className="legend">
+              <span style={{ color: theme.status.actif }}>■ {t('diag.legendeAjoute')}</span>
+              <span style={{ color: theme.status.erreur }}>■ {t('diag.legendeSupprime')}</span>
+              <span style={{ color: theme.edge.unexplained.color }}>■ {t('diag.legendeModifie')}</span>
+            </div>
+          )}
+        </div>
         {hover && (
           <div className="tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }} data-testid="info-arete">
             <div>

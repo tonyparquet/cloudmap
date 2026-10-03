@@ -437,6 +437,16 @@ export const fr = {
   'org.scanErreurs': 'terminé, {n} erreur(s)',
   'org.ouvrirMulti': 'Ouvrir la vue multi-comptes',
   'commun.telecharger': 'Télécharger',
+  'app.signature': 'Le terrain, tel qu’il est.',
+  'nav.filAriane': "Fil d'Ariane",
+  'nav.principale': 'Navigation principale',
+  'profils.importer': 'Importer',
+  'profils.rechercher': 'Rechercher un profil (nom, client, compte)…',
+  'profils.aucunResultat': 'Aucun profil ne correspond à « {q} ».',
+  'profils.viaHub': 'via {hub}',
+  'org.regenerer': 'Générer un autre External ID',
+  'form.regionsModifier': 'Ajouter ou retirer des régions',
+  'commun.retirerElement': 'Retirer {x}',
 } as const;
 
 export type MessageKey = keyof typeof fr;

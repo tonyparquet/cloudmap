@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { download, get, post } from '../api.ts';
 import { t } from '../i18n/index.ts';
+import { Icon } from '../icons.tsx';
 import { Link, navigate } from '../router.tsx';
 import { Alert, CopyButton, Field, fmtDate, useAction, useLoad } from '../ui.tsx';
 import { RegionPicker } from './ProfileForm.tsx';
@@ -112,8 +113,13 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
             <span className="row">
               <input className="mono" value={extId} readOnly size={36} />
               {!known && (
-                <button type="button" onClick={() => setExternalId(randomExternalId())}>
-                  ↻
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label={t('org.regenerer')}
+                  onClick={() => setExternalId(randomExternalId())}
+                >
+                  <Icon name="refresh" />
                 </button>
               )}
             </span>

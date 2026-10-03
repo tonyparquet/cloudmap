@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { get, post, setCsrf } from './api.ts';
 import { Diagram } from './diagram/Diagram.tsx';
-import { t } from './i18n/index.ts';
+import { t, type MessageKey } from './i18n/index.ts';
 import { AuditPage } from './pages/Audit.tsx';
 import { ConfigPage } from './pages/Config.tsx';
 import { CredentialsPage } from './pages/Credentials.tsx';
@@ -19,7 +19,28 @@ import { UsersPage } from './pages/Users.tsx';
 import { Link, match, navigate, usePath } from './router.tsx';
 import { useApp, type AuthState } from './store.ts';
 import { applyTheme, type Theme } from './theme.ts';
-import { ReauthDialog, Toast } from './ui.tsx';
+import { ReauthDialog, Toast, useLoad } from './ui.tsx';
+import { Icon, Logo } from './icons.tsx';
+import type { ProfileView } from './pages/Profiles.tsx';
+
+const TITLES: Record<string, MessageKey> = {
+  profils: 'nav.profils',
+  nouveau: 'profils.nouveau',
+  diagramme: 'profils.diagramme',
+  inventaire: 'profils.inventaire',
+  scan: 'profils.scan',
+  identifiants: 'profils.identifiants',
+  modifier: 'commun.modifier',
+  demarrage: 'onb.titre',
+  organisation: 'org.titre',
+  'multi-comptes': 'nav.multi',
+  import: 'nav.import',
+  configuration: 'nav.configuration',
+  utilisateurs: 'nav.utilisateurs',
+  journal: 'nav.journal',
+  aide: 'nav.aide',
+  login: 'login.titre',
+};
 
 export interface StateResponse extends AuthState {
   csrfToken: string;
@@ -33,18 +54,31 @@ export async function refreshAuth(): Promise<AuthState> {
   return s;
 }
 
+/** Onglets d'un profil, précédés du fil d'Ariane ; un profil « imports uniquement » n'a ni scan ni identifiants. */
 function ProfileTabs({ id }: { id: string }) {
   const path = usePath();
+  const profile = useLoad(() => get<{ profile: ProfileView }>(`/api/profiles/${id}`), [id]);
+  const p = profile.data?.profile;
+  const importOnly = p?.auth.kind === 'import-only';
+  const editTabs: [string, string][] = importOnly
+    ? [['demarrage', t('profils.importer')]]
+    : [
+        ['scan', t('profils.scan')],
+        ['identifiants', t('profils.identifiants')],
+      ];
   const tabs: [string, string][] = [
     ['diagramme', t('profils.diagramme')],
     ['inventaire', t('profils.inventaire')],
-    ['scan', t('profils.scan')],
-    ['identifiants', t('profils.identifiants')],
-    ['modifier', t('commun.modifier')],
+    ...(p?.canEdit === false ? [] : [...editTabs, ['modifier', t('commun.modifier')] as [string, string]]),
   ];
   return (
-    <div className="tabs" style={{ padding: '0 16px', marginBottom: 0 }}>
-      <Link to="/profils">← {t('nav.profils')}</Link>
+    <div className="tabs profile-tabs">
+      <nav aria-label={t('nav.filAriane')} className="crumbs">
+        <Link to="/profils">
+          <Icon name="back" /> {t('nav.profils')}
+        </Link>
+        {p && <span className="crumb">{p.name}</span>}
+      </nav>
       {tabs.map(([seg, label]) => (
         <Link key={seg} to={`/profils/${id}/${seg}`} className={path.endsWith(`/${seg}`) ? 'active' : ''}>
           {label}
@@ -109,6 +143,12 @@ export function App() {
       .catch(() => undefined);
   }, [loggedIn]);
   useEffect(() => applyTheme(theme), [theme]);
+  // Titre d'onglet : section courante (utile avec plusieurs onglets ouverts sur des profils différents).
+  useEffect(() => {
+    const section = path.split('/').filter(Boolean).at(-1) ?? '';
+    const label = TITLES[section];
+    document.title = label ? `${t(label)} · ${t('app.titre')}` : t('app.titre');
+  }, [path]);
 
   if (!ready) return <div className="empty">{t('app.chargement')}</div>;
   if (path === '/login' || !loggedIn) return <LoginPage />;
@@ -127,11 +167,11 @@ export function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        <Link to="/profils" className="brand">
-          <img src="/favicon.svg" alt="" width={20} height={20} />
-          {t('app.titre')}
+        <Link to="/profils" className="brand" aria-label={t('app.titre')}>
+          <Logo size={22} />
+          <span className="brand-name">{t('app.titre')}</span>
         </Link>
-        <nav>
+        <nav aria-label={t('nav.principale')}>
           {nav
             .filter(([, , show]) => show)
             .map(([to, label]) => (
@@ -166,7 +206,7 @@ export function App() {
             })
           }
         >
-          {t('nav.deconnexion')}
+          <Icon name="logout" /> <span className="hide-narrow">{t('nav.deconnexion')}</span>
         </button>
       </header>
       {r.profile && <ProfileTabs id={r.profile} />}

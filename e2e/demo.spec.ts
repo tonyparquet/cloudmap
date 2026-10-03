@@ -130,7 +130,7 @@ test('mise en route : nouveau profil, import du premier snapshot, diagramme', as
   await expect(account).toHaveValue('000000000000');
   await page.getByPlaceholder('Filtrer les régions…').fill('west-3');
   await page.getByLabel('eu-west-3', { exact: true }).check();
-  await expect(page.getByRole('button', { name: 'eu-west-3 ✕' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retirer eu-west-3' })).toBeVisible();
   await page.getByRole('radio', { name: /Imports uniquement/ }).check();
   await page.getByRole('button', { name: 'Créer et continuer' }).click();
 
@@ -142,7 +142,7 @@ test('mise en route : nouveau profil, import du premier snapshot, diagramme', as
   await expect(page.locator('[data-testid=noeud][data-label="CloudFront"]')).toBeVisible();
 
   // La carte du profil résume le dernier scan.
-  await page.getByRole('link', { name: '← Profils' }).click();
+  await page.getByRole('navigation', { name: "Fil d'Ariane" }).getByRole('link', { name: 'Profils' }).click();
   await expect(page.getByTestId('profil').filter({ hasText: 'Compte E2E' })).toContainText('Dernier scan');
 });
 

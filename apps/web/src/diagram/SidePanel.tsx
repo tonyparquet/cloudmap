@@ -1,5 +1,6 @@
 import type { Graph, GraphNode } from '@carto/core';
 import { t, tOr } from '../i18n/index.ts';
+import { Icon } from '../icons.tsx';
 
 interface SgSummary {
   id: string;
@@ -56,8 +57,8 @@ export function SidePanel({
       <div className="row">
         <h2 style={{ margin: 0 }}>{node.label}</h2>
         <span className="spacer" />
-        <button onClick={onClose} aria-label={t('commun.fermer')}>
-          ✕
+        <button onClick={onClose} aria-label={t('commun.fermer')} className="icon-btn">
+          <Icon name="x" />
         </button>
       </div>
       {node.sublabel && <p className="muted">{node.sublabel}</p>}

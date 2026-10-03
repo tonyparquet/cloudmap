@@ -71,19 +71,32 @@ h3 {
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+}
+.topbar .brand:hover {
+  text-decoration: none;
 }
 .topbar nav {
   display: flex;
-  gap: 14px;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 .topbar nav a {
   color: var(--muted);
+  white-space: nowrap;
+  padding: 6px 8px;
+  border-radius: 6px;
 }
 .topbar nav a.active,
 .topbar nav a:hover {
   color: var(--text);
   text-decoration: none;
+}
+.topbar nav a.active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .topbar .who {
   color: var(--muted);
@@ -336,21 +349,29 @@ pre.code {
 }
 .diagram .react-flow {
   background: var(--bg);
-}
-.toolbar {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  z-index: 5;
+  inset: 0;
+}
+.diagram {
+  display: flex;
+  flex-direction: column;
+}
+/* Bandeau d'outils au-dessus du canevas : il ne masque jamais le diagramme. */
+.toolbar {
+  position: relative;
+  z-index: 6;
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
-  pointer-events: none;
+  padding: 8px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-border);
 }
-.toolbar > * {
-  pointer-events: auto;
+.canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 .toolbar select,
 .toolbar input,
@@ -736,4 +757,178 @@ input.paste {
 }
 fieldset fieldset {
   margin-top: 10px;
+}
+
+/* ------------------------------------------------------------------ revue d'ergonomie */
+/* Focus clavier visible sur toute commande (WCAG 2.4.7), sans contour au clic souris. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button,
+.btn,
+summary,
+.choice,
+label.check,
+.dropzone {
+  cursor: pointer;
+}
+button,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    color 0.15s;
+}
+.btn:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.icon {
+  flex-shrink: 0;
+}
+.icon-btn {
+  padding: 6px;
+  line-height: 0;
+}
+.icon-btn.danger {
+  border-color: transparent;
+  color: var(--muted);
+}
+.icon-btn.danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.chip {
+  gap: 4px;
+}
+/* Mouvement réduit : flux CI/CD figés, transitions supprimées. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+.hide-narrow {
+  display: inline;
+}
+@media (max-width: 1100px) {
+  .topbar .brand-name,
+  .topbar .who,
+  .hide-narrow {
+    display: none;
+  }
+}
+/* Onglets de profil : fil d'Ariane puis onglets. */
+.profile-tabs {
+  padding: 0 16px;
+  margin-bottom: 0;
+  align-items: center;
+  overflow-x: auto;
+}
+.profile-tabs a,
+.profile-tabs .crumb {
+  white-space: nowrap;
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+  padding-right: 12px;
+  border-right: 1px solid var(--panel-border);
+}
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 0;
+}
+.crumbs .crumb {
+  color: var(--text);
+  font-weight: 600;
+}
+.crumbs .crumb::before {
+  content: '/';
+  color: var(--muted);
+  margin-right: 6px;
+  font-weight: 400;
+}
+/* Page Profils */
+.page-head {
+  margin-bottom: 8px;
+}
+.page-head h1 {
+  margin: 0;
+}
+.search {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 0 8px;
+  background: var(--bg);
+  color: var(--muted);
+}
+.search input {
+  border: 0;
+  background: transparent;
+  width: min(320px, 40vw);
+}
+.search input:focus {
+  outline: none;
+}
+.search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0;
+}
+.profile-card h2 {
+  margin: 0;
+}
+.profile-card p {
+  margin: 0;
+}
+.profile-card .actions {
+  margin-top: auto;
+  padding-top: 6px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 4px 0;
+  font-size: 13px;
+}
+.facts dt {
+  color: var(--muted);
+}
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* Connexion : marque et signature */
+.login .brand .signature {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.topbar select {
+  width: auto;
+  max-width: 140px;
+  flex-shrink: 0;
 }

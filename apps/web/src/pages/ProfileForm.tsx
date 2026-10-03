@@ -5,6 +5,7 @@ import { t, type MessageKey } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, Field, useAction, useLoad } from '../ui.tsx';
+import { Icon } from '../icons.tsx';
 import { CredentialFields, credentialBody, emptyDraft, otherAccountOf } from './Credentials.tsx';
 import type { ProfileView } from './Profiles.tsx';
 
@@ -54,6 +55,8 @@ const REGION_GROUPS: [string, RegExp][] = [
 /** Régions groupées par continent, filtrables, sélection résumée en pastilles retirables. */
 export function RegionPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   const [filter, setFilter] = useState('');
+  // Liste complète dépliée tant qu'aucune région n'est choisie ; ensuite les pastilles suffisent.
+  const [initiallyOpen] = useState(value.length === 0);
   const shown = AWS_REGIONS.filter((r) => r.includes(filter.trim().toLowerCase()));
   const toggle = (r: string, on: boolean) => onChange(on ? [...value, r] : value.filter((x) => x !== r));
   return (
@@ -63,31 +66,40 @@ export function RegionPicker({ value, onChange }: { value: string[]; onChange: (
       <div className="chips" aria-live="polite">
         <span className="muted small">{t('form.regionsChoisies', { n: value.length })}</span>
         {value.map((r) => (
-          <button key={r} type="button" className="chip" onClick={() => toggle(r, false)}>
-            {r} ✕
+          <button
+            key={r}
+            type="button"
+            className="chip"
+            aria-label={t('commun.retirerElement', { x: r })}
+            onClick={() => toggle(r, false)}
+          >
+            {r} <Icon name="x" size={12} />
           </button>
         ))}
       </div>
-      <input
-        type="search"
-        placeholder={t('form.regionsFiltre')}
-        aria-label={t('form.regionsFiltre')}
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-      />
-      <div className="region-groups">
-        {REGION_GROUPS.map(([label, re]) => {
-          const list = shown.filter((r) => re.test(r));
-          return list.length === 0 ? null : (
-            <div key={label}>
-              <h3>{t(label as MessageKey)}</h3>
-              {list.map((r) => (
-                <Check key={r} label={r} checked={value.includes(r)} onChange={(v) => toggle(r, v)} />
-              ))}
-            </div>
-          );
-        })}
-      </div>
+      <details className="help" open={initiallyOpen}>
+        <summary>{t('form.regionsModifier')}</summary>
+        <input
+          type="search"
+          placeholder={t('form.regionsFiltre')}
+          aria-label={t('form.regionsFiltre')}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        <div className="region-groups">
+          {REGION_GROUPS.map(([label, re]) => {
+            const list = shown.filter((r) => re.test(r));
+            return list.length === 0 ? null : (
+              <div key={label}>
+                <h3>{t(label as MessageKey)}</h3>
+                {list.map((r) => (
+                  <Check key={r} label={r} checked={value.includes(r)} onChange={(v) => toggle(r, v)} />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </details>
     </fieldset>
   );
 }
@@ -378,7 +390,7 @@ export function ProfileForm({ id }: { id?: string }) {
               style={{ flex: 1 }}
             />
             <button type="button" onClick={() => setExternals(externals.filter((_, j) => j !== i))}>
-              ✕
+              <Icon name="x" />
             </button>
           </div>
         ))}
@@ -386,7 +398,7 @@ export function ProfileForm({ id }: { id?: string }) {
           type="button"
           onClick={() => setExternals([...externals, { id: '', label: '', icon: 'git', linksTo: [] }])}
         >
-          + {t('commun.ajouter')}
+          <Icon name="plus" /> {t('commun.ajouter')}
         </button>
 
         <h2>{t('form.sondes')}</h2>
@@ -418,12 +430,12 @@ export function ProfileForm({ id }: { id?: string }) {
               onChange={(v) => setProbes(probes.map((y, j) => (j === i ? { ...y, allowPrivate: v } : y)))}
             />
             <button type="button" onClick={() => setProbes(probes.filter((_, j) => j !== i))}>
-              ✕
+              <Icon name="x" />
             </button>
           </div>
         ))}
         <button type="button" onClick={() => setProbes([...probes, { url: 'https://' }])}>
-          + {t('commun.ajouter')}
+          <Icon name="plus" /> {t('commun.ajouter')}
         </button>
 
         <h2>{t('form.flowLogs')}</h2>

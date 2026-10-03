@@ -43,9 +43,25 @@ export function Check({
   );
 }
 
-export function Modal({ title, children }: { title: string; children: ReactNode }) {
+export function Modal({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose?: () => void;
+}) {
   return (
-    <div className="modal-back" role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      className="modal-back"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && onClose) onClose();
+      }}
+    >
       <div className="modal">
         <h2>{title}</h2>
         {children}
@@ -128,7 +144,7 @@ export function ReauthDialog() {
   if (!pending) return null;
   if (authMode === 'oidc') {
     return (
-      <Modal title={t('reauth.titre')}>
+      <Modal title={t('reauth.titre')} onClose={() => settle(false)}>
         <p>{t('reauth.oidc')}</p>
         <div className="row">
           <button
@@ -148,7 +164,7 @@ export function ReauthDialog() {
     );
   }
   return (
-    <Modal title={t('reauth.titre')}>
+    <Modal title={t('reauth.titre')} onClose={() => settle(false)}>
       <p className="muted">{t('reauth.aide')}</p>
       <p className="muted small">{t('reauth.aideCode')}</p>
       <form
@@ -198,7 +214,11 @@ export function ReauthDialog() {
 
 export function Toast() {
   const toast = useApp((s) => s.toast);
-  return toast ? <div className="toast">{toast}</div> : null;
+  return (
+    <div className="toast-zone" role="status" aria-live="polite">
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
 }
 
 export const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleString('fr-FR') : '—');

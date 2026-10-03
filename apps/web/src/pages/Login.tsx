@@ -5,6 +5,7 @@ import { t } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, CopyButton, Field, useAction } from '../ui.tsx';
+import { Logo } from '../icons.tsx';
 
 interface Enrollment {
   secret: string;
@@ -75,8 +76,11 @@ export function LoginPage() {
 
   const brand = (
     <div className="brand">
-      <img src="/favicon.svg" alt="" width={28} height={28} />
-      {t('app.titre')}
+      <Logo size={36} />
+      <div>
+        <div>{t('app.titre')}</div>
+        <div className="signature">{t('app.signature')}</div>
+      </div>
     </div>
   );
 

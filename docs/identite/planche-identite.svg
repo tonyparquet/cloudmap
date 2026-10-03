@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Cartographe AWS — planche d'identité</title>
+  <defs>
+    <pattern id="points" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#2e2a40"/>
+    </pattern>
+    <pattern id="grille" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#2e2a40" stroke-width="1"/>
+    </pattern>
+    <!-- Marque : cadre ouvert en « C » (la carte), nœud (la ressource), flux qui sort (le trafic). -->
+    <g id="marque">
+      <path d="M22.5 8H11a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h11.5" fill="none" stroke="#2dd4bf" stroke-width="2.4" stroke-linecap="round"/>
+      <rect x="12.5" y="12.5" width="7" height="7" rx="1.8" fill="#8b5cf6"/>
+      <path d="M19.5 16h4" stroke="#e4e4e7" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="25.6" cy="16" r="1.9" fill="#e4e4e7"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#0e0c14"/>
+
+  <!-- 01 · Marque -->
+  <g transform="translate(40 40)">
+    <rect width="490" height="448" rx="14" fill="#16131f"/>
+    <use href="#marque" transform="translate(173 72) scale(4.5)"/>
+    <text x="245" y="300" text-anchor="middle" font-size="40" font-weight="700" fill="#ffffff">Cartographe</text>
+    <text x="245" y="334" text-anchor="middle" font-size="14" font-weight="600" letter-spacing="7" fill="#a1a1aa">AWS</text>
+    <text x="24" y="424" font-size="12" fill="#6b6680">01 · Marque</text>
+  </g>
+
+  <!-- 02 · Construction -->
+  <g transform="translate(554 40)">
+    <rect width="490" height="448" rx="14" fill="#16131f"/>
+    <rect x="101" y="64" width="288" height="288" fill="url(#grille)" stroke="#2e2a40"/>
+    <g transform="translate(101 64) scale(9)" opacity="0.95">
+      <use href="#marque"/>
+    </g>
+    <g font-size="12" fill="#a1a1aa">
+      <path d="M173 136H60" fill="none" stroke="#6b6680" stroke-dasharray="3 3"/>
+      <text x="24" y="130">cadre ouvert</text>
+      <text x="24" y="148" fill="#2dd4bf">la carte</text>
+      <path d="M245 208V362" fill="none" stroke="#6b6680" stroke-dasharray="3 3"/>
+      <text x="256" y="378">nœud</text>
+      <text x="256" y="396" fill="#8b5cf6">la ressource</text>
+      <path d="M331 208V246H430" fill="none" stroke="#6b6680" stroke-dasharray="3 3"/>
+      <text x="400" y="270">flux</text>
+      <text x="400" y="288" fill="#e4e4e7">ce qui sort</text>
+    </g>
+    <text x="24" y="424" font-size="12" fill="#6b6680">02 · Construction</text>
+  </g>
+
+  <!-- 03 · Interface -->
+  <g transform="translate(1068 40)">
+    <rect width="490" height="448" rx="14" fill="#16131f"/>
+    <rect x="24" y="28" width="442" height="364" rx="10" fill="#16131f" stroke="#2e2a40"/>
+    <path d="M24 38a10 10 0 0 1 10-10h422a10 10 0 0 1 10 10v24H24z" fill="#1f1b2e"/>
+    <use href="#marque" transform="translate(36 34) scale(0.72)"/>
+    <text x="64" y="50" font-size="12" font-weight="700" fill="#e4e4e7">Cartographe AWS</text>
+    <rect x="176" y="36" width="54" height="20" rx="5" fill="#8b5cf6" fill-opacity="0.18"/>
+    <text x="186" y="50" font-size="11" fill="#e4e4e7">Profils</text>
+    <text x="242" y="50" font-size="11" fill="#a1a1aa">Multi-comptes</text>
+    <text x="334" y="50" font-size="11" fill="#a1a1aa">Aide</text>
+    <rect x="24" y="62" width="442" height="330" fill="url(#points)"/>
+    <rect x="48" y="84" width="394" height="290" rx="12" fill="none" stroke="#2dd4bf" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="62" y="104" font-size="11" font-weight="700" fill="#2dd4bf">eu-west-3</text>
+    <rect x="70" y="118" width="350" height="236" rx="10" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="84" y="138" font-size="11" font-weight="700" fill="#8b5cf6">VPC 10.20.0.0/16</text>
+    <rect x="90" y="150" width="150" height="186" rx="8" fill="#14b8a6" fill-opacity="0.06" stroke="#14b8a6"/>
+    <rect x="252" y="150" width="150" height="186" rx="8" fill="#84cc16" fill-opacity="0.06" stroke="#84cc16"/>
+    <rect x="143" y="176" width="44" height="44" rx="8" fill="#c925d1" stroke="#e4e4e7" stroke-width="2"/>
+    <circle cx="186" cy="177" r="4" fill="#a1a1aa"/>
+    <text x="165" y="238" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">RDS</text>
+    <rect x="305" y="262" width="44" height="44" rx="8" fill="#ed7100" stroke="#22c55e" stroke-width="2"/>
+    <circle cx="348" cy="263" r="4" fill="#22c55e"/>
+    <text x="327" y="324" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Tâche ECS</text>
+    <path d="M327 262V198H192" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+    <path d="M197 193l-6 5 6 5" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect x="232" y="190" width="62" height="16" rx="3" fill="#16131f"/>
+    <text x="263" y="202" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">TCP 5432</text>
+    <text x="24" y="424" font-size="12" fill="#6b6680">03 · Interface</text>
+  </g>
+
+  <!-- 04 · Couleurs -->
+  <g transform="translate(40 512)">
+    <rect width="490" height="448" rx="14" fill="#16131f"/>
+    <g font-size="12">
+      <rect x="24" y="28" width="212" height="120" rx="10" fill="#0e0c14" stroke="#2e2a40"/>
+      <text x="36" y="124" font-weight="600" fill="#e4e4e7">Nuit</text>
+      <text x="36" y="140" fill="#a1a1aa">#16131F · fond</text>
+      <rect x="254" y="28" width="212" height="120" rx="10" fill="#1f1b2e" stroke="#2e2a40"/>
+      <text x="266" y="124" font-weight="600" fill="#e4e4e7">Panneau</text>
+      <text x="266" y="140" fill="#a1a1aa">#1F1B2E · surfaces</text>
+      <rect x="24" y="164" width="212" height="120" rx="10" fill="#8b5cf6"/>
+      <text x="36" y="260" font-weight="600" fill="#ffffff">Violet</text>
+      <text x="36" y="276" fill="#ede9fe">#8B5CF6 · action, VPC</text>
+      <rect x="254" y="164" width="212" height="120" rx="10" fill="#2dd4bf"/>
+      <text x="266" y="260" font-weight="600" fill="#0e0c14">Lagon</text>
+      <text x="266" y="276" fill="#134e4a">#2DD4BF · région, marque</text>
+      <rect x="24" y="300" width="134" height="80" rx="10" fill="#84cc16"/>
+      <text x="36" y="350" font-weight="600" fill="#1a2e05">Lime</text>
+      <text x="36" y="366" fill="#1a2e05">#84CC16 · public</text>
+      <rect x="178" y="300" width="134" height="80" rx="10" fill="#ed7100"/>
+      <text x="190" y="350" font-weight="600" fill="#1c0a00">Ambre</text>
+      <text x="190" y="366" fill="#1c0a00">#ED7100 · calcul</text>
+      <rect x="332" y="300" width="134" height="80" rx="10" fill="#ef4444"/>
+      <text x="344" y="350" font-weight="600" fill="#ffffff">Alerte</text>
+      <text x="344" y="366" fill="#fee2e2">#EF4444 · bloqué</text>
+    </g>
+    <text x="24" y="424" font-size="12" fill="#6b6680">04 · Couleurs</text>
+  </g>
+
+  <!-- 05 · Typographie -->
+  <g transform="translate(554 512)">
+    <rect width="490" height="448" rx="14" fill="#16131f"/>
+    <text x="24" y="200" font-size="168" font-weight="700" fill="#ffffff" letter-spacing="-6">Aa</text>
+    <text x="250" y="96" font-size="30" font-weight="700" fill="#ffffff">Inter</text>
+    <text x="250" y="122" font-size="13" fill="#a1a1aa">Interface, libellés</text>
+    <text x="250" y="140" font-size="13" fill="#a1a1aa">13–14 px · gras pour</text>
+    <text x="250" y="158" font-size="13" fill="#a1a1aa">les nœuds</text>
+    <path d="M24 250H466" stroke="#2e2a40"/>
+    <text x="24" y="290" font-size="15" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" fill="#e4e4e7">vpc-0de0000000000001</text>
+    <text x="24" y="318" font-size="15" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" fill="#a78bfa">TCP 5432 · TCP 443</text>
+    <text x="24" y="346" font-size="13" fill="#a1a1aa">Chasse fixe pour les identifiants, ARN et ports.</text>
+    <text x="24" y="424" font-size="12" fill="#6b6680">05 · Typographie</text>
+  </g>
+
+  <!-- 06 · Signature -->
+  <g transform="translate(1068 512)">
+    <rect width="490" height="448" rx="14" fill="#16131f"/>
+    <rect x="1" y="1" width="488" height="446" rx="13" fill="url(#points)" opacity="0.6"/>
+    <text x="40" y="196" font-size="46" font-weight="700" fill="#ffffff">Le <tspan fill="#2dd4bf">terrain</tspan>,</text>
+    <text x="40" y="252" font-size="46" font-weight="700" fill="#ffffff">tel qu’il est.</text>
+    <text x="40" y="296" font-size="15" fill="#a1a1aa">Cartographie en lecture seule de vos comptes AWS.</text>
+    <use href="#marque" transform="translate(410 370) scale(1.2)"/>
+    <text x="24" y="424" font-size="12" fill="#6b6680">06 · Signature</text>
+  </g>
+</svg>

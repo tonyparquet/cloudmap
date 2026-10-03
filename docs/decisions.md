@@ -245,3 +245,29 @@ external`, `externalType`.
 - Scan de tous les comptes : en série depuis le navigateur (un compte après l'autre, nouvel essai
   après une pause si la limite de lancement de scans est atteinte), puis ouverture de la vue
   multi-comptes avec le hub et ses comptes membres. La page doit rester ouverte pendant la série.
+
+## Revue d'ergonomie et identité visuelle
+
+- Référentiel : règles d'accessibilité et d'interaction du skill ui-ux-pro-max (style « tableau de
+  bord dense » retenu). Sa proposition de système de design (néon « cyberpunk », polices de luxe)
+  ne correspondait ni au produit ni à la section 9.2 : écartée, les jetons de thème existants restent
+  la référence.
+- Corrections : focus clavier visible partout (`:focus-visible`), `prefers-reduced-motion` respecté
+  (flux CI/CD figés), notifications annoncées (`aria-live`), fenêtre de ré-authentification fermable
+  par Échap, icônes SVG en ligne à la place des caractères (⚠ ✕ ↻ ←), titre d'onglet par page.
+- Navigation : barre du haut qui ne se replie plus (marque réduite au logo sous 1100 px, liens sur
+  une ligne) ; onglets de profil précédés d'un fil d'Ariane avec le nom du profil ; un profil
+  « imports uniquement » propose « Importer » au lieu de « Scan » / « Identifiants » ; un lecteur
+  ne voit plus que Diagramme et Inventaire.
+- Profils : recherche (nom, client, compte) dès 4 profils, informations en grille, action
+  principale mise en avant (Mise en route ou Diagramme), suppression reléguée en bouton discret à
+  droite (avec confirmation) et absente des profils de démonstration, badge « via <hub> ».
+- Diagramme : la barre d'outils devient un bandeau au-dessus du canevas (elle masquait le haut du
+  diagramme sur écran étroit).
+- Régions : liste complète repliable (dépliée tant qu'aucune région n'est choisie), pastilles
+  « Retirer eu-west-3 » accessibles.
+- Identité (skill brandkit) : marque « cadre ouvert + nœud + flux » (le C de Cartographe, le cadre
+  Région/VPC, la ressource, le trafic qui sort), mêmes formes pour le favicon et le composant
+  `Logo` ; signature « Le terrain, tel qu'il est. » (la carte reflète l'état réel, lu en lecture
+  seule). Planche d'identité : `docs/identite/planche-identite.svg` (+ rendu PNG). Palette et
+  typographie inchangées (section 9.2).
