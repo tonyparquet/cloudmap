@@ -7,6 +7,8 @@
 
 ## [Non publié]
 
+## [1.1.0] - 2026-10-04
+
 ### Ajouté
 
 - Microsoft Azure et Google Cloud : profils par abonnement ou projet, identifiants saisis dans
@@ -73,6 +75,7 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.0.1...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/tonyparquet/aws_map/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/tonyparquet/aws_map/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tonyparquet/aws_map/releases/tag/v1.0.0
