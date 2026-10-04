@@ -7,6 +7,8 @@
 
 ## [Non publié]
 
+## [1.2.0] - 2026-10-04
+
 ### Modifié
 
 - L'application s'appelle désormais **CloudMap** (anciennement Cartographe AWS) : interface,
@@ -95,7 +97,8 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.1.0...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/tonyparquet/aws_map/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/tonyparquet/aws_map/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/tonyparquet/aws_map/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tonyparquet/aws_map/releases/tag/v1.0.0
