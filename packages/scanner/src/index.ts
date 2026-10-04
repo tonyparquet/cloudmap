@@ -11,3 +11,13 @@ export {
   type TemporaryCredentials,
 } from './credentials.ts';
 export { SCANNER_VERSION, isAccessDenied, type Credentials } from './context.ts';
+export * from './providers/azure/index.ts';
+export * from './providers/gcp/index.ts';
+export {
+  ReadOnlyHttp,
+  CloudHttpError,
+  isCloudDenied,
+  checkReadOnly,
+  READ_ONLY_POSTS,
+} from './providers/http.ts';
+export type { TokenScanOptions, TokenScanner } from './providers/types.ts';

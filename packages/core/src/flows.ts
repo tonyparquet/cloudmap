@@ -9,6 +9,8 @@ import type { IpPermission, NaclEntry, NetworkModel, SecurityGroup } from './net
 
 export interface FlowNode {
   id: string;
+  /** Type de la ressource (choix du fournisseur qui infère ses flux). */
+  type: string;
   label: string;
   sgs: string[];
   ips: string[];

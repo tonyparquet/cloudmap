@@ -89,6 +89,8 @@ export interface NetworkModel {
   natByVpc: Map<string, Resource[]>;
   endpoints: EndpointInfo[];
   peerings: PeeringInfo[];
+  /** Structures propres à un fournisseur hors AWS (règles NSG, pare-feu…), par identifiant. */
+  providerData: Map<string, unknown>;
 }
 
 const obj = (r: Resource) => (r.raw ?? {}) as Record<string, unknown>;
@@ -121,6 +123,7 @@ export function buildNetworkModel(resources: Resource[]): NetworkModel {
     natByVpc: new Map(),
     endpoints: [],
     peerings: [],
+    providerData: new Map(),
   };
 
   for (const r of of('AWS::EC2::NatGateway')) {
