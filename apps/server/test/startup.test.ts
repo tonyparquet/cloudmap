@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { loadConfig, StartupError } from '../src/config.ts';
 import { createLogger } from '../src/logger.ts';
-import { makeCert, ROOT, testEnv } from './helpers.ts';
+import { makeExpiredCert, ROOT, testEnv } from './helpers.ts';
 
 const problems = (env: NodeJS.ProcessEnv): string => {
   try {
@@ -35,9 +35,9 @@ describe('contrôles de démarrage (section 4.1)', () => {
     expect(problems(env)).toMatch(/PUBLIC_ORIGIN doit commencer par https/);
   });
 
-  it('refuse un certificat expiré', () => {
+  it('refuse un certificat expiré', async () => {
     const { env, dir } = testEnv();
-    const expired = makeCert(join(dir), true);
+    const expired = await makeExpiredCert(dir);
     expect(problems({ ...env, TLS_CERT_FILE: expired.cert, TLS_KEY_FILE: expired.key })).toMatch(
       /Certificat TLS expiré/,
     );

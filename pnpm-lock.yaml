@@ -312,6 +312,9 @@ importers:
       otplib:
         specifier: ^13.5.0
         version: 13.5.0
+      selfsigned:
+        specifier: 5.5.0
+        version: 5.5.0
 
   apps/web:
     dependencies:

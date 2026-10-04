@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import { generate } from 'otplib';
+import { generate as generateCert } from 'selfsigned';
 import { buildApp, type Ctx } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
 import { createLogger } from '../src/logger.ts';
@@ -15,7 +16,7 @@ const TMP = join(ROOT, '.tmp', 'tests');
 mkdirSync(TMP, { recursive: true });
 
 /** Certificat auto-signé de test (EC P-256), éventuellement expiré. */
-export function makeCert(dir: string, expired = false): { cert: string; key: string } {
+export function makeCert(dir: string): { cert: string; key: string } {
   const cert = join(dir, 'cert.pem');
   const key = join(dir, 'key.pem');
   execFileSync(
@@ -36,10 +37,29 @@ export function makeCert(dir: string, expired = false): { cert: string; key: str
       '/CN=localhost',
       '-addext',
       'subjectAltName=DNS:localhost,IP:127.0.0.1',
-      ...(expired ? ['-not_before', '20200101000000Z', '-not_after', '20200102000000Z'] : ['-days', '2']),
+      '-days',
+      '2',
     ],
     { stdio: 'ignore' },
   );
+  return { cert, key };
+}
+
+/**
+ * Certificat expiré (2020), généré en Node : `openssl req -not_after` n'existe qu'à partir
+ * d'OpenSSL 3.4 (absent des runners de CI Ubuntu).
+ */
+export async function makeExpiredCert(dir: string): Promise<{ cert: string; key: string }> {
+  const pems = await generateCert([{ name: 'commonName', value: 'localhost' }], {
+    keyType: 'ec',
+    algorithm: 'sha256',
+    notBeforeDate: new Date('2020-01-01T00:00:00Z'),
+    notAfterDate: new Date('2020-01-02T00:00:00Z'),
+  });
+  const cert = join(dir, 'expired-cert.pem');
+  const key = join(dir, 'expired-key.pem');
+  writeFileSync(cert, pems.cert);
+  writeFileSync(key, pems.private);
   return { cert, key };
 }
 
