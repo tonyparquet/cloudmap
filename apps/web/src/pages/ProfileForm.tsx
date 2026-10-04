@@ -1,63 +1,38 @@
 import type { ExternalNode, Profile } from '@carto/core';
 import { useEffect, useState } from 'react';
 import { get, post, put } from '../api.ts';
-import { t, type MessageKey } from '../i18n/index.ts';
+import { t } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, Field, useAction, useLoad } from '../ui.tsx';
 import { Icon } from '../icons.tsx';
 import { CredentialFields, credentialBody, emptyDraft, otherAccountOf } from './Credentials.tsx';
 import type { ProfileView } from './Profiles.tsx';
-
-/** Codes des régions publiques AWS (données génériques, pas des données client). */
-const AWS_REGIONS = [
-  'us-east-1',
-  'us-east-2',
-  'us-west-1',
-  'us-west-2',
-  'ca-central-1',
-  'ca-west-1',
-  'sa-east-1',
-  'mx-central-1',
-  'eu-west-1',
-  'eu-west-2',
-  'eu-west-3',
-  'eu-central-1',
-  'eu-central-2',
-  'eu-north-1',
-  'eu-south-1',
-  'eu-south-2',
-  'af-south-1',
-  'me-south-1',
-  'me-central-1',
-  'il-central-1',
-  'ap-south-1',
-  'ap-south-2',
-  'ap-east-1',
-  'ap-southeast-1',
-  'ap-southeast-2',
-  'ap-southeast-3',
-  'ap-southeast-4',
-  'ap-southeast-5',
-  'ap-southeast-7',
-  'ap-northeast-1',
-  'ap-northeast-2',
-  'ap-northeast-3',
-];
-
-const REGION_GROUPS: [string, RegExp][] = [
-  ['regions.europe', /^eu-/],
-  ['regions.ameriques', /^(us|ca|sa|mx)-/],
-  ['regions.asie', /^ap-/],
-  ['regions.autres', /^(af|me|il)-/],
-];
+import {
+  ACCOUNT_PATTERN,
+  authLabel,
+  ACCOUNT_PLACEHOLDER,
+  normalizeAccountId,
+  PROVIDER_IDS,
+  providerOf,
+  REGION_GROUPS,
+  type Provider,
+} from '../providers.ts';
 
 /** Régions groupées par continent, filtrables, sélection résumée en pastilles retirables. */
-export function RegionPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+export function RegionPicker({
+  value,
+  onChange,
+  provider = 'aws',
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  provider?: Provider;
+}) {
   const [filter, setFilter] = useState('');
   // Liste complète dépliée tant qu'aucune région n'est choisie ; ensuite les pastilles suffisent.
   const [initiallyOpen] = useState(value.length === 0);
-  const shown = AWS_REGIONS.filter((r) => r.includes(filter.trim().toLowerCase()));
+  const match = (r: string) => r.includes(filter.trim().toLowerCase());
   const toggle = (r: string, on: boolean) => onChange(on ? [...value, r] : value.filter((x) => x !== r));
   return (
     <fieldset className="regions">
@@ -87,11 +62,11 @@ export function RegionPicker({ value, onChange }: { value: string[]; onChange: (
           onChange={(e) => setFilter(e.target.value)}
         />
         <div className="region-groups">
-          {REGION_GROUPS.map(([label, re]) => {
-            const list = shown.filter((r) => re.test(r));
+          {REGION_GROUPS[provider].map(([label, all]) => {
+            const list = all.filter(match);
             return list.length === 0 ? null : (
               <div key={label}>
-                <h3>{t(label as MessageKey)}</h3>
+                <h3>{t(label)}</h3>
                 {list.map((r) => (
                   <Check key={r} label={r} checked={value.includes(r)} onChange={(v) => toggle(r, v)} />
                 ))}
@@ -112,6 +87,7 @@ export function ProfileForm({ id }: { id?: string }) {
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
   const [description, setDescription] = useState('');
+  const [provider, setProvider] = useState<Provider>('aws');
   const [accountId, setAccountId] = useState('');
   const [regions, setRegions] = useState<string[]>([]);
   const [authKind, setAuthKind] = useState<AuthKind>('access-keys');
@@ -127,7 +103,7 @@ export function ProfileForm({ id }: { id?: string }) {
   const [tagFilters, setTagFilters] = useState('');
   // Identifiants saisis ou choisis dès la création (mode « Clés d'accès saisies »).
   const [later, setLater] = useState(!!id);
-  const [draft, setDraft] = useState(emptyDraft);
+  const [draft, setDraft] = useState(() => emptyDraft());
   const [createdId, setCreatedId] = useState<string>();
   const [otherAccount, setOtherAccount] = useState<string>();
   const [run, error, busy] = useAction();
@@ -135,8 +111,24 @@ export function ProfileForm({ id }: { id?: string }) {
   const allProfiles = useLoad(() => get<{ profiles: ProfileView[] }>('/api/profiles'), []);
   // Hubs possibles : profils modifiables qui portent leurs propres identifiants.
   const hubs = (allProfiles.data?.profiles ?? []).filter(
-    (p) => p.canEdit && p.id !== id && (p.auth.kind === 'access-keys' || p.auth.kind === 'assume-role-hub'),
+    (p) =>
+      p.canEdit &&
+      p.id !== id &&
+      providerOf(p) === provider &&
+      (p.auth.kind === 'access-keys' || p.auth.kind === 'assume-role-hub'),
   );
+  // Azure / Google Cloud : pas d'identité propre de l'outil ; profil membre sans rôle à assumer.
+  const modes = (['access-keys', 'assume-role-profile', 'assume-role-hub', 'import-only'] as const).filter(
+    (k) => provider === 'aws' || k !== 'assume-role-hub',
+  );
+  const chooseProvider = (next: Provider) => {
+    setProvider(next);
+    setAccountId('');
+    setRegions([]);
+    setParentId('');
+    setDraft(emptyDraft(next));
+    if (next !== 'aws' && authKind === 'assume-role-hub') setAuthKind('access-keys');
+  };
   const hubAvailable = services.data?.hubAvailable ?? false;
 
   useEffect(() => {
@@ -145,6 +137,8 @@ export function ProfileForm({ id }: { id?: string }) {
       setName(p.name);
       setClient(p.client ?? '');
       setDescription(p.description ?? '');
+      setProvider(providerOf(p));
+      setDraft(emptyDraft(providerOf(p)));
       setAccountId(p.accountId);
       setRegions(p.regions);
       setAuthKind(p.auth.kind);
@@ -181,17 +175,20 @@ export function ProfileForm({ id }: { id?: string }) {
         name,
         ...(client ? { client } : {}),
         ...(description ? { description } : {}),
+        ...(provider !== 'aws' ? { provider } : {}),
         accountId: accountOverride ?? accountId.trim(),
         regions,
         auth:
-          authKind === 'assume-role-hub' || authKind === 'assume-role-profile'
-            ? {
-                kind: authKind,
-                ...(authKind === 'assume-role-profile' ? { parentProfileId: parentId } : {}),
-                roleArn: roleArn.trim(),
-                ...(externalId.trim() ? { externalId: externalId.trim() } : {}),
-              }
-            : { kind: authKind },
+          authKind === 'assume-role-profile' && provider !== 'aws'
+            ? { kind: authKind, parentProfileId: parentId }
+            : authKind === 'assume-role-hub' || authKind === 'assume-role-profile'
+              ? {
+                  kind: authKind,
+                  ...(authKind === 'assume-role-profile' ? { parentProfileId: parentId } : {}),
+                  roleArn: roleArn.trim(),
+                  ...(externalId.trim() ? { externalId: externalId.trim() } : {}),
+                }
+              : { kind: authKind },
         allowedGroups: list(groups),
         externalNodes: externals.map((x) => ({ ...x, ...(x.sublabel ? {} : { sublabel: undefined }) })),
         probes,
@@ -241,6 +238,23 @@ export function ProfileForm({ id }: { id?: string }) {
     >
       <h1>{id ? t('form.titreEdition') : t('form.titreNouveau')}</h1>
       <div className="card">
+        <fieldset className="choices providers" data-testid="fournisseur">
+          <legend>{t('form.fournisseur')}</legend>
+          {PROVIDER_IDS.map((p) => (
+            <label key={p} className={`choice${provider === p ? ' selected' : ''}${id ? ' disabled' : ''}`}>
+              <input
+                type="radio"
+                name="provider"
+                checked={provider === p}
+                disabled={!!id}
+                onChange={() => chooseProvider(p)}
+              />
+              <span>
+                <strong>{t(`fournisseur.${p}`)}</strong>
+              </span>
+            </label>
+          ))}
+        </fieldset>
         <Field label={t('form.nom')}>
           <input
             value={name}
@@ -253,24 +267,24 @@ export function ProfileForm({ id }: { id?: string }) {
         <Field label={t('form.client')}>
           <input value={client} onChange={(e) => setClient(e.target.value)} maxLength={100} />
         </Field>
-        <Field label={t('form.compte')}>
+        <Field label={t(`form.compte.${provider}`)}>
           <input
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value.replace(/\D/g, '').slice(0, 12))}
-            inputMode="numeric"
-            pattern="\d{12}"
-            placeholder="123456789012"
+            onChange={(e) => setAccountId(normalizeAccountId(provider, e.target.value))}
+            {...(provider === 'aws' ? { inputMode: 'numeric' as const } : {})}
+            pattern={ACCOUNT_PATTERN[provider]}
+            placeholder={ACCOUNT_PLACEHOLDER[provider]}
             required
           />
-          <span className="small">{t('form.compteAide')}</span>
+          <span className="small">{t(`form.compteAide.${provider}`)}</span>
         </Field>
-        <RegionPicker value={regions} onChange={setRegions} />
+        <RegionPicker key={provider} value={regions} onChange={setRegions} provider={provider} />
       </div>
 
       <div className="card">
         <fieldset className="choices">
           <legend>{t('form.mode')}</legend>
-          {(['access-keys', 'assume-role-profile', 'assume-role-hub', 'import-only'] as const).map((k) => {
+          {modes.map((k) => {
             const disabled = k === 'assume-role-hub' && !hubAvailable && authKind !== k;
             return (
               <label
@@ -285,7 +299,7 @@ export function ProfileForm({ id }: { id?: string }) {
                   onChange={() => setAuthKind(k)}
                 />
                 <span>
-                  <strong>{t(`auth.${k}`)}</strong>
+                  <strong>{authLabel(provider, k)}</strong>
                   <span className="muted small">{disabled ? t('form.hubIndispo') : t(`form.mode.${k}`)}</span>
                 </span>
               </label>
@@ -305,7 +319,7 @@ export function ProfileForm({ id }: { id?: string }) {
             <span className="small">{t('form.hubAide')}</span>
           </Field>
         )}
-        {(authKind === 'assume-role-hub' || authKind === 'assume-role-profile') && (
+        {provider === 'aws' && (authKind === 'assume-role-hub' || authKind === 'assume-role-profile') && (
           <>
             <Field label={t('form.roleArn')}>
               <input
@@ -333,6 +347,7 @@ export function ProfileForm({ id }: { id?: string }) {
                 draft={draft}
                 onChange={setDraft}
                 hubAvailable={false}
+                provider={provider}
                 profileId={id ?? createdId}
               />
             )}

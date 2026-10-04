@@ -3,10 +3,27 @@ import { useState, type ClipboardEvent } from 'react';
 import { ApiError, del, get, post, put } from '../api.ts';
 import { parseCredentialBlock } from '../credentialBlock.ts';
 import { t } from '../i18n/index.ts';
+import { providerOf, type Provider } from '../providers.ts';
 import { Link } from '../router.tsx';
 import { Alert, Check, Field, fmtDate, useAction, useLoad } from '../ui.tsx';
 
-type CredType = 'temporary' | 'stored' | 'user-role' | 'user' | 'hub-role';
+type CredType =
+  | 'temporary'
+  | 'stored'
+  | 'user-role'
+  | 'user'
+  | 'hub-role'
+  | 'azure-token'
+  | 'azure-sp'
+  | 'gcp-token'
+  | 'gcp-sa';
+
+/** Types de saisie proposés par fournisseur, le recommandé en premier. */
+const TYPES: Record<Provider, CredType[]> = {
+  aws: ['temporary', 'stored', 'user-role', 'user'],
+  azure: ['azure-token', 'azure-sp', 'stored'],
+  gcp: ['gcp-token', 'gcp-sa', 'stored'],
+};
 
 interface CredentialInfo {
   storage: 'memoire' | 'chiffre' | 'role-hub';
@@ -22,6 +39,7 @@ export function profileToInput(p: Profile) {
     name: p.name,
     client: p.client,
     description: p.description,
+    ...(p.provider && p.provider !== 'aws' ? { provider: p.provider } : {}),
     accountId: p.accountId,
     regions: p.regions,
     auth:
@@ -46,10 +64,15 @@ export interface CredentialDraft {
   remember: boolean;
   duration: number;
   sourceProfileId: string;
+  accessToken: string;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  serviceAccountJson: string;
 }
 
-export const emptyDraft = (): CredentialDraft => ({
-  type: 'temporary',
+export const emptyDraft = (provider: Provider = 'aws'): CredentialDraft => ({
+  type: TYPES[provider][0] ?? 'temporary',
   accessKeyId: '',
   secretAccessKey: '',
   sessionToken: '',
@@ -58,6 +81,11 @@ export const emptyDraft = (): CredentialDraft => ({
   remember: false,
   duration: 3600,
   sourceProfileId: '',
+  accessToken: '',
+  tenantId: '',
+  clientId: '',
+  clientSecret: '',
+  serviceAccountJson: '',
 });
 
 /** Corps de PUT /api/profiles/:id/credentials selon le type choisi. */
@@ -81,6 +109,13 @@ export function credentialBody(d: CredentialDraft) {
       return { type, accessKeyId, secretAccessKey, remember, durationSeconds };
     case 'hub-role':
       return { type, roleArn: d.roleArn, externalId: d.externalId };
+    case 'azure-token':
+    case 'gcp-token':
+      return { type, accessToken: d.accessToken };
+    case 'azure-sp':
+      return { type, tenantId: d.tenantId, clientId: d.clientId, clientSecret: d.clientSecret, remember };
+    case 'gcp-sa':
+      return { type, serviceAccountJson: d.serviceAccountJson, remember };
     case 'stored':
       return {
         type,
@@ -100,6 +135,7 @@ export const otherAccountOf = (err: unknown) =>
 interface StoredInfo {
   profileId: string;
   profileName: string;
+  provider?: Provider;
   accountId: string;
   type: CredType;
   maskedAccessKeyId?: string;
@@ -112,13 +148,17 @@ function StoredPicker({
   draft,
   set,
   excludeProfileId,
+  provider,
 }: {
   draft: CredentialDraft;
   set: (patch: Partial<CredentialDraft>) => void;
   excludeProfileId?: string;
+  provider: Provider;
 }) {
   const list = useLoad(() => get<{ stored: StoredInfo[] }>('/api/credentials/stored'), []);
-  const stored = (list.data?.stored ?? []).filter((c) => c.profileId !== excludeProfileId);
+  const stored = (list.data?.stored ?? []).filter(
+    (c) => c.profileId !== excludeProfileId && providerOf(c) === provider,
+  );
   const chosen = stored.find((c) => c.profileId === draft.sourceProfileId);
   if (list.error) return <Alert kind="error">{list.error}</Alert>;
   if (list.data && stored.length === 0) return <Alert>{t('cred.aucuneMemorisee')}</Alert>;
@@ -150,7 +190,7 @@ function StoredPicker({
           </label>
         ))}
       </fieldset>
-      {chosen && (
+      {chosen && provider === 'aws' && (
         <>
           <Field label={t('cred.roleOptionnel')}>
             <input
@@ -188,22 +228,22 @@ export function CredentialFields({
   onChange,
   hubAvailable,
   profileId,
+  provider = 'aws',
 }: {
   draft: CredentialDraft;
   onChange: (d: CredentialDraft) => void;
   hubAvailable: boolean;
   profileId?: string;
+  provider?: Provider;
 }) {
   const [pasted, setPasted] = useState<string>();
   const set = (patch: Partial<CredentialDraft>) => onChange({ ...draft, ...patch });
   const { type } = draft;
   const types: CredType[] = [
-    'temporary',
-    'stored',
-    'user-role',
-    'user',
-    ...(hubAvailable ? (['hub-role'] as const) : []),
+    ...TYPES[provider],
+    ...(provider === 'aws' && hubAvailable ? (['hub-role'] as const) : []),
   ];
+  const aws = provider === 'aws';
 
   const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -231,8 +271,11 @@ export function CredentialFields({
         ))}
       </fieldset>
       {type === 'user' && <Alert kind="warn">{t('cred.avertUser')}</Alert>}
-      {type === 'stored' && <StoredPicker draft={draft} set={set} excludeProfileId={profileId} />}
-      {type !== 'hub-role' && type !== 'stored' && (
+      {type === 'stored' && (
+        <StoredPicker draft={draft} set={set} excludeProfileId={profileId} provider={provider} />
+      )}
+      {!aws && <CloudFields draft={draft} set={set} profileId={profileId} />}
+      {aws && type !== 'hub-role' && type !== 'stored' && (
         <>
           <Field label={t('cred.coller')}>
             <input
@@ -309,6 +352,9 @@ export function CredentialFields({
           </Field>
         </>
       )}
+      {(type === 'azure-sp' || type === 'gcp-sa') && (
+        <Check label={t('cred.memoriser')} checked={draft.remember} onChange={(v) => set({ remember: v })} />
+      )}
       {(type === 'user' || type === 'user-role') && (
         <>
           <Field label={t('cred.duree')}>
@@ -331,6 +377,95 @@ export function CredentialFields({
   );
 }
 
+/** Azure et Google Cloud : jeton d'accès de la CLI, ou secret d'application / clé de compte de service. */
+function CloudFields({
+  draft,
+  set,
+  profileId,
+}: {
+  draft: CredentialDraft;
+  set: (patch: Partial<CredentialDraft>) => void;
+  profileId?: string;
+}) {
+  const [file, setFile] = useState<string>();
+  const { type } = draft;
+  const secret = (label: string, key: 'accessToken' | 'clientSecret', placeholder?: string) => (
+    <Field label={label}>
+      <input
+        type="password"
+        autoComplete="off"
+        value={draft[key]}
+        onChange={(e) => set({ [key]: e.target.value.trim() })}
+        placeholder={placeholder}
+        required
+      />
+    </Field>
+  );
+  const guid = (label: string, key: 'tenantId' | 'clientId') => (
+    <Field label={label}>
+      <input
+        autoComplete="off"
+        className="mono"
+        value={draft[key]}
+        onChange={(e) => set({ [key]: e.target.value.trim().toLowerCase() })}
+        pattern="[0-9a-fA-F\-]{36}"
+        placeholder="00000000-0000-0000-0000-000000000000"
+        required
+      />
+    </Field>
+  );
+  // La clé JSON est lue localement puis envoyée au serveur ; seule l'adresse du compte est affichée.
+  const loadKey = async (f: File | undefined) => {
+    if (!f) return;
+    const text = await f.text();
+    let email: unknown;
+    try {
+      email = (JSON.parse(text) as { client_email?: unknown }).client_email;
+    } catch {
+      email = undefined;
+    }
+    set({ serviceAccountJson: typeof email === 'string' ? text : '' });
+    setFile(
+      typeof email === 'string' ? t('cred.gcpCleChargee', { compte: email }) : t('cred.gcpCleInvalide'),
+    );
+  };
+  return (
+    <>
+      {type === 'azure-token' && secret(t('cred.jeton'), 'accessToken', 'eyJ…')}
+      {type === 'gcp-token' && secret(t('cred.jeton'), 'accessToken', 'ya29.…')}
+      {type === 'azure-sp' && (
+        <>
+          {guid(t('cred.tenantId'), 'tenantId')}
+          {guid(t('cred.clientId'), 'clientId')}
+          {secret(t('cred.clientSecret'), 'clientSecret')}
+        </>
+      )}
+      {type === 'gcp-sa' && (
+        <Field label={t('cred.gcpCle')}>
+          <input
+            type="file"
+            accept="application/json,.json"
+            onChange={(e) => void loadKey(e.target.files?.[0])}
+            required={!draft.serviceAccountJson}
+          />
+          <span className="small">{file ?? t('cred.gcpCleAide')}</span>
+        </Field>
+      )}
+      {type !== 'stored' && (
+        <details className="help">
+          <summary>{t('cred.aideTitreCloud')}</summary>
+          <ul className="small">
+            <li>{t(`cred.aide.${type === 'azure-token' || type === 'azure-sp' ? 'azure' : 'gcp'}`)}</li>
+            <li>
+              <Link to={profileId ? `/aide?profil=${profileId}` : '/aide'}>{t('cred.aideCompteCloud')}</Link>
+            </li>
+          </ul>
+        </details>
+      )}
+    </>
+  );
+}
+
 /** Formulaire autonome (mise en route, page « Identifiants ») avec correction du compte du profil. */
 export function CredentialsForm({
   profile,
@@ -343,7 +478,8 @@ export function CredentialsForm({
   onSaved: (warnings: string[]) => void;
   onProfileChanged: () => void;
 }) {
-  const [draft, setDraft] = useState(emptyDraft);
+  const provider = providerOf(profile);
+  const [draft, setDraft] = useState(() => emptyDraft(provider));
   const [otherAccount, setOtherAccount] = useState<string>();
   const [run, error, busy] = useAction();
 
@@ -354,7 +490,7 @@ export function CredentialsForm({
         `/api/profiles/${profile.id}/credentials`,
         credentialBody(draft),
       );
-      setDraft(emptyDraft());
+      setDraft(emptyDraft(provider));
       onSaved(r.warnings);
     } catch (err) {
       setOtherAccount(otherAccountOf(err));
@@ -375,6 +511,7 @@ export function CredentialsForm({
         onChange={setDraft}
         hubAvailable={hubAvailable}
         profileId={profile.id}
+        provider={provider}
       />
       {error && <Alert kind="error">{error}</Alert>}
       {otherAccount && (

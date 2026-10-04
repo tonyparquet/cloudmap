@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { download, get, post } from '../api.ts';
 import { t } from '../i18n/index.ts';
 import { Icon } from '../icons.tsx';
+import { providerOf } from '../providers.ts';
 import { Link, navigate } from '../router.tsx';
 import { Alert, CopyButton, Field, fmtDate, useAction, useLoad } from '../ui.tsx';
 import { RegionPicker } from './ProfileForm.tsx';
@@ -37,8 +38,14 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
   );
   const all = useLoad(() => get<{ profiles: ProfileView[] }>('/api/profiles'), [profileId]);
   const help = useLoad(() => get<{ stackSet: string }>('/api/help/iam'), []);
-  const services = useLoad(() => get<{ defaults: string[] }>('/api/config/services'), []);
   const hub = all.data?.profiles.find((p) => p.id === profileId);
+  // Azure / Google Cloud : les profils membres réutilisent le jeton du hub, sans rôle ni StackSet.
+  const provider = hub ? providerOf(hub) : 'aws';
+  const aws = provider === 'aws';
+  const services = useLoad(
+    () => get<{ defaults: string[] }>(`/api/config/services?provider=${provider}`),
+    [provider],
+  );
   // Profils déjà rattachés à ce hub : ils fixent le rôle et l'External ID de l'organisation.
   const children = (all.data?.profiles ?? []).filter(
     (p) => p.auth.kind === 'assume-role-profile' && p.auth.parentProfileId === profileId,
@@ -99,11 +106,18 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
   return (
     <div style={{ maxWidth: 980 }}>
       <h1>{t('org.titre')}</h1>
-      <p className="muted">{t('org.intro', { hub: hub?.name ?? '', compte: hubAccount })}</p>
+      <p className="muted">
+        {t(aws ? 'org.intro' : 'org.introCloud', { hub: hub?.name ?? '', compte: hubAccount })}
+      </p>
       {!org.data.canCreate && <Alert kind="warn">{t('org.hubImpossible')}</Alert>}
       {accounts.length === 0 && <Alert>{t('org.aucunCompte')}</Alert>}
 
-      <details className="card" open={children.length === 0}>
+      {!aws && (
+        <Alert>
+          {t('org.roleCloud')} <Link to="/aide">{t('nav.aide')}</Link>
+        </Alert>
+      )}
+      <details className="card" open={children.length === 0} hidden={!aws}>
         <summary>{t('org.etapeRole')}</summary>
         <div className="row">
           <Field label={t('org.nomRole')}>
@@ -159,8 +173,7 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
             void run(async () => {
               const r = await post<{ created: unknown[] }>(`/api/profiles/${profileId}/org-accounts`, {
                 accountIds: selected,
-                roleName: role,
-                externalId: extId,
+                ...(aws ? { roleName: role, externalId: extId } : {}),
                 regions: selRegions,
                 allowedGroups: hub?.allowedGroups ?? [],
               });
@@ -204,7 +217,9 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
               );
             })}
           </fieldset>
-          {org.data.canCreate && <RegionPicker value={selRegions} onChange={setRegions} />}
+          {org.data.canCreate && (
+            <RegionPicker value={selRegions} onChange={setRegions} provider={provider} />
+          )}
           {message && <Alert kind="ok">{message}</Alert>}
           <button
             className="primary"

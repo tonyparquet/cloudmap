@@ -1,7 +1,8 @@
 import type { Profile } from '@carto/core';
 import { useState } from 'react';
 import { del, get } from '../api.ts';
-import { t, tOr } from '../i18n/index.ts';
+import { t } from '../i18n/index.ts';
+import { authLabel, providerOf } from '../providers.ts';
 import { Icon } from '../icons.tsx';
 import { Link } from '../router.tsx';
 import { useApp } from '../store.ts';
@@ -69,6 +70,7 @@ export function ProfilesPage() {
             <article className="card profile-card" key={p.id} data-testid="profil">
               <header className="row">
                 <h2>{p.name}</h2>
+                <span className="badge">{t(`fournisseur.${providerOf(p)}`)}</span>
                 {p.auth.kind === 'assume-role-profile' && (
                   <span className="badge">
                     {t('profils.viaHub', { hub: names.get(p.auth.parentProfileId) ?? '?' })}
@@ -89,7 +91,7 @@ export function ProfilesPage() {
                 <dt>{t('profils.regions')}</dt>
                 <dd>{p.regions.join(', ') || '—'}</dd>
                 <dt>{t('profils.acces')}</dt>
-                <dd>{tOr(`auth.${p.auth.kind}`, p.auth.kind)}</dd>
+                <dd>{authLabel(providerOf(p), p.auth.kind)}</dd>
               </dl>
               <p className="small">
                 {p.lastSnapshot ? (

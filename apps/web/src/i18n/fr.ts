@@ -84,13 +84,21 @@ export const fr = {
   'auth.access-keys': "Clés d'accès saisies",
   'auth.import-only': 'Imports uniquement',
   'auth.assume-role-profile': 'Rôle via un profil hub',
+  'auth.cloud.access-keys': 'Identifiants saisis',
+  'auth.cloud.assume-role-profile': 'Via un profil hub',
 
   'form.titreNouveau': 'Nouveau profil',
   'form.titreEdition': 'Modifier le profil',
   'form.nom': 'Nom',
   'form.client': 'Client',
   'form.description': 'Description',
-  'form.compte': 'ID du compte AWS (12 chiffres)',
+  'form.fournisseur': 'Fournisseur de cloud',
+  'fournisseur.aws': 'AWS',
+  'fournisseur.azure': 'Microsoft Azure',
+  'fournisseur.gcp': 'Google Cloud',
+  'form.compte.aws': 'ID du compte AWS (12 chiffres)',
+  'form.compte.azure': "ID de l'abonnement Azure",
+  'form.compte.gcp': 'ID du projet Google Cloud',
   'form.regions': 'Régions à scanner',
   'form.mode': "Mode d'accès",
   'form.roleArn': 'ARN du rôle à assumer',
@@ -297,8 +305,14 @@ export const fr = {
   'audit.details': 'Détails',
   'audit.filtre': 'Filtrer par action (préfixe)',
 
-  'aide.titre': 'Aide : créer le rôle IAM chez le client',
-  'aide.intro':
+  'aide.titre.aws': 'Aide : créer le rôle IAM chez le client',
+  'aide.titre.azure': 'Aide : accès en lecture seule à Azure',
+  'aide.titre.gcp': 'Aide : accès en lecture seule à Google Cloud',
+  'aide.intro.azure':
+    "Le scan n'utilise que des lectures (Azure Resource Graph et API de gestion en GET). Accordez le rôle intégré « Lecteur » à l'identité utilisée (utilisateur de la CLI ou principal de service), sur l'abonnement ou le groupe d'administration. Aucun secret de Key Vault n'est lu.",
+  'aide.intro.gcp':
+    "Le scan n'utilise que des lectures (Cloud Asset Inventory, Resource Manager, Org Policy). Accordez le rôle « Lecteur » (ou le rôle personnalisé ci-dessous) au compte utilisé, sur le projet ou l'organisation. Aucune valeur de Secret Manager n'est lue.",
+  'aide.intro.aws':
     "Le scan n'utilise que des appels en lecture. Créez dans le compte client un rôle de confiance envers l'outil, protégé par un External ID propre à chaque profil, puis attachez-lui la politique en lecture seule (ou la politique gérée ReadOnlyAccess).",
   'aide.profil': 'Profil (pour insérer son External ID)',
   'aide.confiance': 'Politique de confiance',
@@ -321,12 +335,16 @@ export const fr = {
   'profils.miseEnRoute': 'Mise en route',
   'profils.jamaisScanne': 'Jamais scanné',
   'profils.dernierScan': 'Dernier scan : {date} · {n} ressources',
-  'profils.bienvenueTitre': 'Ajoutez votre premier compte AWS',
+  'profils.bienvenueTitre': 'Ajoutez votre premier compte cloud',
   'profils.bienvenueTexte':
     "Trois étapes : décrire le compte, fournir des identifiants en lecture seule, lancer le scan. Le diagramme s'ouvre ensuite automatiquement.",
-  'profils.ajouterCompte': 'Ajouter un compte AWS',
+  'profils.ajouterCompte': 'Ajouter un compte AWS, Azure ou Google Cloud',
   'form.creerContinuer': 'Créer et continuer',
-  'form.compteAide':
+  'form.compteAide.azure':
+    'GUID visible dans le portail Azure (page « Abonnements ») ou via « az account show --query id ».',
+  'form.compteAide.gcp':
+    'Identifiant du projet (pas son numéro) : sélecteur de projet de la console ou « gcloud config get-value project ».',
+  'form.compteAide.aws':
     '12 chiffres, visibles dans le menu du compte en haut à droite de la console AWS (tirets acceptés).',
   'form.regionsAide':
     'Cochez les régions où le compte héberge des ressources. Les services globaux (CloudFront, Route 53…) sont toujours inclus.',
@@ -377,11 +395,37 @@ export const fr = {
   'import.deposer': 'Déposez le fichier ici ou cliquez pour le choisir',
   'reauth.aideCode': 'Un code déjà utilisé ne peut pas resservir : attendez le suivant si nécessaire.',
   'diag.miseEnRoute': 'Démarrer la mise en route',
-  'cred.type.stored': 'Clés déjà enregistrées (chiffrées)',
+  'cred.type.stored': 'Identifiants déjà enregistrés (chiffrés)',
+  'cred.type.azure-token': "Jeton d'accès Azure (recommandé)",
+  'cred.desc.azure-token':
+    "Jeton temporaire (environ 1 h) de la CLI Azure, lié à votre compte : rien n'est mémorisé.",
+  'cred.type.azure-sp': 'Principal de service (application Entra)',
+  'cred.desc.azure-sp':
+    "Locataire, application et secret client d'une application disposant du rôle « Lecteur » sur l'abonnement.",
+  'cred.type.gcp-token': "Jeton d'accès Google Cloud (recommandé)",
+  'cred.desc.gcp-token': "Jeton temporaire (1 h) de gcloud, lié à votre compte : rien n'est mémorisé.",
+  'cred.type.gcp-sa': "Clé JSON d'un compte de service",
+  'cred.desc.gcp-sa':
+    "Compte de service disposant du rôle « Lecteur » sur le projet ; l'outil n'en obtient qu'un jeton en lecture seule.",
+  'cred.jeton': "Jeton d'accès",
+  'cred.tenantId': 'ID du locataire (tenant)',
+  'cred.clientId': "ID d'application (client)",
+  'cred.clientSecret': 'Secret client',
+  'cred.gcpCle': 'Fichier de clé JSON',
+  'cred.gcpCleAide':
+    "Le fichier est lu dans le navigateur puis envoyé au serveur ; il n'est jamais réaffiché.",
+  'cred.gcpCleChargee': 'Clé chargée : {compte}',
+  'cred.gcpCleInvalide': "Ce fichier n'est pas une clé de compte de service Google Cloud.",
+  'cred.aideTitreCloud': 'Comment obtenir ces identifiants ?',
+  'cred.aide.azure':
+    'CLI Azure : « az account get-access-token --resource https://management.azure.com --query accessToken -o tsv ».',
+  'cred.aide.gcp': 'CLI Google Cloud : « gcloud auth print-access-token ».',
+  'cred.aideCompteCloud':
+    'Pour un accès durable, créez plutôt un principal ou un compte de service en lecture seule : voir la page « Aide ».',
   'cred.desc.stored':
-    "Réutiliser des clés d'utilisateur IAM mémorisées pour un autre profil : elles restent chiffrées côté serveur.",
+    'Réutiliser des identifiants mémorisés pour un autre profil du même fournisseur : ils restent chiffrés côté serveur.',
   'cred.aucuneMemorisee':
-    "Aucune clé mémorisée : lors d'une saisie de clés d'utilisateur IAM, cochez « Mémoriser (chiffré) » pour pouvoir les réutiliser.",
+    "Aucun identifiant mémorisé pour ce fournisseur : lors d'une saisie, cochez « Mémoriser (chiffré) » pour pouvoir les réutiliser.",
   'cred.choisirCles': 'Clés mémorisées',
   'cred.memoriseePour': 'Mémorisées pour « {profil} » (compte {compte}) le {date}',
   'cred.roleOptionnel': 'Rôle à assumer dans ce compte (facultatif)',
@@ -403,7 +447,7 @@ export const fr = {
   'multi.comptes': '{n} compte(s) · modifier',
   'multi.sansSnapshot': 'Sans snapshot, non affichés : {profils}',
   'form.mode.assume-role-profile':
-    "Compte membre d'une organisation : le rôle en lecture seule est assumé avec les identifiants d'un autre profil (hub).",
+    "Compte membre d'une organisation : accès avec les identifiants d'un autre profil (hub), qui assume le rôle en lecture seule sur AWS ou réutilise son jeton sur Azure et Google Cloud.",
   'form.hub': 'Profil hub',
   'form.hubAide':
     "Profil qui porte les identifiants (clés ou rôle de l'outil) et peut assumer le rôle de ce compte.",
@@ -414,6 +458,10 @@ export const fr = {
   'org.titre': "Comptes de l'organisation",
   'org.intro':
     "Créez un profil par compte membre : chacun assume un rôle en lecture seule avec les identifiants de « {hub} » (compte {compte}). Déployez d'abord ce rôle dans les comptes avec le StackSet ci-dessous.",
+  'org.introCloud':
+    "Créez un profil par abonnement ou projet de l'organisation : chacun réutilise les identifiants de « {hub} », qui doivent donc y avoir un accès en lecture.",
+  'org.roleCloud':
+    "Accordez le rôle en lecture seule (« Lecteur ») à l'identité du hub au niveau du groupe d'administration ou de l'organisation : commandes dans la page",
   'org.etapeRole': '1. Déployer le rôle en lecture seule (StackSet)',
   'org.etapeComptes': '2. Choisir les comptes',
   'org.etapeScan': '3. Scanner et réunir',

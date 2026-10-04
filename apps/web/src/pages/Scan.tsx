@@ -2,6 +2,7 @@ import type { Profile } from '@carto/core';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, get, post } from '../api.ts';
 import { t } from '../i18n/index.ts';
+import { providerOf } from '../providers.ts';
 import { Link } from '../router.tsx';
 import { Alert, Check, useAction, useLoad } from '../ui.tsx';
 
@@ -70,9 +71,13 @@ export function ScanRunner({
   first?: boolean;
   onDone?: (r: ScanResult) => void;
 }) {
+  const provider = providerOf(profile);
   const services = useLoad(
-    () => get<{ services: { key: string; label: string }[]; defaults: string[] }>('/api/config/services'),
-    [],
+    () =>
+      get<{ services: { key: string; label: string }[]; defaults: string[] }>(
+        `/api/config/services?provider=${provider}`,
+      ),
+    [provider],
   );
   const [chosenRegions, setRegions] = useState<string[]>();
   const [chosenServices, setSelected] = useState<string[]>();

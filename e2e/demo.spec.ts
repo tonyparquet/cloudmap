@@ -132,7 +132,7 @@ test('mise en route : nouveau profil, import du premier snapshot, diagramme', as
   await page.getByRole('button', { name: 'Vérifier' }).click();
 
   // Aucun compte hors démo : carte d'accueil.
-  await page.getByRole('link', { name: 'Ajouter un compte AWS' }).click();
+  await page.getByRole('link', { name: 'Ajouter un compte AWS, Azure ou Google Cloud' }).click();
   await page.getByLabel('Nom', { exact: true }).fill('Compte E2E');
   const account = page.getByLabel('ID du compte AWS');
   await account.fill('0000-0000-0000');
