@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { Profile } from '@carto/core';
-import { scanAccount, type ScanEvent } from '@carto/scanner';
+import { scanAccount, scanAzure, scanGcp, type ScanEvent } from '@carto/scanner';
 import { redactString } from '@carto/security';
 import type { Audit } from './audit.ts';
 import type { AppSettings } from './config.ts';
 import type { Storage } from './storage.ts';
-import type { StaticCredentials } from './vault.ts';
+import { isTokenCredentials, type CloudCredentials } from './vault.ts';
 
 export type ServerScanEvent =
   | ScanEvent
@@ -49,7 +49,7 @@ export class ScanManager {
 
   start(
     profile: Profile,
-    credentials: StaticCredentials,
+    credentials: CloudCredentials,
     opts: { regions: string[]; services?: string[] | undefined },
     who: { user: string; ip: string },
   ): string {
@@ -76,18 +76,27 @@ export class ScanManager {
       details: { scanId: id, regions: opts.regions },
     });
 
-    scanAccount({
+    // Azure / Google Cloud : scan par jeton (services du fournisseur, tous par défaut) ; AWS : SDK.
+    const common = {
       profileId: profile.id,
       accountId: profile.accountId,
       regions: opts.regions,
-      services: opts.services ?? this.settings.scanner.defaultServices,
-      credentials,
       concurrency: this.settings.scanner.concurrency,
-      probes: profile.probes,
-      flowLogs: profile.flowLogs,
-      probeTimeoutMs: this.settings.scanner.probeTimeoutMs,
       onProgress: push,
-    })
+    };
+    const run = !isTokenCredentials(credentials)
+      ? scanAccount({
+          ...common,
+          services: opts.services ?? this.settings.scanner.defaultServices,
+          credentials,
+          probes: profile.probes,
+          flowLogs: profile.flowLogs,
+          probeTimeoutMs: this.settings.scanner.probeTimeoutMs,
+        })
+      : credentials.provider === 'azure'
+        ? scanAzure({ ...common, ...(opts.services ? { services: opts.services } : {}), credentials })
+        : scanGcp({ ...common, ...(opts.services ? { services: opts.services } : {}), credentials });
+    run
       .then((snapshot) => {
         const row = this.storage.saveSnapshot(profile.id, snapshot, 'scan');
         push({ type: 'snapshot', snapshotId: row.id });

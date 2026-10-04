@@ -12,7 +12,21 @@ import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import { AppError, badRequest, forbidden, parse } from '../errors.ts';
 import { canEdit, requireElevated, requireUser } from '../http.ts';
-import type { CredentialInfo, CredentialType, StaticCredentials } from '../vault.ts';
+import {
+  isTokenCredentials,
+  type CloudCredentials,
+  type CredentialInfo,
+  type CredentialType,
+  type StaticCredentials,
+} from '../vault.ts';
+import {
+  checkTokenScope,
+  isTokenInputType,
+  saveTokenCredentials,
+  tokenInputFromStored,
+  tokenInputSchemas,
+  type TokenInput,
+} from './cloud-credentials.ts';
 import {
   canBeHub,
   editableProfile,
@@ -64,8 +78,11 @@ export const credentialInputSchema = z.discriminatedUnion('type', [
     externalId: externalIdSchema.optional(),
     durationSeconds: duration,
   }),
+  // Azure et Google Cloud : jeton collé, principal de service, compte de service.
+  ...tokenInputSchemas,
 ]);
 type CredentialInput = z.infer<typeof credentialInputSchema>;
+type AwsInput = Exclude<CredentialInput, TokenInput | { type: 'stored' }>;
 
 const stsFailure = (err: unknown) =>
   new AppError(
@@ -82,14 +99,18 @@ export async function resolveCredentials(
   ctx: Ctx,
   req: FastifyRequest,
   profile: Profile,
-): Promise<StaticCredentials> {
+): Promise<CloudCredentials> {
   const family = req.session?.family ?? '';
   if (profile.auth.kind !== 'assume-role-profile') return ctx.vault.resolve(family, profile);
   const user = requireUser(req);
   const parent = getProfile(ctx.db, profile.auth.parentProfileId);
   if (!parent || !canBeHub(parent)) throw badRequest('Profil hub introuvable ou invalide', 'HUB_INVALIDE');
   if (!canEdit(user, parent)) throw forbidden('Droits insuffisants sur le profil hub');
+  if ((parent.provider ?? 'aws') !== (profile.provider ?? 'aws'))
+    throw badRequest('Le profil hub doit être du même fournisseur', 'HUB_INVALIDE');
   const base = await ctx.vault.resolve(family, parent);
+  // Azure / Google Cloud : même jeton que le hub, portée différente (abonnement ou projet).
+  if (isTokenCredentials(base)) return base;
   const { roleArn } = profile.auth;
   if (!roleArn) throw badRequest('Rôle du compte membre manquant', 'HUB_INVALIDE');
   try {
@@ -140,7 +161,35 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
       });
       throw badRequest(motif, code);
     };
-    const input = raw.type === 'stored' ? fromStored(raw) : raw;
+    // Azure / Google Cloud : jeton ou secret saisi, ou secret mémorisé d'un autre profil.
+    if (isTokenInputType(raw.type))
+      return saveTokenCredentials(ctx, {
+        profile,
+        user,
+        ip: req.ip,
+        family: session.family,
+        input: raw as TokenInput,
+        fail,
+      });
+    if (raw.type === 'stored') {
+      const tokenInput = storedTokenInput(raw.sourceProfileId);
+      if (tokenInput)
+        return saveTokenCredentials(ctx, {
+          profile,
+          user,
+          ip: req.ip,
+          family: session.family,
+          input: tokenInput,
+          source: raw.sourceProfileId,
+          fail,
+        });
+    }
+    if ((profile.provider ?? 'aws') !== 'aws')
+      fail(
+        'Identifiants AWS refusés pour ce profil : choisissez ceux de son fournisseur',
+        'TYPE_INCOMPATIBLE',
+      );
+    const input = raw.type === 'stored' ? fromStored(raw) : (raw as AwsInput);
     const dur =
       ('durationSeconds' in input && input.durationSeconds) || config.app.credentials.defaultDurationSeconds;
 
@@ -148,13 +197,23 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
      * Clés d'un autre profil : uniquement si l'utilisateur peut le modifier (cloisonnement), déchiffrées
      * côté serveur puis traitées comme une saisie (vérifications identiques) et mémorisées pour ce profil.
      */
-    function fromStored(
-      r: Extract<CredentialInput, { type: 'stored' }>,
-    ): Extract<CredentialInput, { type: 'user' | 'user-role' }> {
-      const { profile: src } = editableProfile(ctx, req, r.sourceProfileId);
+    function storedSecretOf(sourceProfileId: string) {
+      const { profile: src } = editableProfile(ctx, req, sourceProfileId);
       const secret =
         src.auth.kind === 'access-keys' ? vault.readStored(src.id, src.auth.credentialRef) : undefined;
       if (!secret) return fail('Aucune clé mémorisée pour ce profil source', 'IDENTIFIANTS_ABSENTS');
+      return secret;
+    }
+    function storedTokenInput(sourceProfileId: string): TokenInput | undefined {
+      return tokenInputFromStored(storedSecretOf(sourceProfileId));
+    }
+
+    function fromStored(
+      r: Extract<CredentialInput, { type: 'stored' }>,
+    ): Extract<CredentialInput, { type: 'user' | 'user-role' }> {
+      const secret = storedSecretOf(r.sourceProfileId);
+      if (secret.kind === 'azure-sp' || secret.kind === 'gcp-sa')
+        return fail('Clés mémorisées d’un autre fournisseur', 'TYPE_INCOMPATIBLE');
       const keys = { accessKeyId: secret.accessKeyId, secretAccessKey: secret.secretAccessKey };
       if (!r.roleArn) return { type: 'user', ...keys, remember: true, durationSeconds: r.durationSeconds };
       const externalId = r.externalId ?? (r.roleArn === secret.roleArn ? secret.externalId : undefined);
@@ -276,6 +335,17 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     const { profile, user } = editableProfile(ctx, req, req.params.id);
     requireElevated(req, reauth());
     const creds = await resolveCredentials(ctx, req, profile);
+    if (isTokenCredentials(creds)) {
+      const identity = await checkTokenScope(profile, creds);
+      audit.log({
+        user: user.username,
+        ip: req.ip,
+        action: 'identifiants.test',
+        profileId: profile.id,
+        result: 'succes',
+      });
+      return { account: profile.accountId, arn: identity, matches: true };
+    }
     try {
       const identity = await getCallerIdentity(creds);
       audit.log({

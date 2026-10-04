@@ -1,12 +1,29 @@
 import type { Profile } from '@carto/core';
-import { assumeRole, getSessionToken, hubCredentials } from '@carto/scanner';
+import {
+  assumeRole,
+  azureTokenFromSecret,
+  gcpTokenFromServiceAccount,
+  getSessionToken,
+  hubCredentials,
+  type AzureToken,
+  type GcpToken,
+} from '@carto/scanner';
 import { decryptEnvelope, encryptEnvelope, envelopeSchema, maskAccessKeyId } from '@carto/security';
 import { z } from 'zod';
 import type { AppSettings } from './config.ts';
 import { keyVersion, type Db } from './db/index.ts';
 import { badRequest } from './errors.ts';
 
-export type CredentialType = 'temporary' | 'user' | 'user-role' | 'hub-role' | 'profile-role';
+export type CredentialType =
+  | 'temporary'
+  | 'user'
+  | 'user-role'
+  | 'hub-role'
+  | 'profile-role'
+  | 'azure-token'
+  | 'azure-sp'
+  | 'gcp-token'
+  | 'gcp-sa';
 
 export interface StaticCredentials {
   accessKeyId: string;
@@ -15,21 +32,54 @@ export interface StaticCredentials {
   expiration?: Date;
 }
 
+/** Jeton porteur Azure ou Google Cloud (obtenu ou collé, toujours temporaire). */
+export type TokenCredentials = AzureToken | GcpToken;
+/** Identifiants utilisables pour un scan : clés AWS temporaires ou jeton Azure / Google Cloud. */
+export type CloudCredentials = StaticCredentials | TokenCredentials;
+export const isTokenCredentials = (c: CloudCredentials): c is TokenCredentials => 'accessToken' in c;
+
 interface MemoryEntry {
-  creds: StaticCredentials;
+  creds: CloudCredentials;
   type: CredentialType;
   masked: string;
   addedAt: number;
   expiresAt: number;
 }
 
-const storedSecretSchema = z.object({
-  accessKeyId: z.string(),
-  secretAccessKey: z.string(),
-  roleArn: z.string().optional(),
-  externalId: z.string().optional(),
-});
+// Secrets mémorisés (chiffrés) : clés AWS (entrées antérieures sans `kind`), principal de service
+// Azure, clé de compte de service Google Cloud.
+const storedSecretSchema = z.union([
+  z.object({
+    kind: z.literal('azure-sp'),
+    tenantId: z.string(),
+    clientId: z.string(),
+    clientSecret: z.string(),
+  }),
+  z.object({ kind: z.literal('gcp-sa'), serviceAccountJson: z.string() }),
+  z.object({
+    kind: z.literal('aws').optional(),
+    accessKeyId: z.string(),
+    secretAccessKey: z.string(),
+    roleArn: z.string().optional(),
+    externalId: z.string().optional(),
+  }),
+]);
 export type StoredSecret = z.infer<typeof storedSecretSchema>;
+
+/** Identifiant non secret affiché masqué : clé d'accès AWS, client Entra, compte de service Google. */
+export function maskedIdOf(secret: StoredSecret): string {
+  if (secret.kind === 'azure-sp') return secret.clientId;
+  if (secret.kind === 'gcp-sa') {
+    try {
+      return String(
+        (JSON.parse(secret.serviceAccountJson) as { client_email?: unknown }).client_email ?? 'compte',
+      );
+    } catch {
+      return 'compte';
+    }
+  }
+  return secret.accessKeyId;
+}
 
 /** Métadonnées renvoyées au navigateur : jamais de secret (section 4.3). */
 export interface CredentialInfo {
@@ -43,6 +93,7 @@ export interface CredentialInfo {
 export interface StoredInfo {
   profileId: string;
   profileName: string;
+  provider: string;
   accountId: string;
   type: CredentialType;
   maskedAccessKeyId?: string;
@@ -73,7 +124,7 @@ export class Vault {
   putMemory(
     family: string,
     profileId: string,
-    creds: StaticCredentials,
+    creds: CloudCredentials,
     type: CredentialType,
     maskedFrom: string,
   ): void {
@@ -123,7 +174,7 @@ export class Vault {
         ref,
         profileId,
         kind,
-        maskAccessKeyId(secret.accessKeyId),
+        maskAccessKeyId(maskedIdOf(secret)),
         JSON.stringify(envelope),
         envelope.v,
         new Date().toISOString(),
@@ -208,6 +259,7 @@ export class Vault {
         {
           profileId: p.id,
           profileName: p.name,
+          provider: p.provider ?? 'aws',
           accountId: p.accountId,
           type: row.kind,
           ...(row.masked_key_id ? { maskedAccessKeyId: row.masked_key_id } : {}),
@@ -219,7 +271,7 @@ export class Vault {
   }
 
   /** Identifiants temporaires utilisables pour un scan ou un test, côté serveur uniquement. */
-  async resolve(family: string, profile: Profile): Promise<StaticCredentials> {
+  async resolve(family: string, profile: Profile): Promise<CloudCredentials> {
     const duration = this.settings.defaultDurationSeconds;
     const auth = profile.auth;
     if (auth.kind === 'import-only')
@@ -243,6 +295,18 @@ export class Vault {
         'Aucun identifiant disponible : saisissez-les dans « Identifiants »',
         'IDENTIFIANTS_ABSENTS',
       );
+    }
+    // Azure / Google Cloud : secret mémorisé échangé contre un jeton temporaire (portée lecture seule
+    // pour Google Cloud), conservé en mémoire pour la session.
+    if (stored.kind === 'azure-sp') {
+      const token = await azureTokenFromSecret(stored);
+      this.putMemory(family, profile.id, token, 'azure-sp', stored.clientId);
+      return token;
+    }
+    if (stored.kind === 'gcp-sa') {
+      const token = await gcpTokenFromServiceAccount(stored.serviceAccountJson);
+      this.putMemory(family, profile.id, token, 'gcp-sa', maskedIdOf(stored));
+      return token;
     }
     const base = { accessKeyId: stored.accessKeyId, secretAccessKey: stored.secretAccessKey };
     const temp = stored.roleArn
