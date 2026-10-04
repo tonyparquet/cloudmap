@@ -7,6 +7,13 @@
 
 ## [Non publié]
 
+### Modifié
+
+- Formulaire de profil plus vivant : sections numérotées (Compte, Régions, Accès) qui se cochent une
+  fois complètes, cartes de choix et cases à cocher animées, régions en pastilles avec « Tout » /
+  « Aucune » par continent, identifiant du compte validé en direct, barre d'actions qui indique ce
+  qu'il reste à compléter. Animations désactivées si le système demande moins de mouvement.
+
 ## [1.2.0] - 2026-10-04
 
 ### Modifié
