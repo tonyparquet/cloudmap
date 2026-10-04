@@ -147,6 +147,7 @@ export function ReauthDialog() {
   const pending = useApp((s) => s.reauth);
   const settle = useApp((s) => s.settleReauth);
   const authMode = useApp((s) => s.auth?.authMode);
+  const mfa = useApp((s) => !!s.auth?.mfaEnabled);
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [run, error, busy] = useAction();
@@ -174,13 +175,16 @@ export function ReauthDialog() {
   }
   return (
     <Modal title={t('reauth.titre')} onClose={() => settle(false)}>
-      <p className="muted">{t('reauth.aide')}</p>
-      <p className="muted small">{t('reauth.aideCode')}</p>
+      <p className="muted">{mfa ? t('reauth.aide') : t('reauth.aideMotDePasse')}</p>
+      {mfa && <p className="muted small">{t('reauth.aideCode')}</p>}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           void run(async () => {
-            const r = await api<{ csrfToken: string }>('POST', '/api/auth/reauth', { password, code });
+            const r = await api<{ csrfToken: string }>('POST', '/api/auth/reauth', {
+              password,
+              ...(mfa ? { code } : {}),
+            });
             setCsrf(r.csrfToken);
             setPassword('');
             setCode('');
@@ -198,15 +202,17 @@ export function ReauthDialog() {
             required
           />
         </Field>
-        <Field label={t('login.code')}>
-          <input
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            required
-          />
-        </Field>
+        {mfa && (
+          <Field label={t('login.code')}>
+            <input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+            />
+          </Field>
+        )}
         {error && <Alert kind="error">{error}</Alert>}
         <div className="row">
           <button className="primary" type="submit" disabled={busy}>

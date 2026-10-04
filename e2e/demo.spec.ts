@@ -9,26 +9,33 @@ let recoveryCodes: string[] = [];
 
 test.describe.configure({ mode: 'serial' });
 
-test('parcours démo : connexion admin + TOTP, diagramme, panneau, filtre, export SVG', async ({ page }) => {
+test('parcours démo : compte admin puis MFA, diagramme, panneau, filtre, export SVG', async ({ page }) => {
   const cspErrors: string[] = [];
   page.on('console', (m) => {
     if (/Content Security Policy/i.test(m.text())) cspErrors.push(m.text());
   });
 
-  // Premier démarrage : création de l'administrateur puis enrôlement TOTP obligatoire.
+  // Premier démarrage : création du compte administrateur (MFA facultatif), puis activation du MFA.
   await page.goto('/');
   await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('button', { name: 'Continuer sans compte' })).toBeVisible();
   await page.fill('input[name=username]', ADMIN.username);
   await page.fill('input[name=password]', ADMIN.password);
   await page.fill('input[name=confirm]', ADMIN.password);
-  await page.getByRole('button', { name: 'Créer' }).click();
+  await page.getByRole('button', { name: 'Créer un compte' }).click();
+  await expect(page).toHaveURL(/\/profils$/);
+  await page.getByRole('link', { name: 'Mon compte' }).click();
+  await page.getByRole('button', { name: 'Activer la double authentification' }).click();
+  await page.getByRole('dialog').locator('input[type=password]').fill(ADMIN.password);
+  await page.getByRole('dialog').getByRole('button', { name: 'Confirmer' }).click();
   const secret = (await page.getByTestId('totp-secret').textContent())?.trim() ?? '';
   expect(secret).toMatch(/^[A-Z2-7]{16,}$/);
   await page.fill('input[name=code]', await generate({ secret }));
-  await page.getByRole('button', { name: 'Activer' }).click();
+  await page.getByRole('button', { name: 'Activer', exact: true }).click();
   await expect(page.getByTestId('codes-secours').locator('span')).toHaveCount(10);
   recoveryCodes = await page.getByTestId('codes-secours').locator('span').allTextContents();
-  await page.getByRole('button', { name: "Continuer vers l'application" }).click();
+  await page.getByRole('button', { name: 'Terminé' }).click();
+  await page.getByRole('link', { name: 'Profils' }).first().click();
 
   // Profil Démo et diagramme de la section 9.5.
   const profil = page.getByTestId('profil').filter({ hasText: 'Démo' });

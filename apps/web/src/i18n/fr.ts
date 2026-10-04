@@ -36,6 +36,55 @@ export const fr = {
   'commun.suivant': 'Suivant',
 
   'login.titre': 'Connexion',
+  'login.bienvenue': 'Bienvenue',
+  'login.creerCompte': 'Créer un compte',
+  'login.premierCompte':
+    "Créez le compte administrateur de cette installation, ou essayez sans compte. La double authentification s'active plus tard, depuis « Mon compte ».",
+  'login.inscriptionAide':
+    'Un compte conserve vos profils, diagrammes et dossiers. Double authentification activable plus tard.',
+  'login.motDePasseAide': '14 caractères minimum, pas un mot de passe courant.',
+  'login.ou': 'ou',
+  'login.invite': 'Continuer sans compte',
+  'login.inviteAide': "Mode invité : rien n'est enregistré, tout disparaît à la déconnexion.",
+  'invite.nom': 'Invité',
+  'invite.bandeau': "Mode invité : rien n'est enregistré, tout disparaît à la déconnexion.",
+  'invite.creerCompte': 'Créer un compte pour conserver ce travail',
+  'invite.inscriptionAide':
+    'Les profils, snapshots, diagrammes et dossiers de cette session seront conservés dans le compte.',
+  'invite.conserve': 'Compte créé : {n} profil(s) conservé(s).',
+  'invite.quitterConfirm':
+    'Quitter le mode invité efface définitivement tout le travail de cette session. Continuer ?',
+  'dossiers.titre': 'Dossiers',
+  'dossiers.tous': 'Tous les profils',
+  'dossiers.racine': 'Hors dossier',
+  'dossiers.nouveau': 'Nouveau dossier (dans le dossier ouvert)',
+  'dossiers.nom': 'Nom du dossier',
+  'dossiers.deplier': 'Déplier',
+  'dossiers.replier': 'Replier',
+  'dossiers.renommer': 'Renommer',
+  'dossiers.ranger': 'Ranger « {x} » dans…',
+  'dossiers.deplacerDossier': 'Déplacer le dossier « {x} » dans…',
+  'dossiers.supprimerAide': 'Supprimer le dossier (son contenu remonte d’un niveau)',
+  'dossiers.supprimerConfirm':
+    'Supprimer le dossier « {x} » ? Ses profils et sous-dossiers remontent d’un niveau, rien n’est perdu.',
+  'dossiers.cycle': 'Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.',
+  'dossiers.vide': 'Dossier vide : glissez-y des profils ou utilisez « Ranger dans… » sur un profil.',
+  'dossiers.aide':
+    'Rangez vos diagrammes : créez un dossier avec +, puis glissez-y des profils ou des dossiers.',
+  'compte.titre': 'Mon compte',
+  'compte.role': 'Rôle',
+  'compte.mfa': 'Double authentification (MFA)',
+  'compte.actif': 'active',
+  'compte.inactif': 'inactive',
+  'compte.mfaInactive':
+    'La connexion ne demande que le mot de passe. Activez la double authentification pour exiger aussi un code TOTP.',
+  'compte.mfaActive': 'Un code TOTP est demandé à chaque connexion et avant les actions sensibles.',
+  'compte.activer': 'Activer la double authentification',
+  'compte.desactiver': 'Désactiver',
+  'compte.desactiverConfirm': 'Désactiver la double authentification de ce compte ?',
+  'compte.codesRestants': 'Codes de secours restants : {n}',
+  'compte.termine': 'Terminé',
+  'compte.qr': 'QR code de la double authentification',
   'login.identifiant': 'Identifiant',
   'login.motDePasse': 'Mot de passe',
   'login.confirmation': 'Confirmation du mot de passe',
@@ -62,6 +111,7 @@ export const fr = {
 
   'reauth.titre': 'Confirmez votre identité',
   'reauth.aide': 'Cette action sensible exige une ré-authentification (mot de passe et code TOTP).',
+  'reauth.aideMotDePasse': 'Cette action sensible exige de confirmer votre mot de passe.',
   'reauth.oidc': "Une nouvelle connexion auprès du fournisseur d'identité est nécessaire.",
   'reauth.confirmer': 'Confirmer',
 

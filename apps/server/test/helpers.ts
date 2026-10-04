@@ -161,22 +161,28 @@ export function allowTotpReuse(ctx: Ctx, username: string): void {
 
 export const ADMIN = { username: 'admin', password: 'Une-phrase-de-passe-solide-42' };
 
-/** Premier démarrage : création de l'administrateur, enrôlement TOTP, session complète. */
+/** Activation du MFA depuis une session connectée (ré-authentification par mot de passe, puis TOTP). */
+export async function enableMfa(
+  client: Client,
+  password: string,
+): Promise<{ secret: string; recoveryCodes: string[] }> {
+  const elevate = await client.req('POST', '/api/auth/reauth', { password });
+  if (elevate.status !== 200) throw new Error(`reauth ${elevate.status} ${elevate.body}`);
+  const enroll = (await client.req('GET', '/api/auth/totp/enroll')).json() as { secret: string };
+  const done = await client.req('POST', '/api/auth/totp/enroll', { code: await totp(enroll.secret) });
+  if (done.status !== 200) throw new Error(`enroll ${done.status} ${done.body}`);
+  return { secret: enroll.secret, recoveryCodes: (done.json() as { recoveryCodes: string[] }).recoveryCodes };
+}
+
+/** Premier démarrage : création du premier compte (administrateur) puis activation de son MFA. */
 export async function setupAdmin(
   app: FastifyInstance,
 ): Promise<{ client: Client; secret: string; recoveryCodes: string[] }> {
   const client = new Client(app);
   await client.req('GET', '/api/auth/state');
-  const setup = await client.req('POST', '/api/auth/setup', ADMIN);
-  if (setup.status !== 200) throw new Error(`setup ${setup.status} ${setup.body}`);
-  const enroll = (await client.req('GET', '/api/auth/totp/enroll')).json() as { secret: string };
-  const done = await client.req('POST', '/api/auth/totp/enroll', { code: await totp(enroll.secret) });
-  if (done.status !== 200) throw new Error(`enroll ${done.status} ${done.body}`);
-  return {
-    client,
-    secret: enroll.secret,
-    recoveryCodes: (done.json() as { recoveryCodes: string[] }).recoveryCodes,
-  };
+  const setup = await client.req('POST', '/api/auth/register', ADMIN);
+  if (setup.status !== 200) throw new Error(`register ${setup.status} ${setup.body}`);
+  return { client, ...(await enableMfa(client, ADMIN.password)) };
 }
 
 export async function reauth(
@@ -207,7 +213,6 @@ export async function createAndLogin(
     password: user.password,
   });
   if (login.status !== 200) throw new Error(`login ${login.status} ${login.body}`);
-  const enroll = (await client.req('GET', '/api/auth/totp/enroll')).json() as { secret: string };
-  await client.req('POST', '/api/auth/totp/enroll', { code: await totp(enroll.secret) });
-  return { client, secret: enroll.secret };
+  const { secret } = await enableMfa(client, user.password);
+  return { client, secret };
 }

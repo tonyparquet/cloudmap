@@ -3,7 +3,7 @@ import rateLimit from '@fastify/rate-limit';
 import { redactString } from '@cloudmap/security';
 import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
-import { Audit } from './audit.ts';
+import type { Audit } from './audit.ts';
 import { LoginLimiter } from './auth/ratelimit.ts';
 import { readCookie, Sessions } from './auth/sessions.ts';
 import { Oidc } from './auth/oidc.ts';
@@ -16,19 +16,25 @@ import { createLogger } from './logger.ts';
 import { registerAdminRoutes } from './routes/admin.ts';
 import { registerConfigRoutes } from './routes/config.ts';
 import { registerCredentialRoutes } from './routes/credentials.ts';
+import { registerFolderRoutes } from './routes/folders.ts';
 import { registerProfileRoutes, seedDemo } from './routes/profiles.ts';
 import { registerMultiRoutes } from './routes/multi.ts';
 import { registerSnapshotRoutes } from './routes/snapshots.ts';
 import { registerStaticRoutes } from './routes/static.ts';
-import { ScanManager } from './scans.ts';
-import { Storage } from './storage.ts';
+import type { ScanManager } from './scans.ts';
+import type { Storage } from './storage.ts';
 import { tlsOptions } from './tls.ts';
-import { Vault } from './vault.ts';
+import type { Vault } from './vault.ts';
+import { createWorkspace, GUEST_USER, Guests, WorkspaceRouter, type Workspace } from './workspace.ts';
 import { StartupError } from './config.ts';
 import { UpdateChecker } from './updates.ts';
 import { APP_VERSION } from './version.ts';
 
-/** Dépendances partagées par les routes. */
+/**
+ * Dépendances partagées par les routes. `db`, `audit`, `vault`, `storage` et `scans` désignent l'espace
+ * de la requête en cours (invité ou comptes) ; `main` est toujours celui des comptes (authentification,
+ * administration).
+ */
 export interface Ctx {
   config: ServerConfig;
   db: Db;
@@ -41,6 +47,8 @@ export interface Ctx {
   scans: ScanManager;
   updates: UpdateChecker;
   oidc?: Oidc;
+  main: Workspace;
+  guests: Guests;
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -63,11 +71,14 @@ export async function buildApp(
     db.close();
     throw new StartupError([keyProblem]);
   }
-  const audit = new Audit(db);
-  const storage = new Storage(db, config.dataDir, config.configDir, config.app);
+  const main = createWorkspace(db, config, { dataDir: config.dataDir, guest: false });
+  const router = new WorkspaceRouter(main);
+  const guests = new Guests(config, (w) => {
+    if (config.demoMode) seedDemo(w, config.appRoot);
+  });
   const ctx: Ctx = {
     config,
-    db,
+    db: router.proxy((w) => w.db),
     log,
     sessions: new Sessions(db, config.app.session),
     limiter: new LoginLimiter(
@@ -75,10 +86,12 @@ export async function buildApp(
       config.app.rateLimit.loginAttempts,
       config.app.rateLimit.loginWindowMinutes,
     ),
-    audit,
-    vault: new Vault(db, config.masterKey, config.app.credentials, config.hubCredentials),
-    storage,
-    scans: new ScanManager(storage, audit, config.app),
+    audit: router.proxy((w) => w.audit),
+    vault: router.proxy((w) => w.vault),
+    storage: router.proxy((w) => w.storage),
+    scans: router.proxy((w) => w.scans),
+    main,
+    guests,
     updates: new UpdateChecker(config.app.updates, APP_VERSION, config.updatesToken, opts.fetchImpl),
     ...(config.oidc ? { oidc: new Oidc(config.oidc, config.publicOrigin) } : {}),
   };
@@ -111,10 +124,20 @@ export async function buildApp(
     return { id: u.id, username: u.username, role: u.role, groups };
   };
 
-  app.addHook('onRequest', async (req) => {
+  // Session et espace de travail : le reste de la requête s'exécute dans l'espace de la session
+  // (invité en mémoire, ou comptes sur disque).
+  app.addHook('onRequest', (req, _reply, done) => {
     req.nonce = newNonce();
     const session = ctx.sessions.find(readCookie(req.headers.cookie));
-    if (session) {
+    let space: Workspace | undefined;
+    if (session?.guest) {
+      space = guests.get(session.family);
+      if (space) {
+        ctx.sessions.touch(session);
+        req.session = session;
+        req.user = GUEST_USER;
+      } else ctx.sessions.destroy(session);
+    } else if (session) {
       ctx.sessions.touch(session);
       req.session = session;
       if (session.stage === 'full' && session.user_id) {
@@ -126,6 +149,11 @@ export async function buildApp(
         }
       }
     }
+    if (space) router.run(space, done);
+    else done();
+  });
+
+  app.addHook('onRequest', async (req) => {
     const url = req.url;
     if (!url.startsWith('/api/')) return;
     // CSRF : toute requête non-GET exige Origin = PUBLIC_ORIGIN et le jeton synchronisé de la session.
@@ -180,6 +208,7 @@ export async function buildApp(
 
   registerAuthRoutes(app, ctx);
   registerProfileRoutes(app, ctx);
+  registerFolderRoutes(app, ctx);
   registerCredentialRoutes(app, ctx);
   registerSnapshotRoutes(app, ctx);
   registerMultiRoutes(app, ctx);
@@ -187,15 +216,20 @@ export async function buildApp(
   registerConfigRoutes(app, ctx);
   await registerStaticRoutes(app, ctx);
 
-  if (config.demoMode) seedDemo(ctx);
+  if (config.demoMode) seedDemo(main, config.appRoot);
 
   const timer = setInterval(() => {
-    for (const family of ctx.sessions.purge()) ctx.vault.wipeFamily(family);
-    ctx.vault.purgeExpired();
+    for (const family of ctx.sessions.purge()) {
+      main.vault.wipeFamily(family);
+      guests.drop(family);
+    }
+    main.vault.purgeExpired();
+    for (const family of guests.families()) guests.get(family)?.vault.purgeExpired();
   }, 60_000);
   timer.unref();
   app.addHook('onClose', async () => {
     clearInterval(timer);
+    for (const family of guests.families()) guests.drop(family);
     db.close();
   });
   return { app, ctx };

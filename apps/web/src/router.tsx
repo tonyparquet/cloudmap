@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { create } from 'zustand';
 
 /** Routeur minimal (History API) : chemins à paramètres `:id`. */
@@ -28,11 +28,16 @@ export function match(pattern: string, path: string): Record<string, string> | n
   return params;
 }
 
-export function Link({ to, children, className }: { to: string; children: ReactNode; className?: string }) {
+/** Lien interne ; les autres attributs (aria-label, title…) sont transmis à l'ancre. */
+export function Link({
+  to,
+  children,
+  ...rest
+}: { to: string; children: ReactNode } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'onClick'>) {
   return (
     <a
+      {...rest}
       href={to}
-      className={className}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();

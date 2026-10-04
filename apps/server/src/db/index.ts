@@ -16,6 +16,14 @@ export function openDb(dataDir: string): Db {
   return db;
 }
 
+/** Base en mémoire d'un espace invité : même schéma, aucune écriture sur disque. */
+export function openMemoryDb(): Db {
+  const db = new Database(':memory:');
+  db.pragma('foreign_keys = ON');
+  migrate(db);
+  return db;
+}
+
 export function migrate(db: Db): void {
   db.exec(
     'CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)',

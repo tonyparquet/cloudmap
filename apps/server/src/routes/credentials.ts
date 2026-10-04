@@ -233,8 +233,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     let auth: Profile['auth'];
     try {
       if (input.type === 'hub-role') {
-        if (config.hubCredentials !== 'default-chain')
-          fail('HUB_CREDENTIALS=default-chain est requis pour ce mode');
+        if (!vault.hubAvailable) fail('HUB_CREDENTIALS=default-chain est requis pour ce mode');
         temp = await assumeRole(hubCredentials(), input.roleArn, input.externalId, dur);
         auth = { kind: 'assume-role-hub', roleArn: input.roleArn, externalId: input.externalId };
       } else {
@@ -327,7 +326,7 @@ export function registerCredentialRoutes(app: FastifyInstance, ctx: Ctx): void {
     requireElevated(req, reauth());
     return {
       credentials: infoFor(req.session?.family ?? '', profile),
-      hubAvailable: config.hubCredentials === 'default-chain',
+      hubAvailable: vault.hubAvailable,
     };
   });
 

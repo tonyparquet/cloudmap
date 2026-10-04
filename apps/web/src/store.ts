@@ -8,13 +8,19 @@ export interface AuthUser {
   username: string;
   role: Role;
   groups: string[];
+  /** Session invitée : rien n'est enregistré. */
+  guest?: boolean;
 }
 
 export interface AuthState {
   authMode: 'local' | 'oidc';
   setupRequired: boolean;
+  registrationOpen: boolean;
+  guestsAllowed: boolean;
+  guest: boolean;
   stage: 'anon' | 'mfa' | 'enroll' | 'full';
   demoMode: boolean;
+  mfaEnabled?: boolean;
   user?: AuthUser;
 }
 

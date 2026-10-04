@@ -62,6 +62,14 @@ export const appSettingsSchema = z.object({
       loginWindowMinutes: z.number().int().min(15).default(15),
     })
     .default({ apiPerMinute: 600, loginAttempts: 5, loginWindowMinutes: 15 }),
+  // Accès sans compte : invités (espace en mémoire, aucune trace) et création libre de comptes.
+  access: z
+    .object({
+      guests: z.boolean().default(true),
+      selfRegistration: z.boolean().default(true),
+      maxGuests: z.number().int().min(1).max(1000).default(50),
+    })
+    .default({ guests: true, selfRegistration: true, maxGuests: 50 }),
   // Recherche de mise à jour : flux des releases (API GitHub), consulté côté serveur et mis en cache.
   updates: z
     .object({

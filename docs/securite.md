@@ -10,7 +10,7 @@
 | Action destructrice sur AWS                    | Appels en lecture seule uniquement, vérifiés par un test statique de liste blanche ; politique IAM fournie avec refus explicite des lectures de secrets.                                      |
 | Fuite de secrets applicatifs du client         | Aucune lecture de valeur (Secrets Manager, SSM, variables d'environnement Lambda/ECS, buildspec) : noms et métadonnées seulement.                                                             |
 | Usurpation de session, CSRF, clickjacking, XSS | Cookie `__Host-` Secure HttpOnly SameSite=Strict, identifiant opaque de 256 bits haché en base, jeton CSRF synchronisé + contrôle d'`Origin`, CSP stricte à nonce, `frame-ancestors 'none'`.  |
-| Force brute                                    | Argon2id (64 Mio, t=3), 5 essais / 15 min par compte et par IP puis verrouillage progressif, TOTP obligatoire avec anti-rejeu, limitation globale de l'API.                                   |
+| Force brute                                    | Argon2id (64 Mio, t=3), 5 essais / 15 min par compte et par IP puis verrouillage progressif, TOTP (activable par compte) avec anti-rejeu, limitation globale de l'API.                        |
 | Accès entre clients                            | Profils cloisonnés par groupes (`allowedGroups`), rôles `admin` / `editor` / `viewer`, profil d'un autre groupe invisible (404).                                                              |
 | SSRF via les sondes                            | HTTPS par défaut, IP privées / link-local / réservées bloquées (sauf option explicite du profil), métadonnées cloud toujours bloquées, contrôle à la résolution DNS, redirections revalidées. |
 | Import malveillant                             | Schéma zod strict, taille maximale, rejet de `__proto__` / `constructor`.                                                                                                                     |
@@ -19,14 +19,14 @@
 
 ## Application de bureau (poste local)
 
-| Menace                                                                              | Mesures                                                                                                                                                                                     |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Accès depuis le réseau                                                              | Serveur lié à `127.0.0.1` uniquement ; aucune règle de pare-feu ni port exposé.                                                                                                             |
-| Autre processus local qui se fait passer pour l'application, ou interception locale | TLS 1.3 avec certificat généré par installation et **épinglé** par la fenêtre ; authentification + TOTP inchangées : un processus local qui joint le port doit tout de même s'authentifier. |
-| Vol de la clé maître sur disque                                                     | Clé chiffrée par le système (DPAPI / Trousseau), liée à la session de l'utilisateur ; jamais écrite en clair (`loadConfig` la reçoit en mémoire).                                           |
-| Contenu web malveillant dans la fenêtre                                             | `contextIsolation`, `sandbox`, pas de Node, aucune permission, navigation et nouvelles fenêtres limitées à l'origine locale, CSP stricte du serveur.                                        |
-| Détournement du binaire Electron                                                    | Fusibles : pas de `ELECTRON_RUN_AS_NODE`, pas d'inspecteur ni de `NODE_OPTIONS`, archive à intégrité vérifiée ; signature Authenticode / Developer ID dès que fournie.                      |
-| Logiciel malveillant avec les droits de l'utilisateur                               | Hors périmètre (il peut lire la session du système) ; les identifiants AWS restent temporaires et en mémoire par défaut, les clés longues ne sont mémorisées que sur demande.               |
+| Menace                                                                              | Mesures                                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accès depuis le réseau                                                              | Serveur lié à `127.0.0.1` uniquement ; aucune règle de pare-feu ni port exposé.                                                                                                                |
+| Autre processus local qui se fait passer pour l'application, ou interception locale | TLS 1.3 avec certificat généré par installation et **épinglé** par la fenêtre ; authentification inchangée (et mode invité limité à un espace en mémoire, sans accès aux données des comptes). |
+| Vol de la clé maître sur disque                                                     | Clé chiffrée par le système (DPAPI / Trousseau), liée à la session de l'utilisateur ; jamais écrite en clair (`loadConfig` la reçoit en mémoire).                                              |
+| Contenu web malveillant dans la fenêtre                                             | `contextIsolation`, `sandbox`, pas de Node, aucune permission, navigation et nouvelles fenêtres limitées à l'origine locale, CSP stricte du serveur.                                           |
+| Détournement du binaire Electron                                                    | Fusibles : pas de `ELECTRON_RUN_AS_NODE`, pas d'inspecteur ni de `NODE_OPTIONS`, archive à intégrité vérifiée ; signature Authenticode / Developer ID dès que fournie.                         |
+| Logiciel malveillant avec les droits de l'utilisateur                               | Hors périmètre (il peut lire la session du système) ; les identifiants AWS restent temporaires et en mémoire par défaut, les clés longues ne sont mémorisées que sur demande.                  |
 
 ## Identifiants AWS
 
@@ -46,11 +46,30 @@
 ## Authentification
 
 - Mode local : assistant du premier administrateur, mot de passe ≥ 14 caractères absent de la liste
-  locale de mots de passe courants, TOTP obligatoire pour tous, 10 codes de secours à usage unique.
+  locale de mots de passe courants, TOTP activable par chaque compte (« Mon compte »), 10 codes de secours
+  à usage unique ; une fois activé, exigé à chaque connexion et ré-authentification.
 - Mode OIDC : Authorization Code + PKCE, `state` et `nonce` vérifiés, groupes lus dans le jeton.
 - Sessions : inactivité 30 min, durée absolue 8 h, régénération à la connexion et à l'élévation.
 - Ré-authentification (mot de passe + TOTP, ou nouvelle connexion OIDC) exigée pour les
   identifiants, la suppression d'un profil et la gestion des utilisateurs.
+
+## Mode invité et comptes facultatifs
+
+- Un visiteur peut utiliser l'outil sans compte. Son espace de travail est entièrement en mémoire
+  du serveur (base SQLite `:memory:`, snapshots et mises en page en mémoire) : rien n'est écrit dans
+  `DATA_DIR` ni dans le journal d'audit, tout disparaît à la déconnexion ou à l'expiration de la
+  session (30 min d'inactivité, 8 h au plus). Les sessions de pré-connexion sont elles aussi en mémoire.
+- Isolation : l'espace invité est choisi pour toute la requête ; un invité ne voit ni les profils des
+  comptes ni ceux des autres invités, n'a aucun droit d'administration, et **ne peut jamais utiliser
+  l'identité AWS propre de l'outil** (`HUB_CREDENTIALS`).
+- Risques acceptés quand le mode invité est actif sur un serveur exposé : n'importe qui atteignant
+  l'URL peut utiliser l'outil comme scanner avec **ses propres** identifiants, et consommer de la
+  mémoire (plafond `access.maxGuests`, limitation de débit). Les identifiants saisis par un invité
+  restent soumis aux mêmes règles (jamais renvoyés, jamais journalisés).
+- Recommandation pour un serveur accessible en réseau : `access.guests: false` et
+  `access.selfRegistration: false` dans `app.yaml`, comptes créés par un administrateur, MFA activé.
+- Un invité qui crée un compte : son espace est copié dans celui des comptes (profils rattachés à son
+  groupe personnel), puis effacé.
 
 ## Rotation de la clé maître
 

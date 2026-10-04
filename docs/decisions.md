@@ -399,3 +399,24 @@ external`, `externalType`.
     intacts) ;
   - liste des mots de passe refusés : l'ancien nom y reste (toujours devinable).
 - Préférence de thème du navigateur (clé locale renommée) : non reprise, simple réglage.
+
+## Comptes facultatifs, mode invité et dossiers
+
+- Décision de l'utilisateur : compte facultatif sur le bureau **et** sur le serveur, MFA activable plus
+  tard, travail de l'invité conservé s'il crée un compte. Réglages `app.yaml > access` (invités,
+  création libre, plafond d'invités) activés par défaut, désactivables par l'exploitant.
+- Espace invité : base SQLite `:memory:` (mêmes migrations) et fichiers en mémoire ; les routes
+  utilisent l'espace de la requête via un aiguillage par `AsyncLocalStorage` (aucune route réécrite).
+  Authentification et administration utilisent toujours l'espace des comptes.
+- Sessions : seules celles des comptes connectés sont en base ; pré-connexion, attente du code TOTP et
+  invités restent en mémoire (une visite sans compte ne laisse ni ligne ni adresse IP sur disque).
+- Invité : aucune entrée d'audit ; jamais `HUB_CREDENTIALS` ; ré-authentification sans objet
+  (rien de persistant). Profils de démonstration copiés dans chaque espace invité en mode démo.
+- Inscription : le premier compte est administrateur ; les suivants sont éditeurs d'un groupe
+  personnel `perso.<identifiant>`, si bien que leurs profils ne sont visibles que d'eux (et des
+  administrateurs).
+- MFA : activation après ré-authentification (mot de passe), désactivation après ré-authentification
+  avec le code ; l'activation régénère la session et retire l'élévation.
+- Dossiers : personnels (par utilisateur), sans effet sur les droits ; suppression d'un dossier =
+  son contenu remonte d'un niveau ; cycles refusés côté serveur. Glisser-déposer HTML5 natif, avec
+  le menu « Ranger dans… » comme alternative au clavier et au pointeur simple (WCAG 2.5.7).

@@ -7,6 +7,19 @@
 
 ## [Non publié]
 
+### Ajouté
+
+- Compte facultatif : à l'ouverture, se connecter, créer un compte (le premier administre
+  l'installation) ou continuer **sans compte**. En mode invité, rien n'est enregistré ni journalisé :
+  tout disparaît à la déconnexion. Un invité qui crée un compte garde son travail.
+- Double authentification activable (et désactivable) plus tard, depuis « Mon compte ».
+- Dossiers et sous-dossiers pour ranger les profils et leurs diagrammes, avec glisser-déposer.
+- Réglages `access` dans `app.yaml` pour désactiver le mode invité ou la création libre de comptes.
+
+### Corrigé
+
+- Les liens de l'interface transmettent leurs libellés d'accessibilité (logo, badge de mise à jour).
+
 ## [1.2.1] - 2026-10-04
 
 ### Modifié

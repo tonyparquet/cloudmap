@@ -32,7 +32,9 @@ const updateUserSchema = z.strictObject({
 });
 
 export function registerAdminRoutes(app: FastifyInstance, ctx: Ctx): void {
-  const { db, audit, config } = ctx;
+  // Comptes et journal : toujours l'espace des comptes (jamais celui d'un invité).
+  const { db, audit } = ctx.main;
+  const { config } = ctx;
   /** Gestion des utilisateurs et groupes : administrateur + ré-authentification récente. */
   const admin = (req: Parameters<typeof requireRole>[0]) => {
     const user = requireRole(req, 'admin');

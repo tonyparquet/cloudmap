@@ -49,7 +49,7 @@ export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
         provider === 'aws'
           ? (config.app.scanner.defaultServices ?? SERVICES.map((s) => s.key))
           : services.map((s) => s.key),
-      hubAvailable: config.hubCredentials === 'default-chain',
+      hubAvailable: ctx.vault.hubAvailable,
     };
   });
 

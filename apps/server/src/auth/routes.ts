@@ -5,7 +5,9 @@ import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import { keyVersion } from '../db/index.ts';
 import { AppError, badRequest, forbidden, notFound, parse, tooMany, unauthorized } from '../errors.ts';
-import { requireUser, type AuthUser } from '../http.ts';
+import { requireElevated, requireUser, type AuthUser } from '../http.ts';
+import { adoptGuestWorkspace } from '../guest-transfer.ts';
+import { GUEST_USER } from '../workspace.ts';
 import type { OidcPending } from './oidc.ts';
 import {
   generateRecoveryCodes,
@@ -40,7 +42,8 @@ const credentialsSchema = z.strictObject({ username: usernameSchema, password: z
 const codeSchema = z.strictObject({ code: z.string().trim().min(6).max(20) });
 const reauthSchema = z.strictObject({
   password: z.string().min(1).max(256),
-  code: z.string().trim().min(6).max(20),
+  // Exigé seulement si le compte a activé le MFA.
+  code: z.string().trim().min(6).max(20).optional(),
 });
 
 const OIDC_COOKIE = '__Host-oidc';
@@ -51,8 +54,13 @@ export function totpAad(userId: string) {
   return `totp|${userId}`;
 }
 
+/** Groupe personnel d'un compte créé librement : ses profils ne sont visibles que de lui (et des admins). */
+export const personalGroup = (username: string) => `perso.${username.replace(/[^\w.-]/g, '-')}`.slice(0, 64);
+
 export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
-  const { db, sessions, audit, limiter, config } = ctx;
+  // Comptes, sessions et journal : toujours l'espace des comptes, même depuis une session invitée.
+  const { db, audit } = ctx.main;
+  const { sessions, limiter, config } = ctx;
   const oidcPending = new Map<string, OidcPending & { sessionHash?: string; userId?: string }>();
 
   const userById = (id: string | null) =>
@@ -112,37 +120,96 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
     const elevatedUntil = session.elevated_at
       ? session.elevated_at + config.app.session.reauthMinutes * 60_000
       : undefined;
+    const firstAccount = config.authMode === 'local' && usersCount() === 0;
     return {
       authMode: config.authMode,
-      setupRequired: config.authMode === 'local' && usersCount() === 0,
+      setupRequired: firstAccount,
+      registrationOpen: config.authMode === 'local' && (firstAccount || config.app.access.selfRegistration),
+      guestsAllowed: config.app.access.guests,
+      guest: !!session.guest,
       stage: session.stage,
       csrfToken: session.csrf_token,
       demoMode: config.demoMode,
       ...(req.user ? { user: req.user } : {}),
+      ...(req.user && !req.user.guest ? { mfaEnabled: !!userById(req.user.id)?.totp_enabled } : {}),
       ...(elevatedUntil && elevatedUntil > Date.now() ? { elevatedUntil } : {}),
     };
   });
 
-  /** Assistant du premier administrateur (mode local, tant qu'aucun compte n'existe). */
-  app.post('/api/auth/setup', async (req, reply) => {
-    localOnly();
-    const session = requireSession(req, 'anon');
-    const body = parse(credentialsSchema, req.body);
-    const problem = passwordProblem(body.password, body.username);
-    if (problem) throw badRequest(problem, 'MOT_DE_PASSE_FAIBLE');
-    const hash = await hashPassword(body.password);
-    const id = randomUUID();
-    const now = new Date().toISOString();
-    db.transaction(() => {
-      if (usersCount() > 0) throw forbidden('La configuration initiale a déjà été effectuée');
-      db.prepare(
-        'INSERT INTO users (id, username, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-      ).run(id, body.username, hash, 'admin', now, now);
-    })();
-    const row = regenerate(reply, session, { stage: 'enroll', user_id: id }, true);
-    audit.log({ user: body.username, ip: req.ip, action: 'setup.administrateur', result: 'succes' });
-    return { stage: row.stage, csrfToken: row.csrf_token };
-  });
+  /**
+   * Création de compte (mode local) : le premier compte devient administrateur ; les suivants, si la
+   * création libre est ouverte, sont éditeurs de leur groupe personnel. MFA activable plus tard. Depuis
+   * une session invitée, le travail en cours est transféré dans le nouveau compte.
+   */
+  app.post(
+    '/api/auth/register',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      localOnly();
+      const session = requireSession(req);
+      if (session.stage !== 'anon' && !session.guest) throw forbidden('Déjà connecté');
+      const body = parse(credentialsSchema, req.body);
+      const problem = passwordProblem(body.password, body.username);
+      if (problem) throw badRequest(problem, 'MOT_DE_PASSE_FAIBLE');
+      const guestSpace = session.guest ? ctx.guests.get(session.family) : undefined;
+      if (guestSpace?.scans.anyRunning())
+        throw badRequest('Un scan est en cours : attendez sa fin avant de créer le compte', 'SCAN_EN_COURS');
+      const hash = await hashPassword(body.password);
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      const group = personalGroup(body.username);
+      const role = db.transaction((): UserRow['role'] => {
+        const first = usersCount() === 0;
+        if (!first && !config.app.access.selfRegistration)
+          throw forbidden('La création de compte est réservée aux administrateurs', 'INSCRIPTION_FERMEE');
+        if (userByName(body.username))
+          throw badRequest('Cet identifiant est déjà utilisé', 'IDENTIFIANT_PRIS');
+        db.prepare(
+          'INSERT INTO users (id, username, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ).run(id, body.username, hash, first ? 'admin' : 'editor', now, now);
+        if (!first) {
+          db.prepare('INSERT OR IGNORE INTO groups (name, created_at) VALUES (?, ?)').run(group, now);
+          db.prepare('INSERT INTO user_groups (user_id, group_name) VALUES (?, ?)').run(id, group);
+        }
+        return first ? 'admin' : 'editor';
+      })();
+      const transferred = guestSpace
+        ? adoptGuestWorkspace(ctx.main, guestSpace, {
+            userId: id,
+            group: role === 'admin' ? undefined : group,
+          })
+        : undefined;
+      if (guestSpace) {
+        guestSpace.vault.moveFamilyTo(ctx.main.vault, session.family);
+        ctx.guests.drop(session.family);
+      }
+      const row = regenerate(reply, session, { stage: 'full', user_id: id, elevated_at: null }, true);
+      audit.log({
+        user: body.username,
+        ip: req.ip,
+        action: role === 'admin' ? 'setup.administrateur' : 'compte.creation',
+        result: 'succes',
+        ...(transferred ? { details: { reprisInvite: transferred } } : {}),
+      });
+      const user = userById(id);
+      return { csrfToken: row.csrf_token, user: user ? publicUser(user) : undefined, transferred };
+    },
+  );
+
+  /** Session invitée : espace en mémoire, aucune donnée enregistrée ni journalisée. */
+  app.post(
+    '/api/auth/guest',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      if (!config.app.access.guests) throw forbidden('Le mode invité est désactivé', 'INVITE_DESACTIVE');
+      const session = requireSession(req, 'anon');
+      sessions.destroy(session);
+      const created = sessions.create('full', GUEST_USER.id, req.ip, session.family, true);
+      ctx.guests.create(session.family);
+      reply.header('set-cookie', sessionCookie(created.token));
+      return { csrfToken: created.row.csrf_token, user: GUEST_USER };
+    },
+  );
 
   app.post('/api/auth/login', async (req, reply) => {
     localOnly();
@@ -166,17 +233,48 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
       audit.log({ user: body.username, ip: req.ip, action: 'connexion', result: 'echec' });
       throw INVALID();
     }
-    const stage: Stage = user.totp_enabled ? 'mfa' : 'enroll';
+    const stage: Stage = user.totp_enabled ? 'mfa' : 'full';
     const row = regenerate(reply, session, { stage, user_id: user.id, elevated_at: null }, true);
-    return { stage, csrfToken: row.csrf_token };
+    if (stage === 'full') {
+      limiter.succeed(keys);
+      audit.log({ user: user.username, ip: req.ip, action: 'connexion', result: 'succes' });
+    }
+    return { stage, csrfToken: row.csrf_token, ...(stage === 'full' ? { user: publicUser(user) } : {}) };
   });
 
-  /** Enrôlement TOTP obligatoire (premier login de chaque compte local). */
-  app.get('/api/auth/totp/enroll', async (req) => {
-    localOnly();
-    const session = requireSession(req, 'enroll');
-    const user = userById(session.user_id);
+  /** Compte connecté : état du MFA (activable et désactivable à tout moment). */
+  app.get('/api/auth/account', async (req) => {
+    const current = requireUser(req);
+    if (current.guest) throw forbidden('Session invitée : aucun compte');
+    const user = userById(current.id);
     if (!user) throw unauthorized();
+    const left = (
+      db
+        .prepare('SELECT COUNT(*) AS n FROM recovery_codes WHERE user_id = ? AND used_at IS NULL')
+        .get(user.id) as { n: number }
+    ).n;
+    return {
+      username: user.username,
+      role: user.role,
+      local: config.authMode === 'local',
+      mfaEnabled: !!user.totp_enabled,
+      recoveryCodesLeft: left,
+    };
+  });
+
+  /** Activation du MFA (après ré-authentification) : secret TOTP à scanner. */
+  const enrollingUser = (req: FastifyRequest): UserRow => {
+    localOnly();
+    const current = requireElevated(req, config.app.session.reauthMinutes);
+    if (current.guest) throw forbidden('Session invitée : créez un compte pour activer le MFA');
+    const user = userById(current.id);
+    if (!user) throw unauthorized();
+    if (user.totp_enabled) throw badRequest('Le MFA est déjà activé', 'MFA_DEJA_ACTIF');
+    return user;
+  };
+
+  app.get('/api/auth/totp/enroll', async (req) => {
+    const user = enrollingUser(req);
     let secret = !user.totp_enabled ? totpSecret(user) : undefined;
     if (!secret) {
       secret = newTotpSecret();
@@ -191,11 +289,10 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
   });
 
   app.post('/api/auth/totp/enroll', async (req, reply) => {
-    localOnly();
-    const session = requireSession(req, 'enroll');
-    const user = userById(session.user_id);
-    const secret = user ? totpSecret(user) : undefined;
-    if (!user || !secret) throw badRequest('Enrôlement non commencé');
+    const user = enrollingUser(req);
+    const session = requireSession(req, 'full');
+    const secret = totpSecret(user);
+    if (!secret) throw badRequest('Enrôlement non commencé');
     const keys = loginKeys(user.username, req.ip);
     if (limiter.isLocked(keys)) throw tooMany();
     const body = parse(codeSchema, req.body);
@@ -219,10 +316,24 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
         );
     })();
     limiter.succeed(keys);
-    const row = regenerate(reply, session, { stage: 'full' }, true);
+    const row = regenerate(reply, session, { elevated_at: null }, false);
     audit.log({ user: user.username, ip: req.ip, action: 'mfa.activation', result: 'succes' });
-    audit.log({ user: user.username, ip: req.ip, action: 'connexion', result: 'succes' });
     return { recoveryCodes: codes, csrfToken: row.csrf_token, user: publicUser(user) };
+  });
+
+  /** Désactivation du MFA (après ré-authentification avec le code) : secret et codes de secours effacés. */
+  app.delete('/api/auth/totp', async (req) => {
+    localOnly();
+    const current = requireElevated(req, config.app.session.reauthMinutes);
+    if (current.guest) throw forbidden();
+    db.transaction(() => {
+      db.prepare(
+        'UPDATE users SET totp_secret = NULL, totp_enabled = 0, totp_last_step = 0, updated_at = ? WHERE id = ?',
+      ).run(new Date().toISOString(), current.id);
+      db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(current.id);
+    })();
+    audit.log({ user: current.username, ip: req.ip, action: 'mfa.desactivation', result: 'succes' });
+    return { ok: true };
   });
 
   /** Second facteur : code TOTP (anti-rejeu) ou code de secours à usage unique. */
@@ -264,10 +375,14 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
   app.post('/api/auth/logout', async (req, reply) => {
     const session = req.session;
     if (session) {
-      ctx.vault.wipeFamily(session.family);
       sessions.destroy(session);
-      if (req.user)
-        audit.log({ user: req.user.username, ip: req.ip, action: 'deconnexion', result: 'succes' });
+      // Invité : l'espace entier disparaît (profils, snapshots, identifiants), sans journal.
+      if (session.guest) ctx.guests.drop(session.family);
+      else {
+        ctx.main.vault.wipeFamily(session.family);
+        if (req.user)
+          audit.log({ user: req.user.username, ip: req.ip, action: 'deconnexion', result: 'succes' });
+      }
     }
     reply.header('set-cookie', clearSessionCookie);
     return { ok: true };
@@ -277,6 +392,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
   app.post('/api/auth/reauth', async (req, reply) => {
     const user = requireUser(req);
     const session = requireSession(req, 'full');
+    if (user.guest) throw forbidden('Session invitée : aucune ré-authentification nécessaire');
     if (config.authMode === 'oidc' && ctx.oidc) {
       const { url, pending } = await ctx.oidc.start(true);
       const id = randomBytes(24).toString('base64url');
@@ -290,7 +406,8 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx): void {
     if (limiter.isLocked(keys)) throw tooMany();
     const body = parse(reauthSchema, req.body);
     const ok =
-      (await verifyPassword(row.password_hash, body.password)) && (await verifySecondFactor(row, body.code));
+      (await verifyPassword(row.password_hash, body.password)) &&
+      (!row.totp_enabled || (!!body.code && (await verifySecondFactor(row, body.code))));
     if (!ok) {
       limiter.fail(keys);
       audit.log({ user: row.username, ip: req.ip, action: 'reauth', result: 'echec' });

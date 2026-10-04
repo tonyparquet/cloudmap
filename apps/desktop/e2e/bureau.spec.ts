@@ -8,7 +8,7 @@ const desktop = fileURLToPath(new URL('..', import.meta.url));
 const root = join(desktop, '..', '..');
 const PASSWORD = 'Une-phrase-de-passe-solide-42';
 
-test('application de bureau : serveur local TLS, compte + TOTP, démo, navigation verrouillée', async () => {
+test('application de bureau : serveur local TLS, compte puis MFA, démo, navigation verrouillée', async () => {
   const config = mkdtempSync(join(root, '.tmp', 'bureau-'));
   const app = await electron.launch({
     executablePath: join(desktop, 'node_modules', 'electron', 'dist', 'electron'),
@@ -18,14 +18,21 @@ test('application de bureau : serveur local TLS, compte + TOTP, démo, navigatio
   const win = await app.firstWindow();
   await expect(win).toHaveURL(/^https:\/\/127\.0\.0\.1:\d+\/login$/);
 
-  // Premier lancement : administrateur local + TOTP obligatoire, comme la version serveur.
+  // Premier lancement : création du compte administrateur (MFA facultatif), puis activation du MFA.
+  await expect(win.getByRole('button', { name: 'Continuer sans compte' })).toBeVisible();
   await win.fill('input[name=username]', 'admin');
   await win.fill('input[name=password]', PASSWORD);
   await win.fill('input[name=confirm]', PASSWORD);
-  await win.getByRole('button', { name: 'Créer' }).click();
+  await win.getByRole('button', { name: 'Créer un compte' }).click();
+  await expect(win).toHaveURL(/\/profils$/);
+  await win.getByRole('link', { name: 'Mon compte' }).click();
+  await win.getByRole('button', { name: 'Activer la double authentification' }).click();
+  // Ré-authentification par mot de passe (pas encore de MFA).
+  await win.getByRole('dialog').locator('input[type=password]').fill(PASSWORD);
+  await win.getByRole('dialog').getByRole('button', { name: 'Confirmer' }).click();
   const secret = (await win.getByTestId('totp-secret').textContent())?.trim() ?? '';
   await win.fill('input[name=code]', await generate({ secret }));
-  await win.getByRole('button', { name: 'Activer' }).click();
+  await win.getByRole('button', { name: 'Activer', exact: true }).click();
   // Bouton « Copier » des codes de secours : le presse-papiers reçoit bien les codes.
   const codes = await win.getByTestId('codes-secours').locator('span').allTextContents();
   await win.getByRole('button', { name: 'Copier', exact: true }).click();
@@ -40,7 +47,8 @@ test('application de bureau : serveur local TLS, compte + TOTP, démo, navigatio
       ),
     ),
   ).toBe('refusé');
-  await win.getByRole('button', { name: "Continuer vers l'application" }).click();
+  await win.getByRole('button', { name: 'Terminé' }).click();
+  await win.getByRole('link', { name: 'Profils' }).first().click();
   await win
     .getByTestId('profil')
     .filter({ hasText: 'Démo' })

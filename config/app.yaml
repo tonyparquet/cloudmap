@@ -63,6 +63,15 @@ rateLimit:
   loginAttempts: 5 # par compte et par adresse IP (max 5)
   loginWindowMinutes: 15
 
+# Accès sans compte. Invités : espace de travail en mémoire du serveur, rien n'est enregistré, tout
+# disparaît à la déconnexion ou à l'expiration de la session. Création de compte libre : chacun peut
+# s'inscrire depuis la page de connexion (le premier compte devient administrateur). Sur un serveur
+# exposé, désactivez l'un ou l'autre pour réserver l'outil aux comptes créés par un administrateur.
+access:
+  guests: true
+  selfRegistration: true
+  maxGuests: 50 # sessions invitées simultanées au plus
+
 # Recherche de mise à jour (page Configuration, badge « Mise à jour » des administrateurs) : releases
 # du dépôt, consultées par le serveur. Dépôt privé : jeton en lecture via UPDATES_TOKEN_FILE.
 updates:

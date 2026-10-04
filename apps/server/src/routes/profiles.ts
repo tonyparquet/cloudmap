@@ -15,6 +15,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import type { Db } from '../db/index.ts';
+import type { Storage } from '../storage.ts';
 import { badRequest, forbidden, notFound, parse } from '../errors.ts';
 import {
   canEdit,
@@ -372,17 +373,17 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
 }
 
 /** Mode démo : profils fictifs chargés depuis fixtures/ (AWS « Démo » et « Partenaire », Azure). */
-export function seedDemo(ctx: Ctx): void {
-  const dir = join(ctx.config.appRoot, 'fixtures');
+export function seedDemo(w: { db: Db; storage: Storage }, appRoot: string): void {
+  const dir = join(appRoot, 'fixtures');
   const json = (name: string): unknown => JSON.parse(readFileSync(join(dir, name), 'utf8'));
   for (const prefix of ['demo', 'demo-partenaire', 'demo-azure', 'demo-gcp']) {
     const profile = profileSchema.parse(json(`${prefix}-profile.json`));
-    saveProfile(ctx.db, profile);
+    saveProfile(w.db, profile);
     // Nouveau snapshot si la fixture a changé depuis le dernier démarrage (mise à jour de l'application).
     const snapshot = rawSnapshotSchema.parse(json(`${prefix}-snapshot.json`));
-    const latest = ctx.storage.listSnapshots(profile.id).find((r) => r.source === 'demo');
-    if (!latest || JSON.stringify(ctx.storage.loadSnapshot(latest)) !== JSON.stringify(snapshot)) {
-      ctx.storage.saveSnapshot(profile.id, snapshot, 'demo');
+    const latest = w.storage.listSnapshots(profile.id).find((r) => r.source === 'demo');
+    if (!latest || JSON.stringify(w.storage.loadSnapshot(latest)) !== JSON.stringify(snapshot)) {
+      w.storage.saveSnapshot(profile.id, snapshot, 'demo');
     }
   }
 }

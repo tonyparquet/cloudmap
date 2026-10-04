@@ -37,6 +37,10 @@ export class ScanManager {
     return this.running.has(profileId);
   }
 
+  anyRunning(): boolean {
+    return this.running.size > 0;
+  }
+
   get(id: string): ScanState | undefined {
     return this.scans.get(id);
   }

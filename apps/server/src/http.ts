@@ -11,6 +11,8 @@ export interface AuthUser {
   username: string;
   role: Role;
   groups: string[];
+  /** Session invitée : espace en mémoire, aucune donnée conservée. */
+  guest?: boolean;
 }
 
 declare module 'fastify' {
@@ -93,6 +95,8 @@ export function requireRole(req: FastifyRequest, ...roles: Role[]): AuthUser {
 /** Ré-authentification récente exigée (identifiants, suppression de profil, gestion des utilisateurs). */
 export function requireElevated(req: FastifyRequest, reauthMinutes: number): AuthUser {
   const user = requireUser(req);
+  // Invité : aucun mot de passe à redemander, et rien de persistant à protéger.
+  if (user.guest) return user;
   const at = req.session?.elevated_at;
   if (!at || Date.now() - at > reauthMinutes * 60_000) {
     throw forbidden('Ré-authentification requise pour cette action', 'REAUTH_REQUISE');

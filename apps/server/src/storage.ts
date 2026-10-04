@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { parseRules, rawSnapshotSchema, type RawSnapshot, type RuleSet } from '@cloudmap/core';
 import { parse as parseYaml } from 'yaml';
@@ -41,31 +41,62 @@ function deepMerge(base: unknown, over: unknown): unknown {
   return out;
 }
 
+/** Fichiers de données (snapshots, mises en page), chemins relatifs à DATA_DIR. */
+interface FileStore {
+  write(path: string, data: Buffer | string): void;
+  read(path: string): Buffer | undefined;
+  /** Supprime un fichier ou tout ce qui se trouve sous un dossier. */
+  remove(path: string): void;
+}
+
+function diskFiles(dataDir: string): FileStore {
+  for (const d of ['snapshots', 'layouts', 'logs']) mkdirSync(join(dataDir, d), { recursive: true });
+  return {
+    write(path, data) {
+      mkdirSync(dirname(join(dataDir, path)), { recursive: true });
+      writeFileSync(join(dataDir, path), data, { mode: 0o600 });
+    },
+    read: (path) => (existsSync(join(dataDir, path)) ? readFileSync(join(dataDir, path)) : undefined),
+    remove: (path) => rmSync(join(dataDir, path), { recursive: true, force: true }),
+  };
+}
+
+/** Espace invité : rien n'est écrit sur disque, tout disparaît avec l'espace. */
+export function memoryFiles(): FileStore {
+  const files = new Map<string, Buffer>();
+  return {
+    write: (path, data) => void files.set(path, Buffer.from(data)),
+    read: (path) => files.get(path),
+    remove(path) {
+      for (const k of [...files.keys()]) if (k === path || k.startsWith(`${path}/`)) files.delete(k);
+    },
+  };
+}
+
 /** Fichiers de DATA_DIR (snapshots gzip, mises en page) et lecture de CONFIG_DIR (règles, thème). */
 export class Storage {
   private rulesCache?: { signature: string; set: RuleSet };
+  private readonly files: FileStore;
 
+  /** `dataDir` absent : espace invité, données en mémoire uniquement. */
   constructor(
     private readonly db: Db,
-    private readonly dataDir: string,
+    dataDir: string | undefined,
     private readonly configDir: string,
     private readonly settings: AppSettings,
   ) {
-    for (const d of ['snapshots', 'layouts', 'logs']) mkdirSync(join(dataDir, d), { recursive: true });
+    this.files = dataDir ? diskFiles(dataDir) : memoryFiles();
   }
 
   // ------------------------------------------------------------------ snapshots
 
   saveSnapshot(profileId: string, snapshot: RawSnapshot, source: SnapshotRow['source']): SnapshotRow {
-    const dir = join(this.dataDir, 'snapshots', safeId(profileId));
-    mkdirSync(dir, { recursive: true });
     const id = randomUUID();
     const createdAt = new Date().toISOString();
     const file = `${createdAt.replace(/[:.]/g, '-')}-${id.slice(0, 8)}.json.gz`;
-    writeFileSync(
-      join(dir, file),
+    this.files.write(
+      `snapshots/${safeId(profileId)}/${file}`,
       gzipSync(JSON.stringify({ ...snapshot, meta: { ...snapshot.meta, profileId } })),
-      { mode: 0o600 },
     );
     const row: SnapshotRow = {
       id,
@@ -98,8 +129,25 @@ export class Storage {
   }
 
   loadSnapshot(row: SnapshotRow): RawSnapshot {
-    const path = join(this.dataDir, 'snapshots', safeId(row.profile_id), row.file);
-    return rawSnapshotSchema.parse(JSON.parse(gunzipSync(readFileSync(path)).toString('utf8')));
+    const data = this.files.read(`snapshots/${safeId(row.profile_id)}/${row.file}`);
+    if (!data) throw badRequest('Snapshot introuvable');
+    return rawSnapshotSchema.parse(JSON.parse(gunzipSync(data).toString('utf8')));
+  }
+
+  /** Contenu brut (gzip) d'un snapshot : transfert d'un espace invité vers un compte. */
+  snapshotFile(row: SnapshotRow): Buffer | undefined {
+    return this.files.read(`snapshots/${safeId(row.profile_id)}/${row.file}`);
+  }
+
+  /** Ajoute un snapshot déjà compressé avec sa ligne d'index (transfert d'un espace invité). */
+  adoptSnapshot(row: SnapshotRow, data: Buffer): void {
+    this.files.write(`snapshots/${safeId(row.profile_id)}/${row.file}`, data);
+    this.db
+      .prepare(
+        `INSERT INTO snapshots (id, profile_id, created_at, file, source, account_id, resource_count, error_count)
+         VALUES (@id, @profile_id, @created_at, @file, @source, @account_id, @resource_count, @error_count)`,
+      )
+      .run(row);
   }
 
   /** Rétention : nombre maximal de snapshots par profil et âge maximal. */
@@ -110,30 +158,28 @@ export class Storage {
       (r, i) => i >= this.settings.snapshots.maxCount || (i > 0 && Date.parse(r.created_at) < limit),
     );
     for (const r of doomed) {
-      rmSync(join(this.dataDir, 'snapshots', safeId(profileId), r.file), { force: true });
+      this.files.remove(`snapshots/${safeId(profileId)}/${r.file}`);
       this.db.prepare('DELETE FROM snapshots WHERE id = ?').run(r.id);
     }
   }
 
   deleteProfileFiles(profileId: string): void {
-    rmSync(join(this.dataDir, 'snapshots', safeId(profileId)), { recursive: true, force: true });
-    rmSync(join(this.dataDir, 'layouts', `${safeId(profileId)}.json`), { force: true });
+    this.files.remove(`snapshots/${safeId(profileId)}`);
+    this.files.remove(`layouts/${safeId(profileId)}.json`);
   }
 
   // ------------------------------------------------------------------ mises en page
 
   readLayout(profileId: string): Layout {
-    const path = join(this.dataDir, 'layouts', `${safeId(profileId)}.json`);
-    if (!existsSync(path)) return { positions: {} };
-    const r = layoutSchema.safeParse(JSON.parse(readFileSync(path, 'utf8')));
+    const data = this.files.read(`layouts/${safeId(profileId)}.json`);
+    if (!data) return { positions: {} };
+    const r = layoutSchema.safeParse(JSON.parse(data.toString('utf8')));
     return r.success ? r.data : { positions: {} };
   }
 
   writeLayout(profileId: string, layout: Layout): void {
     if (Object.keys(layout.positions).length > 20_000) throw badRequest('Mise en page trop volumineuse');
-    writeFileSync(join(this.dataDir, 'layouts', `${safeId(profileId)}.json`), JSON.stringify(layout), {
-      mode: 0o600,
-    });
+    this.files.write(`layouts/${safeId(profileId)}.json`, JSON.stringify(layout));
   }
 
   // ------------------------------------------------------------------ CONFIG_DIR

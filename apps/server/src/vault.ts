@@ -210,6 +210,20 @@ export class Vault {
     for (const k of this.memory.keys()) if (k.startsWith(`${family}|`)) this.memory.delete(k);
   }
 
+  /** Identité AWS propre de l'outil utilisable (jamais pour un espace invité). */
+  get hubAvailable(): boolean {
+    return this.hubMode === 'default-chain';
+  }
+
+  /** Transfert des identifiants en mémoire d'une session vers un autre coffre (invité devenu compte). */
+  moveFamilyTo(other: Vault, family: string): void {
+    for (const [k, e] of this.memory)
+      if (k.startsWith(`${family}|`)) {
+        other.memory.set(k, e);
+        this.memory.delete(k);
+      }
+  }
+
   wipeProfile(profileId: string): void {
     for (const k of this.memory.keys()) if (k.endsWith(`|${profileId}`)) this.memory.delete(k);
     this.db.prepare('DELETE FROM credentials WHERE profile_id = ?').run(profileId);

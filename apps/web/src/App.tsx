@@ -2,13 +2,14 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { get, post, setCsrf } from './api.ts';
 import { Diagram } from './diagram/Diagram.tsx';
 import { t, type MessageKey } from './i18n/index.ts';
+import { AccountPage } from './pages/Account.tsx';
 import { AuditPage } from './pages/Audit.tsx';
 import { ConfigPage } from './pages/Config.tsx';
 import { CredentialsPage } from './pages/Credentials.tsx';
 import { HelpPage } from './pages/Help.tsx';
 import { ImportPage } from './pages/Import.tsx';
 import { InventoryPage } from './pages/Inventory.tsx';
-import { LoginPage } from './pages/Login.tsx';
+import { LoginPage, RegisterForm } from './pages/Login.tsx';
 import { MultiPage } from './pages/Multi.tsx';
 import { OnboardingPage } from './pages/Onboarding.tsx';
 import { OrgAccountsPage } from './pages/OrgAccounts.tsx';
@@ -40,6 +41,8 @@ const TITLES: Record<string, MessageKey> = {
   utilisateurs: 'nav.utilisateurs',
   journal: 'nav.journal',
   aide: 'nav.aide',
+  compte: 'compte.titre',
+  inscription: 'login.creerCompte',
   login: 'login.titre',
 };
 
@@ -104,9 +107,28 @@ function ProfileTabs({ id }: { id: string }) {
   );
 }
 
-function route(path: string): { node: ReactNode; full?: boolean; profile?: string } {
+/** Invité qui crée un compte : son travail de la session est conservé. */
+function RegisterFromGuest() {
+  return (
+    <div className="card" style={{ maxWidth: 460 }}>
+      <h1>{t('login.creerCompte')}</h1>
+      <RegisterForm
+        first={false}
+        fromGuest
+        onDone={(r) => {
+          useApp.getState().showToast(t('invite.conserve', { n: r.transferred?.profiles ?? 0 }));
+          navigate('/profils', true);
+        }}
+      />
+    </div>
+  );
+}
+
+function route(path: string, guest: boolean): { node: ReactNode; full?: boolean; profile?: string } {
   const p = (pattern: string) => match(pattern, path);
   let m: Record<string, string> | null;
+  if (p('/compte') && !guest) return { node: <AccountPage /> };
+  if (p('/inscription') && guest) return { node: <RegisterFromGuest /> };
   if (p('/profils')) return { node: <ProfilesPage /> };
   if (p('/profils/nouveau')) return { node: <ProfileForm /> };
   if ((m = p('/profils/:id/modifier'))) return { node: <ProfileForm id={m.id} />, profile: m.id };
@@ -169,8 +191,9 @@ export function App() {
   if (!ready) return <div className="empty">{t('app.chargement')}</div>;
   if (path === '/login' || !loggedIn) return <LoginPage />;
 
-  const r = route(path);
   const user = auth.user;
+  const guest = !!user?.guest;
+  const r = route(path, guest);
   const nav: [string, string, boolean][] = [
     ['/profils', t('nav.profils'), true],
     ['/multi-comptes', t('nav.multi'), true],
@@ -214,18 +237,43 @@ export function App() {
           ))}
         </select>
         {user?.role === 'admin' && <UpdatePill />}
-        <span className="who">{user?.username}</span>
+        {guest ? (
+          <span className="who">{t('invite.nom')}</span>
+        ) : (
+          <Link
+            to="/compte"
+            className="who account-link"
+            aria-label={t('compte.titre')}
+            title={t('compte.titre')}
+          >
+            <Icon name="user" /> <span className="hide-narrow">{user?.username}</span>
+          </Link>
+        )}
         <button
-          onClick={() =>
+          onClick={() => {
+            // Invité : quitter efface définitivement le travail de la session.
+            if (guest && !window.confirm(t('invite.quitterConfirm'))) return;
             void post('/api/auth/logout').finally(() => {
               useApp.getState().setAuth(undefined);
               window.location.assign('/login');
-            })
-          }
+            });
+          }}
         >
           <Icon name="logout" /> <span className="hide-narrow">{t('nav.deconnexion')}</span>
         </button>
       </header>
+      {guest && (
+        <div className="guest-banner" role="status">
+          <Icon name="alert" />
+          <span>{t('invite.bandeau')}</span>
+          <span className="spacer" />
+          {path !== '/inscription' && (
+            <Link to="/inscription" className="btn primary">
+              {t('invite.creerCompte')}
+            </Link>
+          )}
+        </div>
+      )}
       {r.profile && <ProfileTabs id={r.profile} />}
       {r.full ? <main className="full">{r.node}</main> : <main className="page">{r.node}</main>}
       <ReauthDialog />

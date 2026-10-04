@@ -108,10 +108,13 @@ describe('en-têtes, sessions, CSRF, MFA, limitation (sections 4.2 et 4.4)', () 
   it('mot de passe faible refusé à la création de l’administrateur', async () => {
     const c = new Client(s.app);
     await c.req('GET', '/api/auth/state');
-    const res = await c.req('POST', '/api/auth/setup', { username: 'admin', password: 'motdepasse2024!!' });
+    const res = await c.req('POST', '/api/auth/register', {
+      username: 'admin',
+      password: 'motdepasse2024!!',
+    });
     expect(res.status).toBe(400);
     expect(res.json().error.code).toBe('MOT_DE_PASSE_FAIBLE');
-    expect((await c.req('POST', '/api/auth/setup', { username: 'admin', password: 'court' })).status).toBe(
+    expect((await c.req('POST', '/api/auth/register', { username: 'admin', password: 'court' })).status).toBe(
       400,
     );
   });
@@ -151,7 +154,7 @@ describe('en-têtes, sessions, CSRF, MFA, limitation (sections 4.2 et 4.4)', () 
     expect((await c.req('POST', '/api/profiles', body)).status).toBe(200);
   });
 
-  it('MFA obligatoire : mot de passe seul insuffisant, TOTP sans rejeu', async () => {
+  it('MFA activé : mot de passe seul insuffisant, TOTP sans rejeu', async () => {
     const c = new Client(s.app);
     await c.req('GET', '/api/auth/state');
     const login = await c.req('POST', '/api/auth/login', ADMIN);

@@ -95,7 +95,7 @@ Ce fichier est la spécification complète. **Construis l'application entière e
 | `LOG_LEVEL` | `info` | |
 | `DEMO_MODE` | `false` | Ajoute le profil « Démo » chargé depuis `fixtures/` |
 
-Il n'existe **pas** de variable permettant de désactiver TLS, l'authentification ou le MFA.
+Il n'existe **pas** de variable permettant de désactiver TLS. L'accès sans compte (mode invité, section 4.4) et la création libre de comptes se règlent dans `app.yaml > access` (activés par défaut, désactivables pour réserver l'outil aux comptes créés par un administrateur).
 
 ### 3.2 `app.yaml`
 
@@ -174,12 +174,13 @@ Profile = {
 
 ### 4.4 Authentification et sessions de l'application
 
-- **Toute** route, sauf `/healthz`, `/login` et ses ressources statiques, exige une session authentifiée.
-- `AUTH_MODE=local` : premier démarrage → assistant de création de l'administrateur (mot de passe ≥ 14 caractères, vérifié contre une liste locale de mots de passe courants), **TOTP obligatoire** pour tous les comptes, codes de secours (10, hachés). Mots de passe hachés en Argon2id (m=64 Mio, t=3, p=1).
+- **Toute** route, sauf `/healthz`, `/login` et ses ressources statiques, exige une session : compte connecté ou session invitée.
+- **Compte facultatif.** À l'ouverture, l'utilisateur crée un compte, se connecte ou continue **en invité**. Mode invité : espace de travail entièrement en mémoire du serveur (base SQLite `:memory:`, fichiers en mémoire), isolé des comptes et des autres invités, **jamais écrit sur disque ni journalisé**, détruit à la déconnexion ou à l'expiration de la session ; jamais d'accès à l'identité propre de l'outil (`HUB_CREDENTIALS`) ; nombre d'invités simultanés limité. Un invité qui crée un compte y retrouve son travail (profils, snapshots, mises en page, dossiers).
+- `AUTH_MODE=local` : le premier compte créé devient administrateur ; les suivants (création libre, désactivable) sont éditeurs de leur groupe personnel. Mot de passe ≥ 14 caractères, vérifié contre une liste locale de mots de passe courants, haché en Argon2id (m=64 Mio, t=3, p=1). **TOTP facultatif**, activable ou désactivable par chaque compte depuis « Mon compte » (après ré-authentification), codes de secours (10, hachés) ; une fois activé, il est exigé à chaque connexion et à chaque ré-authentification.
 - `AUTH_MODE=oidc` : Authorization Code + PKCE, vérification `state`/`nonce`, groupes lus dans le jeton pour les droits.
 - Cookie de session : nom `__Host-session`, `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, identifiant opaque de 256 bits stocké haché en base. Expiration d'inactivité 30 min, absolue 8 h. Régénération à la connexion et à l'élévation.
 - **CSRF** : jeton synchronisé dans un en-tête `X-CSRF-Token` sur toute requête non-GET + vérification de `Origin` = `PUBLIC_ORIGIN`.
-- **Ré-authentification** (mot de passe + TOTP, ou nouvelle connexion OIDC) exigée avant : saisie ou affichage de métadonnées d'identifiants, suppression d'un profil, gestion des utilisateurs.
+- **Ré-authentification** (mot de passe, + TOTP s'il est activé, ou nouvelle connexion OIDC) exigée avant : saisie ou affichage de métadonnées d'identifiants, suppression d'un profil, gestion des utilisateurs.
 - Limitation de débit : connexion (5 essais / 15 min par compte et par IP, puis verrouillage progressif), API globale, endpoints de scan (1 scan simultané par profil).
 - Rôles : `admin` (utilisateurs, tous les profils), `editor` (créer/scanner les profils de ses groupes), `viewer` (lecture des diagrammes de ses groupes). Cloisonnement strict par `allowedGroups`.
 
@@ -406,7 +407,7 @@ Un thème clair et un thème « couleurs client » sont sélectionnables ; ils n
 
 ## 10. Pages de l'interface
 
-1. **Connexion** (+ TOTP, + assistant du premier administrateur).
+1. **Connexion** : se connecter (+ TOTP s'il est activé), créer un compte (le premier est administrateur) ou continuer en invité. **Mon compte** : activation / désactivation du MFA, codes de secours. **Dossiers** : arborescence personnelle (dossiers / sous-dossiers) pour ranger les profils et leurs diagrammes, glisser-déposer et menu « Ranger dans… ».
 2. **Profils** : liste filtrée par droits, création/édition (nom, client, compte, régions, mode d'accès, nœuds externes, sondes, Flow Logs, groupes autorisés).
 3. **Identifiants du profil** (après ré-authentification) : formulaire de saisie (4.3), état (en mémoire / mémorisé chiffré, expiration), bouton « Tester » (GetCallerIdentity), bouton « Supprimer ».
 4. **Scan** : choix des régions et services, lancement, progression SSE, erreurs d'accès listées clairement avec la permission manquante.
@@ -512,7 +513,8 @@ Rétention des snapshots configurable (nombre ou durée). Migrations SQLite vers
   - limitation des tentatives de connexion ;
   - cloisonnement : un `viewer` d'un groupe ne voit pas le profil d'un autre groupe ;
   - protection SSRF des sondes.
-- **E2E** : connexion admin + TOTP, ouverture du profil Démo, affichage du diagramme, clic sur un nœud, filtre, export SVG.
+- **mode invité** : aucune écriture dans `DATA_DIR`, isolement des comptes, pas d'identité de l'outil, reprise du travail à la création d'un compte ; MFA facultatif ; réglages `access` ; dossiers (cycles refusés, cloisonnement par utilisateur).
+- **E2E** : création du compte admin puis activation du MFA, ouverture du profil Démo, affichage du diagramme, clic sur un nœud, filtre, export SVG.
 
 ---
 
@@ -540,7 +542,7 @@ Ne t'arrête pas sur des questions : si un détail n'est pas spécifié, prends 
 - [ ] `pnpm check` passe sans erreur ni avertissement.
 - [ ] `docker compose up` démarre l'application en HTTPS TLS 1.3 ; sans certificat ou sans clé maître, elle refuse de démarrer avec un message clair.
 - [ ] `openssl s_client -tls1_2` est refusé, `-tls1_3` accepté.
-- [ ] Toutes les routes sauf `/healthz` et la connexion exigent une session ; le MFA est obligatoire en mode local.
+- [ ] Toutes les routes sauf `/healthz` et la connexion exigent une session (compte ou invité) ; une session invitée ne laisse aucune trace sur disque ; le MFA est activable par chaque compte et exigé dès qu'il est activé.
 - [ ] Des identifiants saisis dans l'interface ne sont jamais renvoyés au navigateur, jamais écrits en clair sur disque, jamais présents dans les journaux.
 - [ ] Le profil Démo affiche le diagramme de la section 9.5 dans le style de 9.2 (conteneurs, pastilles, ports, CI/CD animé).
 - [ ] Un scan réel d'un compte en lecture seule produit un diagramme ; les services sans collecteur dédié apparaissent en nœuds génériques ; les permissions manquantes sont signalées sans faire échouer le scan.
