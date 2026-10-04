@@ -1,0 +1,37 @@
+# Google Cloud — CI/CD : Artifact Registry, déclencheurs Cloud Build (source Git → build → images).
+- type: artifactregistry.googleapis.com/Repository
+  typeLabel: Dépôt Artifact Registry
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: "'dépôt ' & $lowercase($r.raw.format)"
+  icon: gcp-artifact-registry
+  category: compute
+  status: [{ default: actif }]
+  console: &console "'https://console.cloud.google.com/home/dashboard?project=' & ($r.account ? $r.account : $all.meta.accountId)"
+  details:
+    mode: '$r.raw.mode'
+
+- type: cloudbuild.googleapis.com/BuildTrigger
+  typeLabel: Déclencheur Cloud Build
+  label: '$r.raw.name'
+  sublabel: "$r.raw.disabled = true ? 'désactivé' : ($r.raw.github ? 'push ' & ($r.raw.github.push.branch ? $r.raw.github.push.branch : $r.raw.github.push.tag) : 'déclencheur')"
+  icon: gcp-cloud-build
+  category: devtools
+  status:
+    - { when: '$r.raw.disabled = true', value: arrete }
+    - { default: actif }
+  console: *console
+  details:
+    fichier: '$r.raw.filename'
+    substitutions: '$keys($r.raw.substitutions)'
+  relations:
+    # Source : dépôt GitHub ou URI Git (nœud externe Git, rapproché d'un nœud du profil par domaine).
+    - kind: cicd
+      to: "[$r.raw.github ? 'github.com/' & $r.raw.github.owner & '/' & $r.raw.github.name, $r.raw.sourceToBuild.uri, $r.raw.gitFileSource.uri]"
+      resolve: dns-name
+      unresolved: external
+      externalType: External::Git
+      reverse: true
+    # Cible : dépôts Artifact Registry des images produites (build en ligne uniquement).
+    - kind: cicd
+      label: images
+      to: '$r.raw.build.images.($m := $match($, /^([a-z0-9-]+)-docker\.pkg\.dev\/([^\/]+)\/([^\/]+)\//); $m ? "//artifactregistry.googleapis.com/projects/" & $m.groups[1] & "/locations/" & $m.groups[0] & "/repositories/" & $m.groups[2])'

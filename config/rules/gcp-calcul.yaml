@@ -1,0 +1,179 @@
+# Google Cloud — calcul : Compute Engine, GKE, Cloud Run, Cloud Functions, App Engine.
+# Tags réseau (`tag:…`) et comptes de service (`sa:…`) sont les cibles et sources des règles de pare-feu VPC.
+- type: compute.googleapis.com/Instance
+  typeLabel: Instance Compute Engine
+  label: '$r.raw.name'
+  sublabel: "$substringAfter($r.raw.machineType, 'machineTypes/') & ' · ' & $lookup({'RUNNING': 'en marche', 'TERMINATED': 'arrêtée', 'STOPPED': 'arrêtée', 'SUSPENDED': 'suspendue', 'PROVISIONING': 'création', 'STAGING': 'démarrage'}, $r.raw.status)"
+  icon: gcp-compute-engine
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.networkInterfaces.subnetwork', multi: first }
+  securityGroups: "[$r.raw.tags.items.('tag:' & $), $r.raw.serviceAccounts.('sa:' & email)]"
+  ips: '[$r.raw.networkInterfaces.networkIP, $r.raw.networkInterfaces.accessConfigs.natIP]'
+  status:
+    - { when: "$r.raw.status = 'RUNNING'", value: actif }
+    - {
+        when: "$r.raw.status in ['TERMINATED', 'STOPPED', 'STOPPING', 'SUSPENDED', 'SUSPENDING']",
+        value: arrete,
+      }
+    - { when: "$r.raw.status in ['PROVISIONING', 'STAGING', 'REPAIRING']", value: en-veille }
+    - { default: inconnu }
+  group: { key: "$r.raw.metadata.items[key = 'created-by'].value" }
+  console: &console "'https://console.cloud.google.com/home/dashboard?project=' & ($r.account ? $r.account : $all.meta.accountId)"
+  details:
+    typeMachine: "$substringAfter($r.raw.machineType, 'machineTypes/')"
+    ipExterne: '$r.raw.networkInterfaces.accessConfigs.natIP'
+    tagsReseau: '$r.raw.tags.items'
+    comptesDeService: '$r.raw.serviceAccounts.email'
+
+# Groupe d'instances : instances créées par le gestionnaire du même nom (métadonnée `created-by`).
+- type: compute.googleapis.com/InstanceGroup
+  typeLabel: Groupe d'instances
+  label: '$r.raw.name'
+  sublabel: "($m := $ofType('compute.googleapis.com/InstanceGroupManager')[raw.instanceGroup = $r.id]; $m ? 'géré · ' & $string($m.raw.targetSize) & ' instance(s)' : 'non géré · ' & $string($r.raw.size) & ' instance(s)')"
+  icon: gcp-instance-group
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.subnetwork', vpcRef: '$r.raw.network' }
+  status: [{ default: actif }]
+  console: *console
+  relations:
+    - kind: network
+      to: "($want := $replace($substringAfter($substringAfter($r.id, '/projects/'), '/'), '/instanceGroups/', '/instanceGroupManagers/'); $ofType('compute.googleapis.com/Instance')[$substringAfter($substringAfter(raw.metadata.items[key = 'created-by'].value, '/projects/'), '/') = $want].id)"
+- type: compute.googleapis.com/InstanceGroupManager
+  typeLabel: Gestionnaire de groupe d'instances
+  label: '$r.raw.name'
+  icon: gcp-instance-group
+  category: compute
+  hidden: true
+
+- type: container.googleapis.com/Cluster
+  typeLabel: Cluster GKE
+  label: '$r.raw.name'
+  sublabel: "'GKE ' & $r.raw.currentMasterVersion & ' · ' & $string($r.raw.currentNodeCount) & ' nœud(s)'"
+  icon: gcp-gke
+  category: compute
+  placement:
+    { container: subnet, ref: '$r.raw.networkConfig.subnetwork', vpcRef: '$r.raw.networkConfig.network' }
+  securityGroups: "[$r.raw.nodePools.config.tags.('tag:' & $), $r.raw.nodePools.config.serviceAccount.('sa:' & $)]"
+  ips: '$r.raw.privateClusterConfig.privateEndpoint'
+  status:
+    - { when: "$r.raw.status = 'RUNNING'", value: actif }
+    - { when: "$r.raw.status in ['ERROR', 'DEGRADED']", value: erreur }
+    - { when: "$r.raw.status in ['PROVISIONING', 'RECONCILING']", value: en-veille }
+    - { default: inconnu }
+  console: *console
+  details:
+    pools: '$r.raw.nodePools.name'
+    prive: '$r.raw.privateClusterConfig.enablePrivateNodes'
+- type: container.googleapis.com/NodePool
+  typeLabel: Pool de nœuds GKE
+  label: '$r.raw.name'
+  icon: gcp-gke
+  category: compute
+  hidden: true
+
+# Cloud Run (format Knative v1) : connecteur VPC, Cloud SQL, secrets et images référencés par la révision.
+- type: run.googleapis.com/Service
+  typeLabel: Service Cloud Run
+  label: '$r.raw.metadata.name'
+  sublabel: "$substringBefore($substringAfter($r.raw.status.url, 'https://'), '.')"
+  icon: gcp-cloud-run
+  category: compute
+  dnsNames: '$r.raw.status.url'
+  status:
+    - { when: "$r.raw.status.conditions[type = 'Ready'].status = 'True'", value: actif }
+    - { when: "$r.raw.status.conditions[type = 'Ready'].status = 'False'", value: erreur }
+    - { default: inconnu }
+  console: *console
+  details:
+    url: '$r.raw.status.url'
+    images: '$r.raw.spec.template.spec.containers.image'
+    variables: '$r.raw.spec.template.spec.containers.env.name'
+    compteDeService: '$r.raw.spec.template.spec.serviceAccountName'
+  relations:
+    - kind: network
+      label: accès VPC
+      to: "($c := $r.raw.spec.template.metadata.annotations.`run.googleapis.com/vpc-access-connector`; $c ? '//vpcaccess.googleapis.com/' & ($contains($c, '/') ? $c : 'projects/' & $substringBefore($substringAfter($r.id, '/projects/'), '/') & '/locations/' & $r.region & '/connectors/' & $c))"
+    - kind: data
+      label: Cloud SQL
+      to: "($s := $split($r.raw.spec.template.metadata.annotations.`run.googleapis.com/cloudsql-instances`, ',').$trim($); $ofType('sqladmin.googleapis.com/Instance')[raw.connectionName in $s].id)"
+    - kind: data
+      to: "($refs := [$r.raw.spec.template.spec.containers.env.valueFrom.secretKeyRef.name, $r.raw.spec.template.spec.volumes.secret.secretName]; $ofType('secretmanager.googleapis.com/Secret')[$split(raw.name, '/')[-1] in $refs].id)"
+    - kind: data
+      label: images
+      to: '$r.raw.spec.template.spec.containers.image.($m := $match($, /^([a-z0-9-]+)-docker\.pkg\.dev\/([^\/]+)\/([^\/]+)\//); $m ? "//artifactregistry.googleapis.com/projects/" & $m.groups[1] & "/locations/" & $m.groups[0] & "/repositories/" & $m.groups[2])'
+
+- type: cloudfunctions.googleapis.com/Function
+  typeLabel: Cloud Function (2e génération)
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: '$r.raw.buildConfig.runtime'
+  icon: gcp-cloud-functions
+  category: compute
+  dnsNames: '$r.raw.serviceConfig.uri'
+  status:
+    - { when: "$r.raw.state = 'ACTIVE'", value: actif }
+    - { when: "$r.raw.state = 'FAILED'", value: erreur }
+    - { when: "$r.raw.state = 'DEPLOYING'", value: en-veille }
+    - { default: inconnu }
+  console: *console
+  details:
+    declencheur: '$r.raw.eventTrigger.eventType'
+    variables: '$keys($r.raw.serviceConfig.environmentVariables)'
+  relations:
+    - kind: network
+      label: accès VPC
+      to: "$r.raw.serviceConfig.vpcConnector ? '//vpcaccess.googleapis.com/' & $r.raw.serviceConfig.vpcConnector"
+    - kind: data
+      reverse: true
+      label: déclencheur
+      to: "$r.raw.eventTrigger.pubsubTopic ? '//pubsub.googleapis.com/' & $r.raw.eventTrigger.pubsubTopic"
+    - kind: data
+      reverse: true
+      label: déclencheur
+      to: "$ofType('storage.googleapis.com/Bucket')[raw.name in $r.raw.eventTrigger.eventFilters[attribute = 'bucket'].value].id"
+    - kind: data
+      to: "$ofType('secretmanager.googleapis.com/Secret')[$split(raw.name, '/')[-1] in $r.raw.serviceConfig.secretEnvironmentVariables.secret.$split($, '/')[-1]].id"
+
+- type: cloudfunctions.googleapis.com/CloudFunction
+  typeLabel: Cloud Function (1re génération)
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: '$r.raw.runtime'
+  icon: gcp-cloud-functions
+  category: compute
+  dnsNames: '$r.raw.httpsTrigger.url'
+  status:
+    - { when: "$r.raw.status = 'ACTIVE'", value: actif }
+    - { when: "$r.raw.status = 'OFFLINE'", value: arrete }
+    - { when: "$r.raw.status = 'DEPLOY_IN_PROGRESS'", value: en-veille }
+    - { default: inconnu }
+  console: *console
+  relations:
+    - kind: network
+      label: accès VPC
+      to: "$r.raw.vpcConnector ? '//vpcaccess.googleapis.com/' & $r.raw.vpcConnector"
+    - kind: data
+      reverse: true
+      label: déclencheur
+      to: "$contains($r.raw.eventTrigger.resource, '/topics/') ? '//pubsub.googleapis.com/' & $r.raw.eventTrigger.resource"
+    - kind: data
+      reverse: true
+      label: déclencheur
+      to: "$contains($r.raw.eventTrigger.resource, '/buckets/') ? $ofType('storage.googleapis.com/Bucket')[raw.name = $split($r.raw.eventTrigger.resource, '/')[-1]].id"
+
+- type: appengine.googleapis.com/Application
+  typeLabel: Application App Engine
+  label: '$r.raw.id'
+  sublabel: '$r.raw.defaultHostname'
+  icon: gcp-app-engine
+  category: compute
+  dnsNames: '$r.raw.defaultHostname'
+  status:
+    - { when: "$r.raw.servingStatus = 'SERVING'", value: actif }
+    - { when: "$r.raw.servingStatus in ['USER_DISABLED', 'SYSTEM_DISABLED']", value: arrete }
+    - { default: inconnu }
+  console: *console
+- type: appengine.googleapis.com/Service
+  typeLabel: Service App Engine
+  label: '$r.raw.id'
+  icon: gcp-app-engine
+  category: compute
+  hidden: true

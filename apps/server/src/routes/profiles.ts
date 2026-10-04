@@ -375,7 +375,7 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
 export function seedDemo(ctx: Ctx): void {
   const dir = join(ctx.config.appRoot, 'fixtures');
   const json = (name: string): unknown => JSON.parse(readFileSync(join(dir, name), 'utf8'));
-  for (const prefix of ['demo', 'demo-partenaire', 'demo-azure']) {
+  for (const prefix of ['demo', 'demo-partenaire', 'demo-azure', 'demo-gcp']) {
     const profile = profileSchema.parse(json(`${prefix}-profile.json`));
     saveProfile(ctx.db, profile);
     // Nouveau snapshot si la fixture a changé depuis le dernier démarrage (mise à jour de l'application).

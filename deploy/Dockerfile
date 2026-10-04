@@ -39,6 +39,7 @@ COPY config ./config
 COPY fixtures ./fixtures
 COPY docs/iam ./docs/iam
 COPY docs/azure ./docs/azure
+COPY docs/gcp ./docs/gcp
 COPY CHANGELOG.md ./CHANGELOG.md
 USER 10001:10001
 EXPOSE 8443

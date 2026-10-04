@@ -1,0 +1,20 @@
+# Rôle personnalisé Google Cloud pour Cartographe : inventaire en lecture seule.
+# À créer au niveau de l'organisation (vue complète : dossiers, projets, règles d'administration).
+# Pour un seul projet, utiliser role-lecture-seule-projet.yaml (les permissions d'organisation et de
+# dossier ne sont pas acceptées dans un rôle personnalisé de projet).
+#
+# Volontairement absentes : secretmanager.versions.access (valeurs des secrets), storage.objects.*
+# (contenu des buckets), iam.serviceAccountKeys.* (clés de comptes de service), et toute permission
+# create / update / delete / setIamPolicy.
+title: Cartographe - lecture seule
+description: Inventaire en lecture seule pour Cartographe (Cloud Asset Inventory, Resource Manager, règles d'administration). Aucune valeur de secret, aucun objet Cloud Storage.
+stage: GA
+includedPermissions:
+  - cloudasset.assets.listResource
+  - cloudasset.assets.searchAllIamPolicies
+  - resourcemanager.organizations.get
+  - resourcemanager.folders.get
+  - resourcemanager.folders.list
+  - resourcemanager.projects.get
+  - resourcemanager.projects.list
+  - orgpolicy.policies.list

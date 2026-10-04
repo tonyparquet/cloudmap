@@ -45,7 +45,13 @@ export function SidePanel({
 }) {
   const d = node.details;
   const tags = (d.tags ?? {}) as Record<string, string>;
-  const sgs = (d.securityGroups ?? []) as SgSummary[];
+  // Marqueurs internes de l'inférence des flux (« schéma:… », Google Cloud) : non affichés.
+  const sgs = ((d.securityGroups ?? []) as SgSummary[]).filter((sg) => !sg.id.startsWith('schéma:'));
+  const sgTitle = node.type.includes('.googleapis.com/')
+    ? t('panel.sg.gcp')
+    : node.type.startsWith('microsoft.')
+      ? t('panel.sg.azure')
+      : t('panel.sg');
   const ips = (d.ips ?? []) as string[];
   const label = (id: string) =>
     graph.nodes.find((n) => n.id === id)?.label ?? graph.containers.find((c) => c.id === id)?.label ?? id;
@@ -131,7 +137,7 @@ export function SidePanel({
       )}
       {sgs.length > 0 && (
         <>
-          <h3>{t('panel.sg')}</h3>
+          <h3>{sgTitle}</h3>
           {sgs.map((sg) => (
             <div key={sg.id} style={{ marginBottom: 8 }}>
               <div className="mono">

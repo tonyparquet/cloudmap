@@ -1,0 +1,169 @@
+# Google Cloud — types sans règle dédiée : nœud générique avec l'icône de sa catégorie, par API.
+# Le joker le plus long l'emporte ; une règle dédiée (autre fichier gcp-*.yaml) prime toujours.
+- type: compute.googleapis.com/*
+  typeLabel: Ressource Compute Engine
+  label: &nom "$r.raw.displayName ? $r.raw.displayName : ($r.raw.name ? $split($r.raw.name, '/')[-1] : $split($r.id, '/')[-1])"
+  icon: gcp-compute-engine
+  category: compute
+  console: &console "'https://console.cloud.google.com/home/dashboard?project=' & ($r.account ? $r.account : $all.meta.accountId)"
+
+- type: container.googleapis.com/*
+  typeLabel: Ressource GKE
+  label: *nom
+  icon: gcp-gke
+  category: compute
+  console: *console
+
+- type: run.googleapis.com/*
+  typeLabel: Ressource Cloud Run
+  label: *nom
+  icon: gcp-cloud-run
+  category: compute
+  console: *console
+
+- type: cloudfunctions.googleapis.com/*
+  typeLabel: Ressource Cloud Functions
+  label: *nom
+  icon: gcp-cloud-functions
+  category: compute
+  console: *console
+
+- type: appengine.googleapis.com/*
+  typeLabel: Ressource App Engine
+  label: *nom
+  icon: gcp-app-engine
+  category: compute
+  console: *console
+
+- type: sqladmin.googleapis.com/*
+  typeLabel: Ressource Cloud SQL
+  label: *nom
+  icon: gcp-cloud-sql
+  category: database
+  console: *console
+
+- type: alloydb.googleapis.com/*
+  typeLabel: Ressource AlloyDB
+  label: *nom
+  icon: database
+  category: database
+  console: *console
+
+- type: storage.googleapis.com/*
+  typeLabel: Ressource Cloud Storage
+  label: *nom
+  icon: gcp-cloud-storage
+  category: storage
+  console: *console
+
+- type: file.googleapis.com/*
+  typeLabel: Ressource Filestore
+  label: *nom
+  icon: storage
+  category: storage
+  console: *console
+
+- type: pubsub.googleapis.com/*
+  typeLabel: Ressource Pub/Sub
+  label: *nom
+  icon: gcp-pubsub
+  category: integration
+  console: *console
+
+- type: eventarc.googleapis.com/*
+  typeLabel: Ressource Eventarc
+  label: *nom
+  icon: integration
+  category: integration
+  console: *console
+
+- type: workflows.googleapis.com/*
+  typeLabel: Ressource Workflows
+  label: *nom
+  icon: integration
+  category: integration
+  console: *console
+
+- type: bigquery.googleapis.com/*
+  typeLabel: Ressource BigQuery
+  label: *nom
+  icon: analytics
+  category: analytics
+  console: *console
+
+- type: dataflow.googleapis.com/*
+  typeLabel: Ressource Dataflow
+  label: *nom
+  icon: analytics
+  category: analytics
+  console: *console
+
+- type: dataproc.googleapis.com/*
+  typeLabel: Ressource Dataproc
+  label: *nom
+  icon: analytics
+  category: analytics
+  console: *console
+
+- type: secretmanager.googleapis.com/*
+  typeLabel: Ressource Secret Manager
+  label: *nom
+  icon: gcp-secret-manager
+  category: security
+  console: *console
+
+- type: cloudkms.googleapis.com/*
+  typeLabel: Ressource Cloud KMS
+  label: *nom
+  icon: gcp-kms
+  category: security
+  console: *console
+
+- type: iam.googleapis.com/*
+  typeLabel: Ressource IAM
+  label: *nom
+  icon: security
+  category: security
+  console: *console
+
+- type: artifactregistry.googleapis.com/*
+  typeLabel: Ressource Artifact Registry
+  label: *nom
+  icon: gcp-artifact-registry
+  category: compute
+  console: *console
+
+- type: cloudbuild.googleapis.com/*
+  typeLabel: Ressource Cloud Build
+  label: *nom
+  icon: gcp-cloud-build
+  category: devtools
+  console: *console
+
+- type: dns.googleapis.com/*
+  typeLabel: Ressource Cloud DNS
+  label: *nom
+  icon: gcp-cloud-dns
+  category: network
+  console: *console
+
+- type: vpcaccess.googleapis.com/*
+  typeLabel: Ressource Accès VPC sans serveur
+  label: *nom
+  icon: network
+  category: network
+  console: *console
+
+- type: logging.googleapis.com/*
+  typeLabel: Ressource Cloud Logging
+  label: *nom
+  icon: management
+  category: management
+  console: *console
+
+- type: monitoring.googleapis.com/*
+  typeLabel: Ressource Cloud Monitoring
+  label: *nom
+  icon: management
+  category: management
+  console: *console

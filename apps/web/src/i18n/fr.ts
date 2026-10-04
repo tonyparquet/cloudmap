@@ -231,6 +231,8 @@ export const fr = {
   'panel.tags': 'Tags',
   'panel.ips': 'Adresses IP',
   'panel.sg': 'Groupes de sécurité',
+  'panel.sg.azure': 'Groupes de sécurité réseau (NSG)',
+  'panel.sg.gcp': 'Tags réseau et comptes de service (pare-feu VPC)',
   'panel.entrantes': 'Règles entrantes',
   'panel.sortantes': 'Règles sortantes',
   'panel.liees': 'Ressources liées',

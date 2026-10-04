@@ -1,0 +1,209 @@
+# Google Cloud — réseau (types Cloud Asset Inventory). Les réseaux VPC et sous-réseaux sont dessinés
+# en conteneurs par le fournisseur `gcp` ; pare-feu, routes, adresses, proxys et mappages d'URL servent
+# aux flux et aux relations sans nœud propre. Les références sont des noms d'actifs (`//compute…`).
+- type: compute.googleapis.com/Network
+  typeLabel: Réseau VPC
+  label: '$r.raw.name'
+  icon: gcp-vpc
+  category: network
+  hidden: true
+  console: &console "'https://console.cloud.google.com/home/dashboard?project=' & ($r.account ? $r.account : $all.meta.accountId)"
+
+- type: compute.googleapis.com/Subnetwork
+  typeLabel: Sous-réseau
+  label: '$r.raw.name'
+  icon: gcp-vpc
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/Firewall
+  typeLabel: Règle de pare-feu VPC
+  label: '$r.raw.name'
+  icon: gcp-firewall
+  category: security
+  hidden: true
+
+- type: compute.googleapis.com/Route
+  typeLabel: Route
+  label: '$r.raw.name'
+  icon: gcp-route
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/Address
+  typeLabel: Adresse IP régionale
+  label: '$r.raw.name'
+  icon: gcp-ip
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/GlobalAddress
+  typeLabel: Adresse IP globale
+  label: '$r.raw.name'
+  icon: gcp-ip
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/TargetHttpsProxy
+  typeLabel: Proxy HTTPS cible
+  label: '$r.raw.name'
+  icon: gcp-load-balancing
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/TargetHttpProxy
+  typeLabel: Proxy HTTP cible
+  label: '$r.raw.name'
+  icon: gcp-load-balancing
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/UrlMap
+  typeLabel: Mappage d'URL
+  label: '$r.raw.name'
+  icon: gcp-load-balancing
+  category: network
+  hidden: true
+
+- type: compute.googleapis.com/Router
+  typeLabel: Cloud Router
+  label: "$count($r.raw.nats) > 0 ? 'Cloud NAT' : 'Cloud Router'"
+  sublabel: '$r.raw.name'
+  icon: gcp-cloud-nat
+  category: network
+  placement: { container: vpc, ref: '$r.raw.network' }
+  status: [{ default: actif }]
+  console: *console
+  details:
+    passerellesNat: '$r.raw.nats.name'
+    asn: '$r.raw.bgp.asn'
+
+# Équilibreurs : règle de transfert → proxy → mappage d'URL → services de backend (proxys et mappages masqués).
+# `schéma:…` inscrit la règle de transfert dans l'inférence des flux (Internet → équilibreur externe).
+- type: compute.googleapis.com/GlobalForwardingRule
+  typeLabel: Équilibreur de charge (règle de transfert globale)
+  label: '$r.raw.name'
+  sublabel: "$r.raw.IPAddress & ' · ' & $r.raw.IPProtocol & ' ' & $substringBefore($r.raw.portRange, '-')"
+  icon: gcp-load-balancing
+  category: network
+  placement: { container: global }
+  securityGroups: "$r.raw.loadBalancingScheme ? 'schéma:' & $r.raw.loadBalancingScheme"
+  ips: '$r.raw.IPAddress'
+  status: [{ default: actif }]
+  console: *console
+  details:
+    schema: '$r.raw.loadBalancingScheme'
+    niveauReseau: '$r.raw.networkTier'
+  relations: &forwarding
+    - kind: network
+      to: '($p := $byId($r.raw.target); [$p.raw.service, $byId($p.raw.urlMap).raw.[defaultService, pathMatchers.defaultService, pathMatchers.pathRules.service, pathMatchers.routeRules.service]])'
+    - { kind: network, to: '$r.raw.backendService' }
+    - kind: network
+      label: Private Service Connect
+      to: "$contains($r.raw.target, '/serviceAttachments/') ? $r.raw.target"
+
+- type: compute.googleapis.com/ForwardingRule
+  typeLabel: Équilibreur de charge (règle de transfert régionale)
+  label: '$r.raw.name'
+  sublabel: "$r.raw.IPAddress & ' · ' & $r.raw.IPProtocol & ' ' & $substringBefore($r.raw.portRange, '-')"
+  icon: gcp-load-balancing
+  category: network
+  placement: { container: subnet, ref: '$r.raw.subnetwork', vpcRef: '$r.raw.network' }
+  securityGroups: "$r.raw.loadBalancingScheme ? 'schéma:' & $r.raw.loadBalancingScheme"
+  ips: '$r.raw.IPAddress'
+  status: [{ default: actif }]
+  console: *console
+  details:
+    schema: '$r.raw.loadBalancingScheme'
+  relations: *forwarding
+
+- type: compute.googleapis.com/BackendService
+  typeLabel: Service de backend
+  label: '$r.raw.name'
+  sublabel: "$r.raw.protocol & ' · ' & $string($count($r.raw.backends)) & ' backend(s)'"
+  icon: gcp-load-balancing
+  category: network
+  placement: { container: global }
+  status: [{ default: actif }]
+  console: *console
+  relations: &backend
+    - { kind: network, to: '$r.raw.backends.group' }
+    - { kind: dependency, to: '$r.raw.securityPolicy', reverse: true, label: protège }
+
+- type: compute.googleapis.com/RegionBackendService
+  typeLabel: Service de backend régional
+  label: '$r.raw.name'
+  sublabel: "$r.raw.protocol & ' · ' & $string($count($r.raw.backends)) & ' backend(s)'"
+  icon: gcp-load-balancing
+  category: network
+  status: [{ default: actif }]
+  console: *console
+  relations: *backend
+
+- type: compute.googleapis.com/SecurityPolicy
+  typeLabel: Cloud Armor
+  label: '$r.raw.name'
+  sublabel: "'Cloud Armor · ' & $string($count($r.raw.rules)) & ' règle(s)'"
+  icon: gcp-cloud-armor
+  category: security
+  placement: { container: global }
+  status: [{ default: actif }]
+  console: *console
+  details:
+    regles: "$r.raw.rules.($string(priority) & ' ' & action & ' ' & (match.expr.expression ? match.expr.expression : $join(match.config.srcIpRanges, ', ')))"
+
+- type: compute.googleapis.com/NetworkEndpointGroup
+  typeLabel: Groupe de points de terminaison réseau (NEG)
+  label: '$r.raw.name'
+  sublabel: "'NEG ' & $lowercase($r.raw.networkEndpointType)"
+  icon: gcp-load-balancing
+  category: network
+  placement: { container: subnet, ref: '$r.raw.subnetwork', vpcRef: '$r.raw.network' }
+  status: [{ default: actif }]
+  console: *console
+  relations:
+    - kind: network
+      to: "$ofType('run.googleapis.com/Service')[raw.metadata.name = $r.raw.cloudRun.service and region = $r.region].id"
+    - kind: network
+      to: "$ofType('cloudfunctions.googleapis.com/Function')[$split(raw.name, '/')[-1] = $r.raw.cloudFunction.function].id"
+    - kind: network
+      to: "$ofType('cloudfunctions.googleapis.com/CloudFunction')[$split(raw.name, '/')[-1] = $r.raw.cloudFunction.function].id"
+    - kind: network
+      to: "$r.raw.appEngine ? $ofType('appengine.googleapis.com/Application').id"
+
+- type: compute.googleapis.com/ServiceAttachment
+  typeLabel: Private Service Connect (publication)
+  label: '$r.raw.name'
+  sublabel: "'PSC · ' & $lowercase($r.raw.connectionPreference)"
+  icon: gcp-private-service-connect
+  category: network
+  status: [{ default: actif }]
+  console: *console
+  relations:
+    - { kind: network, to: '$r.raw.producerForwardingRule' }
+    - { kind: network, to: '$r.raw.targetService' }
+
+- type: vpcaccess.googleapis.com/Connector
+  typeLabel: Connecteur d'accès au VPC sans serveur
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: "'connecteur VPC · ' & $r.raw.ipCidrRange"
+  icon: gcp-serverless-vpc-access
+  category: network
+  placement:
+    container: vpc
+    ref: "$contains($r.raw.network, '//') ? $r.raw.network : '//compute.googleapis.com/projects/' & $substringBefore($substringAfter($r.id, '/projects/'), '/') & '/global/networks/' & $r.raw.network"
+  status:
+    - { when: "$r.raw.state = 'READY'", value: actif }
+    - { when: "$r.raw.state = 'ERROR'", value: erreur }
+    - { default: inconnu }
+  console: *console
+
+- type: dns.googleapis.com/ManagedZone
+  typeLabel: Zone Cloud DNS
+  label: '$r.raw.dnsName'
+  sublabel: "$r.raw.visibility = 'private' ? 'zone privée' : 'zone publique'"
+  icon: gcp-cloud-dns
+  category: network
+  placement: { container: global }
+  status: [{ default: actif }]
+  console: *console

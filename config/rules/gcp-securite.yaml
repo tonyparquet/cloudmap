@@ -1,0 +1,39 @@
+# Google Cloud — sécurité : Secret Manager (métadonnées uniquement, jamais de version lue), Cloud KMS.
+- type: secretmanager.googleapis.com/Secret
+  typeLabel: Secret (Secret Manager)
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: "'secret · réplication ' & ($exists($r.raw.replication.automatic) ? 'automatique' : 'gérée')"
+  icon: gcp-secret-manager
+  category: security
+  status: [{ default: actif }]
+  console: &console "'https://console.cloud.google.com/home/dashboard?project=' & ($r.account ? $r.account : $all.meta.accountId)"
+  details:
+    creation: '$r.raw.createTime'
+    prochaineRotation: '$r.raw.rotation.nextRotationTime'
+    expiration: '$r.raw.expireTime'
+  relations:
+    - kind: dependency
+      label: chiffrement
+      to: "[$r.raw.replication.automatic.customerManagedEncryption.kmsKeyName, $r.raw.replication.userManaged.replicas.customerManagedEncryption.kmsKeyName].('//cloudkms.googleapis.com/' & $)"
+
+- type: cloudkms.googleapis.com/KeyRing
+  typeLabel: Trousseau Cloud KMS
+  label: "$split($r.raw.name, '/')[-1]"
+  icon: gcp-kms
+  category: security
+  hidden: true
+
+- type: cloudkms.googleapis.com/CryptoKey
+  typeLabel: Clé Cloud KMS
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: "'clé · ' & $lowercase($r.raw.purpose)"
+  icon: gcp-kms
+  category: security
+  status:
+    - { when: "$r.raw.primary.state = 'ENABLED'", value: actif }
+    - { when: "$r.raw.primary.state in ['DISABLED', 'DESTROYED', 'DESTROY_SCHEDULED']", value: arrete }
+    - { default: inconnu }
+  console: *console
+  details:
+    rotation: '$r.raw.rotationPeriod'
+    protection: '$r.raw.versionTemplate.protectionLevel'

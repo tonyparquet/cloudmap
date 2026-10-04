@@ -352,7 +352,9 @@ class GraphBuilder {
     for (const [k, source] of Object.entries(rule?.details ?? {})) extra[k] = await this.ev.value(source, r);
     const consoleUrl =
       (rule?.console ? await this.ev.str(rule.console, r) : undefined) ??
-      (r.arn ? `https://console.aws.amazon.com/go/view?arn=${encodeURIComponent(r.arn)}` : undefined);
+      (r.arn?.startsWith('arn:')
+        ? `https://console.aws.amazon.com/go/view?arn=${encodeURIComponent(r.arn)}`
+        : undefined);
     const icon = external && typeof raw.icon === 'string' ? raw.icon : (rule?.icon ?? 'generic');
 
     const baseId = resourceKey(r);
