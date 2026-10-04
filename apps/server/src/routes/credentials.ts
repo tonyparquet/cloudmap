@@ -90,10 +90,12 @@ export async function resolveCredentials(
   if (!parent || !canBeHub(parent)) throw badRequest('Profil hub introuvable ou invalide', 'HUB_INVALIDE');
   if (!canEdit(user, parent)) throw forbidden('Droits insuffisants sur le profil hub');
   const base = await ctx.vault.resolve(family, parent);
+  const { roleArn } = profile.auth;
+  if (!roleArn) throw badRequest('Rôle du compte membre manquant', 'HUB_INVALIDE');
   try {
     // Chaînage de rôles : AWS limite la session à une heure.
     const duration = Math.min(ctx.config.app.credentials.defaultDurationSeconds, 3600);
-    return await assumeRole(base, profile.auth.roleArn, profile.auth.externalId, duration);
+    return await assumeRole(base, roleArn, profile.auth.externalId, duration);
   } catch (err) {
     throw badRequest(
       `Impossible d’assumer ${profile.auth.roleArn} depuis « ${parent.name} » (${(err as { name?: string })?.name ?? 'erreur'}) : vérifiez que le rôle est déployé dans le compte et l’External ID`,

@@ -149,8 +149,8 @@ export function ProfileForm({ id }: { id?: string }) {
       setRegions(p.regions);
       setAuthKind(p.auth.kind);
       if (p.auth.kind === 'assume-role-hub' || p.auth.kind === 'assume-role-profile') {
-        setRoleArn(p.auth.roleArn);
-        setExternalId(p.auth.externalId);
+        setRoleArn(p.auth.roleArn ?? '');
+        setExternalId(p.auth.externalId ?? '');
       }
       if (p.auth.kind === 'assume-role-profile') setParentId(p.auth.parentProfileId);
       setGroups(p.allowedGroups.join(', '));

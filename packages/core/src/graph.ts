@@ -12,6 +12,7 @@ import {
   type ServiceUse,
 } from './flows.ts';
 import { buildNetworkModel, nameTag, type NetworkModel, type SecurityGroup } from './network.ts';
+import { NETWORK_PROVIDERS } from './providers/index.ts';
 import { Evaluator, findRule, type Resolver, type Rule, type RuleSet } from './rules.ts';
 import type {
   EdgeKind,
@@ -169,6 +170,10 @@ class GraphBuilder {
   ) {
     this.resources = [...snapshot.resources, ...externalResources(profile)];
     this.net = buildNetworkModel(snapshot.resources);
+    for (const p of NETWORK_PROVIDERS) {
+      const own = snapshot.resources.filter((r) => p.owns(r.type));
+      if (own.length) p.extend(this.net, own);
+    }
     this.ev = new Evaluator(snapshot, this.resources, rules, this.warnings);
     for (const r of this.resources) {
       if (r.arn) this.byArn.set(r.arn, r);
@@ -655,6 +660,7 @@ class GraphBuilder {
   private flowNode(m: NodeMeta): FlowNode {
     return {
       id: m.node.id,
+      type: m.node.type,
       label: m.node.label,
       sgs: m.sgs,
       ips: m.ips,
@@ -722,7 +728,13 @@ class GraphBuilder {
         port: f.ports,
         evidence: f.evidence,
       });
-    inferSecurityGroupFlows(ctx).forEach(push);
+    // AWS : groupes de sécurité et NACL ; autres fournisseurs : leurs propres règles, sur leurs nœuds.
+    const others = new Set(NETWORK_PROVIDERS.flatMap((p) => flowNodes.filter((n) => p.owns(n.type))));
+    inferSecurityGroupFlows({ ...ctx, nodes: flowNodes.filter((n) => !others.has(n)) }).forEach(push);
+    for (const p of NETWORK_PROVIDERS) {
+      const nodes = flowNodes.filter((n) => p.owns(n.type));
+      if (nodes.length) p.flows({ ...ctx, nodes }).forEach(push);
+    }
     const egress = inferEgressFlows(ctx, this.serviceUses, {
       nodeOf: (ref) => this.nodesByResource.get(ref)?.[0] ?? this.metasForRef(ref)[0]?.node.id,
     });

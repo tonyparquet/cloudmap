@@ -7,6 +7,7 @@ import type {
   RawSnapshot,
   Resource,
 } from './schemas.ts';
+import { ORG_GRAPH_BUILDERS } from './providers/index.ts';
 
 /**
  * Vue « Organisation » (fonction pure) : organisation > OU imbriquées > comptes, politiques
@@ -35,7 +36,17 @@ function accountStatus(state: string | undefined): NodeStatus {
   return 'inconnu';
 }
 
+/** Vue « Organisation » du snapshot, quel que soit le fournisseur ; `null` sans données d'organisation. */
 export function buildOrgGraph(snapshot: RawSnapshot): Graph | null {
+  for (const build of [buildAwsOrgGraph, ...ORG_GRAPH_BUILDERS]) {
+    const graph = build(snapshot);
+    if (graph) return graph;
+  }
+  return null;
+}
+
+/** AWS Organizations et IAM Identity Center. */
+export function buildAwsOrgGraph(snapshot: RawSnapshot): Graph | null {
   const of = (type: string) => snapshot.resources.filter((r) => r.type === type);
   const orgRes = of('AWS::Organizations::Organization')[0];
   const instances = of('AWS::SSO::Instance');

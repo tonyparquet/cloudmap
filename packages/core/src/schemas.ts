@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PROVIDERS } from './providers/types.ts';
 
 export const STATUSES = ['actif', 'en-veille', 'arrete', 'erreur', 'inconnu'] as const;
 export const EDGE_KINDS = ['network', 'cicd', 'data', 'dependency'] as const;
@@ -23,6 +24,10 @@ export type EdgeState = (typeof EDGE_STATES)[number];
 export type ContainerKind = (typeof CONTAINER_KINDS)[number];
 
 export const accountIdSchema = z.string().regex(/^\d{12}$/, 'ID de compte AWS : 12 chiffres');
+/** Compte de tout fournisseur (compte AWS, abonnement Azure, projet Google Cloud) : voir providerIdProblems. */
+export const cloudIdSchema = z.string().regex(/^[\w.:-]{1,64}$/, 'Identifiant de compte invalide');
+export const cloudRegionSchema = z.string().regex(/^[a-z][a-z0-9-]{1,40}$/, 'Code de région invalide');
+export const providerSchema = z.enum(PROVIDERS);
 export const regionSchema = z.string().regex(/^[a-z]{2}(-[a-z]+)+-\d{1,2}$/, 'Code de région AWS invalide');
 const isoDate = z.string().refine((s) => !Number.isNaN(Date.parse(s)), 'Date ISO 8601 attendue');
 
@@ -36,10 +41,7 @@ export const resourceSchema = z.strictObject({
   raw: z.unknown(),
   tags: z.record(z.string(), z.string()).optional(),
   /** Compte d'origine : renseigné uniquement dans une vue multi-comptes (snapshots fusionnés). */
-  account: z
-    .string()
-    .regex(/^\d{12}$/)
-    .optional(),
+  account: cloudIdSchema.optional(),
 });
 export type Resource = z.infer<typeof resourceSchema>;
 
@@ -47,7 +49,9 @@ export const rawSnapshotSchema = z.strictObject({
   schemaVersion: z.literal(1),
   meta: z.strictObject({
     profileId: z.string().min(1).max(200),
-    accountId: accountIdSchema,
+    /** Absent : AWS (snapshots antérieurs au multi-cloud). */
+    provider: providerSchema.optional(),
+    accountId: cloudIdSchema,
     regions: z.array(z.string().max(64)),
     startedAt: isoDate,
     finishedAt: isoDate,
@@ -113,11 +117,13 @@ export const profileAuthSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({ kind: z.literal('import-only') }),
   // Rôle d'un compte membre assumé avec les identifiants d'un autre profil (hub d'organisation).
+  // AWS : rôle assumé (ARN + External ID obligatoires). Azure / Google Cloud : mêmes identifiants que le
+  // hub, portée différente (abonnement ou projet).
   z.strictObject({
     kind: z.literal('assume-role-profile'),
     parentProfileId: z.string().regex(/^[\w-]{1,64}$/),
-    roleArn: roleArnSchema,
-    externalId: externalIdSchema,
+    roleArn: roleArnSchema.optional(),
+    externalId: externalIdSchema.optional(),
   }),
 ]);
 
@@ -143,8 +149,10 @@ export const profileSchema = z.strictObject({
   name: shortText(100),
   client: z.string().max(100).optional(),
   description: z.string().max(2000).optional(),
-  accountId: accountIdSchema,
-  regions: z.array(regionSchema).max(40),
+  /** Absent : AWS. Les contrôles propres au fournisseur sont dans providerIdProblems. */
+  provider: providerSchema.optional(),
+  accountId: cloudIdSchema,
+  regions: z.array(cloudRegionSchema).max(40),
   auth: profileAuthSchema,
   tagFilters: z
     .array(z.strictObject({ key: shortText(128), values: z.array(z.string().max(256)).max(50) }))

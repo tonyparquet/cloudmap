@@ -60,7 +60,7 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
   const selected = org.data?.canCreate
     ? (chosen ?? candidates.filter((a) => a.status === 'ACTIVE').map((a) => a.id))
     : [];
-  const role = roleName ?? known?.roleArn.split('/').pop() ?? 'CartographeLectureSeule';
+  const role = roleName ?? known?.roleArn?.split('/').pop() ?? 'CartographeLectureSeule';
   const extId = known?.externalId ?? externalId;
   const selRegions = regions ?? hub?.regions ?? [];
   const commands = [
