@@ -371,11 +371,11 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
   });
 }
 
-/** Mode démo : profils « Démo » et « Partenaire » (comptes fictifs reliés) chargés depuis fixtures/. */
+/** Mode démo : profils fictifs chargés depuis fixtures/ (AWS « Démo » et « Partenaire », Azure). */
 export function seedDemo(ctx: Ctx): void {
   const dir = join(ctx.config.appRoot, 'fixtures');
   const json = (name: string): unknown => JSON.parse(readFileSync(join(dir, name), 'utf8'));
-  for (const prefix of ['demo', 'demo-partenaire']) {
+  for (const prefix of ['demo', 'demo-partenaire', 'demo-azure']) {
     const profile = profileSchema.parse(json(`${prefix}-profile.json`));
     saveProfile(ctx.db, profile);
     // Nouveau snapshot si la fixture a changé depuis le dernier démarrage (mise à jour de l'application).

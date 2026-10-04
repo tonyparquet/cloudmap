@@ -1,0 +1,25 @@
+{
+  "Name": "Cartographe - lecture seule",
+  "IsCustom": true,
+  "Description": "Inventaire Azure Resource Graph en lecture seule pour le Cartographe : aucune action, aucune lecture de clé, de secret ni de chaîne de connexion.",
+  "Actions": ["*/read"],
+  "NotActions": [
+    "Microsoft.Storage/storageAccounts/listKeys/action",
+    "Microsoft.Storage/storageAccounts/listAccountSas/action",
+    "Microsoft.Storage/storageAccounts/listServiceSas/action",
+    "Microsoft.Web/sites/config/list/action",
+    "Microsoft.Web/sites/publishxml/action",
+    "Microsoft.Web/sites/slots/config/list/action",
+    "Microsoft.DocumentDB/databaseAccounts/listKeys/action",
+    "Microsoft.DocumentDB/databaseAccounts/listConnectionStrings/action",
+    "Microsoft.Cache/redis/listKeys/action",
+    "Microsoft.ServiceBus/namespaces/authorizationRules/listKeys/action",
+    "Microsoft.EventHub/namespaces/authorizationRules/listKeys/action",
+    "Microsoft.ContainerRegistry/registries/listCredentials/action",
+    "Microsoft.ContainerService/managedClusters/listClusterAdminCredential/action",
+    "Microsoft.ContainerService/managedClusters/listClusterUserCredential/action"
+  ],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": ["/subscriptions/<SUBSCRIPTION_ID>"]
+}

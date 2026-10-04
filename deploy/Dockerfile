@@ -38,6 +38,7 @@ COPY --from=build /src/apps/web/dist ./apps/web/dist
 COPY config ./config
 COPY fixtures ./fixtures
 COPY docs/iam ./docs/iam
+COPY docs/azure ./docs/azure
 COPY CHANGELOG.md ./CHANGELOG.md
 USER 10001:10001
 EXPOSE 8443

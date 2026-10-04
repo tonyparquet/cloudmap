@@ -1,0 +1,13 @@
+{
+  "id": "demo-azure",
+  "name": "Azure (exemple)",
+  "client": "Exemple fictif",
+  "description": "Abonnement Azure fictif : Front Door, App Service, VNet appairé, NSG, endpoint privé vers SQL Database.",
+  "provider": "azure",
+  "accountId": "00000000-0000-4000-8000-000000000001",
+  "regions": ["francecentral"],
+  "auth": {
+    "kind": "import-only"
+  },
+  "allowedGroups": []
+}

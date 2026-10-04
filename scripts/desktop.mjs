@@ -80,7 +80,9 @@ async function assemble() {
     filter: (src) => !src.includes(join('icons', 'aws')),
   });
   cpSync(join(root, 'fixtures'), join(res, 'fixtures'), { recursive: true });
-  cpSync(join(root, 'docs', 'iam'), join(res, 'docs', 'iam'), { recursive: true });
+  for (const doc of ['iam', 'azure', 'gcp'])
+    if (existsSync(join(root, 'docs', doc)))
+      cpSync(join(root, 'docs', doc), join(res, 'docs', doc), { recursive: true });
   cpSync(join(root, 'CHANGELOG.md'), join(res, 'CHANGELOG.md'));
 
   const runtime = JSON.parse(readFileSync(join(root, 'deploy', 'runtime', 'package.json'), 'utf8'));
