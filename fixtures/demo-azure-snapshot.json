@@ -1,0 +1,720 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "profileId": "demo-azure",
+    "provider": "azure",
+    "accountId": "00000000-0000-4000-8000-000000000001",
+    "regions": ["francecentral"],
+    "startedAt": "2026-10-01T08:00:00Z",
+    "finishedAt": "2026-10-01T08:00:37Z",
+    "scannerVersion": "demo"
+  },
+  "resources": [
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo",
+      "type": "microsoft.network/virtualnetworks",
+      "region": "francecentral",
+      "raw": {
+        "name": "vnet-demo",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": ["10.40.0.0/16"]
+          },
+          "subnets": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-web",
+              "name": "snet-web",
+              "properties": {
+                "addressPrefix": "10.40.1.0/24",
+                "networkSecurityGroup": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-web"
+                },
+                "routeTable": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/routetables/rt-web"
+                }
+              }
+            },
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-data",
+              "name": "snet-data",
+              "properties": {
+                "addressPrefix": "10.40.2.0/24",
+                "networkSecurityGroup": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-data"
+                },
+                "natGateway": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/natgateways/nat-demo"
+                }
+              }
+            }
+          ],
+          "virtualNetworkPeerings": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/virtualnetworkpeerings/vers-partage",
+              "name": "vers-partage",
+              "properties": {
+                "peeringState": "Connected",
+                "remoteVirtualNetwork": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-partage/providers/microsoft.network/virtualnetworks/vnet-partage"
+                },
+                "remoteAddressSpace": {
+                  "addressPrefixes": ["10.50.0.0/16"]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "tags": {
+        "environnement": "exemple"
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-partage/providers/microsoft.network/virtualnetworks/vnet-partage",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-partage/providers/microsoft.network/virtualnetworks/vnet-partage",
+      "type": "microsoft.network/virtualnetworks",
+      "region": "francecentral",
+      "raw": {
+        "name": "vnet-partage",
+        "resourceGroup": "rg-partage",
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": ["10.50.0.0/16"]
+          },
+          "subnets": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-partage/providers/microsoft.network/virtualnetworks/vnet-partage/subnets/snet-outils",
+              "name": "snet-outils",
+              "properties": {
+                "addressPrefix": "10.50.1.0/24"
+              }
+            }
+          ],
+          "virtualNetworkPeerings": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-partage/providers/microsoft.network/virtualnetworks/vnet-partage/virtualnetworkpeerings/vers-demo",
+              "name": "vers-demo",
+              "properties": {
+                "peeringState": "Connected",
+                "remoteVirtualNetwork": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo"
+                },
+                "remoteAddressSpace": {
+                  "addressPrefixes": ["10.40.0.0/16"]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-web",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-web",
+      "type": "microsoft.network/networksecuritygroups",
+      "region": "francecentral",
+      "raw": {
+        "name": "nsg-web",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "securityRules": [
+            {
+              "name": "RefuserSSHInternet",
+              "properties": {
+                "direction": "Inbound",
+                "priority": 100,
+                "access": "Deny",
+                "protocol": "Tcp",
+                "destinationPortRange": "22",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*"
+              }
+            },
+            {
+              "name": "AutoriserHTTPS",
+              "properties": {
+                "direction": "Inbound",
+                "priority": 110,
+                "access": "Allow",
+                "protocol": "Tcp",
+                "destinationPortRange": "443",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*"
+              }
+            },
+            {
+              "name": "AutoriserSSHPartage",
+              "properties": {
+                "direction": "Inbound",
+                "priority": 200,
+                "access": "Allow",
+                "protocol": "Tcp",
+                "destinationPortRange": "22",
+                "sourceAddressPrefix": "10.50.0.0/16",
+                "destinationAddressPrefix": "*"
+              }
+            },
+            {
+              "name": "AutoriserSSHInternet",
+              "properties": {
+                "direction": "Inbound",
+                "priority": 300,
+                "access": "Allow",
+                "protocol": "Tcp",
+                "destinationPortRange": "22",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*"
+              }
+            }
+          ],
+          "subnets": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-web"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-data",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-data",
+      "type": "microsoft.network/networksecuritygroups",
+      "region": "francecentral",
+      "raw": {
+        "name": "nsg-data",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "securityRules": [
+            {
+              "name": "AutoriserSQLDepuisWeb",
+              "properties": {
+                "direction": "Inbound",
+                "priority": 100,
+                "access": "Allow",
+                "protocol": "Tcp",
+                "destinationPortRange": "1433",
+                "sourceApplicationSecurityGroups": [
+                  {
+                    "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/applicationsecuritygroups/asg-web"
+                  }
+                ],
+                "destinationAddressPrefix": "*"
+              }
+            },
+            {
+              "name": "RefuserInternet",
+              "properties": {
+                "direction": "Inbound",
+                "priority": 4000,
+                "access": "Deny",
+                "protocol": "*",
+                "destinationPortRange": "*",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "*"
+              }
+            }
+          ],
+          "subnets": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-data"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/applicationsecuritygroups/asg-web",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/applicationsecuritygroups/asg-web",
+      "type": "microsoft.network/applicationsecuritygroups",
+      "region": "francecentral",
+      "raw": {
+        "name": "asg-web",
+        "resourceGroup": "rg-demo",
+        "properties": {}
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/routetables/rt-web",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/routetables/rt-web",
+      "type": "microsoft.network/routetables",
+      "region": "francecentral",
+      "raw": {
+        "name": "rt-web",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "routes": [
+            {
+              "name": "internet",
+              "properties": {
+                "addressPrefix": "0.0.0.0/0",
+                "nextHopType": "Internet"
+              }
+            }
+          ],
+          "subnets": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-web"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/natgateways/nat-demo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/natgateways/nat-demo",
+      "type": "microsoft.network/natgateways",
+      "region": "francecentral",
+      "raw": {
+        "name": "nat-demo",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "provisioningState": "Succeeded",
+          "subnets": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-data"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/publicipaddresses/pip-vm-web",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/publicipaddresses/pip-vm-web",
+      "type": "microsoft.network/publicipaddresses",
+      "region": "francecentral",
+      "raw": {
+        "name": "pip-vm-web",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "ipAddress": "203.0.113.10",
+          "publicIPAllocationMethod": "Static"
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-vm-web",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-vm-web",
+      "type": "microsoft.network/networkinterfaces",
+      "region": "francecentral",
+      "raw": {
+        "name": "nic-vm-web",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "virtualMachine": {
+            "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.compute/virtualmachines/vm-web"
+          },
+          "networkSecurityGroup": {
+            "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-web"
+          },
+          "ipConfigurations": [
+            {
+              "name": "ipconfig1",
+              "properties": {
+                "subnet": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-web"
+                },
+                "privateIPAddress": "10.40.1.4",
+                "publicIPAddress": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/publicipaddresses/pip-vm-web"
+                },
+                "applicationSecurityGroups": [
+                  {
+                    "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/applicationsecuritygroups/asg-web"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-pe-sql",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-pe-sql",
+      "type": "microsoft.network/networkinterfaces",
+      "region": "francecentral",
+      "raw": {
+        "name": "nic-pe-sql",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "privateEndpoint": {
+            "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/privateendpoints/pe-sql"
+          },
+          "ipConfigurations": [
+            {
+              "name": "ipconfig1",
+              "properties": {
+                "subnet": {
+                  "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-data"
+                },
+                "privateIPAddress": "10.40.2.4"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.compute/virtualmachines/vm-web",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.compute/virtualmachines/vm-web",
+      "type": "microsoft.compute/virtualmachines",
+      "region": "francecentral",
+      "raw": {
+        "name": "vm-web",
+        "resourceGroup": "rg-demo",
+        "_nics": [
+          {
+            "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-vm-web",
+            "subnetId": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-web",
+            "privateIp": "10.40.1.4",
+            "publicIpId": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/publicipaddresses/pip-vm-web",
+            "publicIp": "203.0.113.10",
+            "nsgId": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networksecuritygroups/nsg-web",
+            "asgIds": [
+              "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/applicationsecuritygroups/asg-web"
+            ]
+          }
+        ],
+        "properties": {
+          "hardwareProfile": {
+            "vmSize": "Standard_B2s"
+          },
+          "storageProfile": {
+            "osDisk": {
+              "osType": "Linux"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaces": [
+              {
+                "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-vm-web"
+              }
+            ]
+          },
+          "extended": {
+            "instanceView": {
+              "powerState": {
+                "code": "PowerState/running"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/privateendpoints/pe-sql",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/privateendpoints/pe-sql",
+      "type": "microsoft.network/privateendpoints",
+      "region": "francecentral",
+      "raw": {
+        "name": "pe-sql",
+        "resourceGroup": "rg-demo",
+        "_nics": [
+          {
+            "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-pe-sql",
+            "subnetId": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-data",
+            "privateIp": "10.40.2.4",
+            "asgIds": []
+          }
+        ],
+        "properties": {
+          "subnet": {
+            "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/virtualnetworks/vnet-demo/subnets/snet-data"
+          },
+          "networkInterfaces": [
+            {
+              "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/networkinterfaces/nic-pe-sql"
+            }
+          ],
+          "privateLinkServiceConnections": [
+            {
+              "name": "sql",
+              "properties": {
+                "privateLinkServiceId": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.sql/servers/sql-demo",
+                "groupIds": ["sqlServer"],
+                "privateLinkServiceConnectionState": {
+                  "status": "Approved"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.sql/servers/sql-demo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.sql/servers/sql-demo",
+      "type": "microsoft.sql/servers",
+      "region": "francecentral",
+      "raw": {
+        "name": "sql-demo",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "state": "Ready",
+          "version": "12.0",
+          "publicNetworkAccess": "Disabled",
+          "fullyQualifiedDomainName": "sql-demo.database.windows.net"
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.sql/servers/sql-demo/databases/db-commandes",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.sql/servers/sql-demo/databases/db-commandes",
+      "type": "microsoft.sql/servers/databases",
+      "region": "francecentral",
+      "raw": {
+        "name": "sql-demo/db-commandes",
+        "resourceGroup": "rg-demo",
+        "sku": {
+          "name": "S1",
+          "tier": "Standard"
+        },
+        "properties": {
+          "status": "Online"
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.web/serverfarms/plan-demo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.web/serverfarms/plan-demo",
+      "type": "microsoft.web/serverfarms",
+      "region": "francecentral",
+      "raw": {
+        "name": "plan-demo",
+        "resourceGroup": "rg-demo",
+        "sku": {
+          "name": "P1v3"
+        },
+        "properties": {
+          "status": "Ready"
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.web/sites/app-commandes",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.web/sites/app-commandes",
+      "type": "microsoft.web/sites",
+      "region": "francecentral",
+      "raw": {
+        "name": "app-commandes",
+        "resourceGroup": "rg-demo",
+        "kind": "app,linux",
+        "properties": {
+          "state": "Running",
+          "serverFarmId": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.web/serverfarms/plan-demo",
+          "defaultHostName": "app-commandes.azurewebsites.net",
+          "hostNames": ["app-commandes.azurewebsites.net"],
+          "httpsOnly": true
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/frontdoors/fd-demo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.network/frontdoors/fd-demo",
+      "type": "microsoft.network/frontdoors",
+      "region": "global",
+      "raw": {
+        "name": "fd-demo",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "resourceState": "Enabled",
+          "frontendEndpoints": [
+            {
+              "name": "fd-demo",
+              "properties": {
+                "hostName": "fd-demo.azurefd.net"
+              }
+            }
+          ],
+          "backendPools": [
+            {
+              "name": "app",
+              "properties": {
+                "backends": [
+                  {
+                    "address": "app-commandes.azurewebsites.net",
+                    "httpsPort": 443
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.keyvault/vaults/kv-demo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.keyvault/vaults/kv-demo",
+      "type": "microsoft.keyvault/vaults",
+      "region": "francecentral",
+      "raw": {
+        "name": "kv-demo",
+        "resourceGroup": "rg-demo",
+        "properties": {
+          "enableRbacAuthorization": true,
+          "enableSoftDelete": true,
+          "sku": {
+            "name": "standard"
+          }
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.storage/storageaccounts/stdemo",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.storage/storageaccounts/stdemo",
+      "type": "microsoft.storage/storageaccounts",
+      "region": "francecentral",
+      "raw": {
+        "name": "stdemo",
+        "resourceGroup": "rg-demo",
+        "kind": "StorageV2",
+        "sku": {
+          "name": "Standard_LRS"
+        },
+        "properties": {
+          "allowBlobPublicAccess": false,
+          "minimumTlsVersion": "TLS1_2"
+        }
+      }
+    },
+    {
+      "arn": "/providers/microsoft.management/managementgroups/00000000-0000-4000-8000-0000000000aa",
+      "id": "/providers/microsoft.management/managementgroups/00000000-0000-4000-8000-0000000000aa",
+      "type": "microsoft.management/managementgroups",
+      "region": "global",
+      "raw": {
+        "name": "00000000-0000-4000-8000-0000000000aa",
+        "properties": {
+          "displayName": "Tenant Root Group",
+          "tenantId": "00000000-0000-4000-8000-0000000000aa"
+        }
+      }
+    },
+    {
+      "arn": "/providers/microsoft.management/managementgroups/mg-plateforme",
+      "id": "/providers/microsoft.management/managementgroups/mg-plateforme",
+      "type": "microsoft.management/managementgroups",
+      "region": "global",
+      "raw": {
+        "name": "mg-plateforme",
+        "properties": {
+          "displayName": "Plateforme",
+          "tenantId": "00000000-0000-4000-8000-0000000000aa",
+          "details": {
+            "parent": {
+              "id": "/providers/microsoft.management/managementgroups/00000000-0000-4000-8000-0000000000aa",
+              "name": "00000000-0000-4000-8000-0000000000aa"
+            }
+          }
+        }
+      }
+    },
+    {
+      "arn": "/providers/microsoft.management/managementgroups/mg-production",
+      "id": "/providers/microsoft.management/managementgroups/mg-production",
+      "type": "microsoft.management/managementgroups",
+      "region": "global",
+      "raw": {
+        "name": "mg-production",
+        "properties": {
+          "displayName": "Production",
+          "tenantId": "00000000-0000-4000-8000-0000000000aa",
+          "details": {
+            "parent": {
+              "id": "/providers/microsoft.management/managementgroups/00000000-0000-4000-8000-0000000000aa",
+              "name": "00000000-0000-4000-8000-0000000000aa"
+            }
+          }
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001",
+      "type": "microsoft.resources/subscriptions",
+      "region": "global",
+      "raw": {
+        "name": "abonnement-exemple",
+        "properties": {
+          "state": "Enabled",
+          "managementGroupAncestorsChain": [
+            {
+              "name": "mg-production"
+            },
+            {
+              "name": "00000000-0000-4000-8000-0000000000aa"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000002",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000002",
+      "type": "microsoft.resources/subscriptions",
+      "region": "global",
+      "raw": {
+        "name": "abonnement-outils",
+        "properties": {
+          "state": "Enabled",
+          "managementGroupAncestorsChain": [
+            {
+              "name": "mg-plateforme"
+            },
+            {
+              "name": "00000000-0000-4000-8000-0000000000aa"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "arn": "/providers/microsoft.management/managementgroups/mg-production/providers/microsoft.authorization/policyassignments/emplacements",
+      "id": "/providers/microsoft.management/managementgroups/mg-production/providers/microsoft.authorization/policyassignments/emplacements",
+      "type": "microsoft.authorization/policyassignments",
+      "region": "global",
+      "raw": {
+        "name": "emplacements",
+        "properties": {
+          "displayName": "Emplacements autorisés",
+          "scope": "/providers/microsoft.management/managementgroups/mg-production",
+          "policyDefinitionId": "/providers/microsoft.authorization/policydefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c",
+          "enforcementMode": "Default"
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/providers/microsoft.authorization/roleassignments/00000000-0000-4000-8000-0000000000b1",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/providers/microsoft.authorization/roleassignments/00000000-0000-4000-8000-0000000000b1",
+      "type": "microsoft.authorization/roleassignments",
+      "region": "global",
+      "raw": {
+        "name": "lecteurs",
+        "roleName": "Reader",
+        "properties": {
+          "principalId": "11111111-0000-4000-8000-000000000001",
+          "principalType": "Group",
+          "scope": "/subscriptions/00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "arn": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.authorization/roleassignments/00000000-0000-4000-8000-0000000000b2",
+      "id": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo/providers/microsoft.authorization/roleassignments/00000000-0000-4000-8000-0000000000b2",
+      "type": "microsoft.authorization/roleassignments",
+      "region": "global",
+      "raw": {
+        "name": "deploiement",
+        "roleName": "Contributor",
+        "properties": {
+          "principalId": "22222222-0000-4000-8000-000000000002",
+          "principalType": "ServicePrincipal",
+          "scope": "/subscriptions/00000000-0000-4000-8000-000000000001/resourcegroups/rg-demo"
+        }
+      }
+    }
+  ],
+  "errors": []
+}

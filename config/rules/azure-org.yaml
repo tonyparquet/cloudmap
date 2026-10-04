@@ -1,0 +1,33 @@
+# Azure — organisation : dessinée par la vue « Organisation », masquée du diagramme d'infrastructure.
+- {
+    type: microsoft.management/managementgroups,
+    typeLabel: Groupe d'administration,
+    label: '$r.raw.properties.displayName',
+    icon: ou,
+    category: management,
+    hidden: true,
+  }
+- {
+    type: microsoft.resources/subscriptions,
+    typeLabel: Abonnement,
+    label: '$r.raw.name',
+    icon: account,
+    category: management,
+    hidden: true,
+  }
+- {
+    type: microsoft.authorization/policyassignments,
+    typeLabel: Affectation Azure Policy,
+    label: '$r.raw.properties.displayName',
+    icon: policy,
+    category: security,
+    hidden: true,
+  }
+- {
+    type: microsoft.authorization/roleassignments,
+    typeLabel: Attribution de rôle,
+    label: '$r.raw.roleName',
+    icon: group,
+    category: security,
+    hidden: true,
+  }

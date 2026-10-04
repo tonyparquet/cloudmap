@@ -1,0 +1,27 @@
+# Azure — App Service et Functions (jamais de paramètres d'application ni de chaînes de connexion :
+# le scanner les retire). Les plans App Service apparaissent dans les détails des applications.
+- {
+    type: microsoft.web/serverfarms,
+    typeLabel: Plan App Service,
+    label: '$r.raw.name',
+    icon: azure-app-service,
+    category: compute,
+    hidden: true,
+  }
+
+- type: microsoft.web/sites
+  typeLabel: App Service
+  label: '$r.raw.name'
+  sublabel: "($contains($r.raw.kind, 'functionapp') ? 'Functions' : 'App Service') & ' · ' & $r.raw.properties.defaultHostName"
+  icon: azure-app-service
+  category: compute
+  dnsNames: '$r.raw.properties.hostNames'
+  status:
+    - { when: "$r.raw.properties.state = 'Running'", value: actif }
+    - { when: "$r.raw.properties.state = 'Stopped'", value: arrete }
+    - { default: inconnu }
+  console: "'https://portal.azure.com/#@/resource' & $r.id"
+  details:
+    plan: "$substringAfter($r.raw.properties.serverFarmId, '/serverfarms/')"
+    httpsUniquement: '$r.raw.properties.httpsOnly'
+    integrationVnet: '$r.raw.properties.virtualNetworkSubnetId'

@@ -1,0 +1,216 @@
+# Azure — réseau. Types ARM en minuscules (Resource Graph), identifiants ARM en minuscules (scanner).
+# VNet, sous-réseaux, NSG, ASG, cartes réseau et tables de routage sont dessinés en conteneurs ou
+# servent à l'inférence des flux : ils sont masqués en tant que nœuds.
+- {
+    type: microsoft.network/virtualnetworks,
+    typeLabel: Réseau virtuel,
+    label: '$r.raw.name',
+    icon: azure-vnet,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: microsoft.network/networksecuritygroups,
+    typeLabel: Groupe de sécurité réseau,
+    label: '$r.raw.name',
+    icon: azure-nsg,
+    category: security,
+    hidden: true,
+  }
+- {
+    type: microsoft.network/applicationsecuritygroups,
+    typeLabel: Groupe de sécurité d'application,
+    label: '$r.raw.name',
+    icon: azure-asg,
+    category: security,
+    hidden: true,
+  }
+- {
+    type: microsoft.network/networkinterfaces,
+    typeLabel: Carte réseau,
+    label: '$r.raw.name',
+    icon: azure-nic,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: microsoft.network/routetables,
+    typeLabel: Table de routage,
+    label: '$r.raw.name',
+    icon: azure-route,
+    category: network,
+    hidden: true,
+  }
+- {
+    type: microsoft.network/publicipaddresses,
+    typeLabel: Adresse IP publique,
+    label: '$r.raw.name',
+    icon: azure-pip,
+    category: network,
+    hidden: true,
+  }
+
+- type: microsoft.network/natgateways
+  typeLabel: Passerelle NAT
+  label: '$r.raw.name'
+  sublabel: "'NAT · ' & $string($count($r.raw.properties.subnets)) & ' sous-réseau(x)'"
+  icon: azure-nat
+  category: network
+  placement: { container: vpc, ref: "$substringBefore($r.raw.properties.subnets[0].id, '/subnets/')" }
+  status: &provisioning
+    - { when: "$r.raw.properties.provisioningState = 'Succeeded'", value: actif }
+    - { when: "$r.raw.properties.provisioningState = 'Failed'", value: erreur }
+    - {
+        when: "$r.raw.properties.provisioningState in ['Creating', 'Updating', 'Deleting']",
+        value: en-veille,
+      }
+    - { default: actif }
+  console: &console "'https://portal.azure.com/#@/resource' & $r.id"
+
+- type: microsoft.network/privateendpoints
+  typeLabel: Endpoint privé
+  label: '$r.raw.name'
+  sublabel: "'Private Link · ' & $join($r.raw.properties.privateLinkServiceConnections.properties.groupIds, ', ')"
+  icon: azure-private-endpoint
+  category: network
+  placement: { container: subnet, ref: '[$r.raw.properties.subnet.id, $r.raw._nics.subnetId]', multi: first }
+  securityGroups: '$r.raw._nics.nsgId'
+  ips: '$r.raw._nics.privateIp'
+  status:
+    - {
+        when: "'Approved' in $r.raw.properties.privateLinkServiceConnections.properties.privateLinkServiceConnectionState.status",
+        value: actif,
+      }
+    - {
+        when: "'Pending' in $r.raw.properties.privateLinkServiceConnections.properties.privateLinkServiceConnectionState.status",
+        value: en-veille,
+      }
+    - { default: inconnu }
+  relations:
+    - {
+        kind: network,
+        to: '$r.raw.properties.privateLinkServiceConnections.properties.privateLinkServiceId',
+        resolve: arn,
+        label: Private Link,
+      }
+  console: *console
+
+- type: microsoft.network/loadbalancers
+  typeLabel: Équilibreur de charge
+  label: '$r.raw.name'
+  sublabel: "($r.raw.properties.frontendIPConfigurations.properties.publicIPAddress ? 'public' : 'interne') & ' · ' & $r.raw.sku.name"
+  icon: azure-load-balancer
+  category: network
+  placement:
+    {
+      container: subnet,
+      ref: '$r.raw.properties.frontendIPConfigurations.properties.subnet.id',
+      multi: first,
+    }
+  ips: '$r.raw.properties.frontendIPConfigurations.properties.privateIPAddress'
+  status: *provisioning
+  relations:
+    - kind: network
+      to: "( $nics := $r.raw.properties.backendAddressPools.properties.backendIPConfigurations.id.$substringBefore($, '/ipconfigurations/'); $ofType('microsoft.compute/virtualmachines')[raw._nics.id in $nics].id )"
+      resolve: arn
+  console: *console
+
+- type: microsoft.network/applicationgateways
+  typeLabel: Application Gateway
+  label: '$r.raw.name'
+  sublabel: "$r.raw.properties.sku.tier & ($r.raw.properties.webApplicationFirewallConfiguration.enabled or $r.raw.properties.firewallPolicy ? ' · WAF' : '')"
+  icon: azure-app-gateway
+  category: network
+  placement:
+    { container: subnet, ref: '$r.raw.properties.gatewayIPConfigurations.properties.subnet.id', multi: first }
+  status:
+    - { when: "$r.raw.properties.operationalState = 'Running'", value: actif }
+    - { when: "$r.raw.properties.operationalState = 'Stopped'", value: arrete }
+    - { default: inconnu }
+  relations:
+    - {
+        kind: network,
+        to: '$r.raw.properties.backendAddressPools.properties.backendAddresses.fqdn',
+        resolve: dns-name,
+        label: HTTPS,
+      }
+    - kind: network
+      to: "( $nics := $r.raw.properties.backendAddressPools.properties.backendIPConfigurations.id.$substringBefore($, '/ipconfigurations/'); $ofType('microsoft.compute/virtualmachines')[raw._nics.id in $nics].id )"
+      resolve: arn
+  console: *console
+
+- type: microsoft.network/frontdoors
+  typeLabel: Front Door (classique)
+  label: '$r.raw.name'
+  sublabel: '$join($r.raw.properties.frontendEndpoints.properties.hostName, ", ")'
+  icon: azure-front-door
+  category: network
+  placement: { container: global }
+  dnsNames: '$r.raw.properties.frontendEndpoints.properties.hostName'
+  status:
+    - { when: "$r.raw.properties.resourceState = 'Enabled'", value: actif }
+    - { when: "$r.raw.properties.resourceState = 'Disabled'", value: arrete }
+    - { default: inconnu }
+  relations:
+    - {
+        kind: network,
+        to: '$r.raw.properties.backendPools.properties.backends.address',
+        resolve: dns-name,
+        label: HTTPS,
+      }
+  console: *console
+
+- type: microsoft.cdn/profiles
+  typeLabel: Front Door / CDN
+  label: '$r.raw.name'
+  sublabel: '$r.raw.sku.name'
+  icon: azure-front-door
+  category: network
+  placement: { container: global }
+  status: *provisioning
+  console: *console
+
+- type: microsoft.network/azurefirewalls
+  typeLabel: Pare-feu Azure
+  label: '$r.raw.name'
+  sublabel: "'Pare-feu · ' & $r.raw.properties.sku.tier"
+  icon: azure-firewall
+  category: security
+  placement:
+    { container: subnet, ref: '$r.raw.properties.ipConfigurations.properties.subnet.id', multi: first }
+  ips: '$r.raw.properties.ipConfigurations.properties.privateIPAddress'
+  status: *provisioning
+  console: *console
+
+- type: microsoft.network/virtualnetworkgateways
+  typeLabel: Passerelle de réseau virtuel
+  label: '$r.raw.name'
+  sublabel: "$r.raw.properties.gatewayType & ' · ' & $r.raw.properties.sku.name"
+  icon: azure-vpn-gateway
+  category: network
+  placement:
+    { container: subnet, ref: '$r.raw.properties.ipConfigurations.properties.subnet.id', multi: first }
+  status: *provisioning
+  console: *console
+
+- type: microsoft.network/bastionhosts
+  typeLabel: Bastion
+  label: '$r.raw.name'
+  sublabel: "'Bastion'"
+  icon: azure-bastion
+  category: security
+  placement:
+    { container: subnet, ref: '$r.raw.properties.ipConfigurations.properties.subnet.id', multi: first }
+  status: *provisioning
+  console: *console
+
+- type: microsoft.apimanagement/service
+  typeLabel: API Management
+  label: '$r.raw.name'
+  sublabel: "$r.raw.sku.name & ' · ' & $r.raw.properties.virtualNetworkType"
+  icon: azure-api-management
+  category: network
+  placement: { container: subnet, ref: '$r.raw.properties.virtualNetworkConfiguration.subnetResourceId' }
+  dnsNames: '$r.raw.properties.hostnameConfigurations.hostName'
+  status: *provisioning
+  console: *console

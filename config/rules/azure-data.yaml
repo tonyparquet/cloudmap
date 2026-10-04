@@ -1,0 +1,136 @@
+# Azure — données, stockage, messagerie, sécurité, supervision. Key Vault : métadonnées seulement
+# (aucun secret, clé ni certificat lu). Bases SQL : comptées sur leur serveur.
+- {
+    type: microsoft.sql/servers/databases,
+    typeLabel: Base SQL,
+    label: '$r.raw.name',
+    icon: azure-sql,
+    category: database,
+    hidden: true,
+  }
+
+- type: microsoft.sql/servers
+  typeLabel: Serveur SQL Database
+  label: '$r.raw.name'
+  sublabel: "$string($count($ofType('microsoft.sql/servers/databases')[$contains(id, $r.id & '/databases/')])) & ' base(s) · accès public ' & ($r.raw.properties.publicNetworkAccess = 'Disabled' ? 'désactivé' : 'activé')"
+  icon: azure-sql
+  category: database
+  dnsNames: '$r.raw.properties.fullyQualifiedDomainName'
+  status:
+    - { when: "$r.raw.properties.state = 'Ready'", value: actif }
+    - { when: "$r.raw.properties.state = 'Disabled'", value: arrete }
+    - { default: inconnu }
+  console: &console "'https://portal.azure.com/#@/resource' & $r.id"
+  details:
+    bases: "$ofType('microsoft.sql/servers/databases')[$contains(id, $r.id & '/databases/')].raw.name"
+
+- type: microsoft.documentdb/databaseaccounts
+  typeLabel: Cosmos DB
+  label: '$r.raw.name'
+  sublabel: "'Cosmos DB · ' & $r.raw.kind"
+  icon: azure-cosmos-db
+  category: database
+  status: &provisioning
+    - { when: "$r.raw.properties.provisioningState = 'Succeeded'", value: actif }
+    - { when: "$r.raw.properties.provisioningState = 'Failed'", value: erreur }
+    - { default: inconnu }
+  console: *console
+
+- type: microsoft.dbforpostgresql/flexibleservers
+  typeLabel: PostgreSQL (serveur flexible)
+  label: '$r.raw.name'
+  sublabel: "'PostgreSQL ' & $r.raw.properties.version"
+  icon: azure-postgresql
+  category: database
+  placement: { container: subnet, ref: '$r.raw.properties.network.delegatedSubnetResourceId' }
+  dnsNames: '$r.raw.properties.fullyQualifiedDomainName'
+  status: &server-state
+    - { when: "$r.raw.properties.state = 'Ready'", value: actif }
+    - { when: "$r.raw.properties.state = 'Stopped'", value: arrete }
+    - { default: inconnu }
+  console: *console
+
+- type: microsoft.dbformysql/flexibleservers
+  typeLabel: MySQL (serveur flexible)
+  label: '$r.raw.name'
+  sublabel: "'MySQL ' & $r.raw.properties.version"
+  icon: azure-mysql
+  category: database
+  placement: { container: subnet, ref: '$r.raw.properties.network.delegatedSubnetResourceId' }
+  dnsNames: '$r.raw.properties.fullyQualifiedDomainName'
+  status: *server-state
+  console: *console
+
+- type: microsoft.cache/redis
+  typeLabel: Cache Redis
+  label: '$r.raw.name'
+  sublabel: "'Redis ' & $r.raw.properties.redisVersion"
+  icon: azure-redis
+  category: database
+  placement: { container: subnet, ref: '$r.raw.properties.subnetId' }
+  ips: '$r.raw.properties.staticIP'
+  dnsNames: '$r.raw.properties.hostName'
+  status:
+    - { when: "$r.raw.properties.provisioningState = 'Succeeded'", value: actif }
+    - { default: inconnu }
+  console: *console
+
+- type: microsoft.storage/storageaccounts
+  typeLabel: Compte de stockage
+  label: '$r.raw.name'
+  sublabel: "$r.raw.kind & ' · ' & $r.raw.sku.name & ($r.raw.properties.allowBlobPublicAccess ? ' · blobs publics' : '')"
+  icon: azure-storage
+  category: storage
+  status:
+    - { when: "$r.raw.properties.statusOfPrimary = 'unavailable'", value: erreur }
+    - { default: actif }
+  console: *console
+
+- type: microsoft.servicebus/namespaces
+  typeLabel: Service Bus
+  label: '$r.raw.name'
+  sublabel: "'Service Bus · ' & $r.raw.sku.name"
+  icon: azure-service-bus
+  category: integration
+  status: *provisioning
+  console: *console
+
+- type: microsoft.eventhub/namespaces
+  typeLabel: Event Hubs
+  label: '$r.raw.name'
+  sublabel: "'Event Hubs · ' & $r.raw.sku.name"
+  icon: azure-event-hubs
+  category: integration
+  status: *provisioning
+  console: *console
+
+- type: microsoft.keyvault/vaults
+  typeLabel: Key Vault
+  label: '$r.raw.name'
+  sublabel: "'Coffre · ' & ($r.raw.properties.enableRbacAuthorization ? 'RBAC' : 'stratégies d’accès')"
+  icon: azure-key-vault
+  category: security
+  status:
+    - { default: actif }
+  console: *console
+  details:
+    rbac: '$r.raw.properties.enableRbacAuthorization'
+    suppressionReversible: '$r.raw.properties.enableSoftDelete'
+
+- type: microsoft.operationalinsights/workspaces
+  typeLabel: Espace Log Analytics
+  label: '$r.raw.name'
+  sublabel: "'Log Analytics · ' & $string($r.raw.properties.retentionInDays) & ' j'"
+  icon: azure-log-analytics
+  category: management
+  status: *provisioning
+  console: *console
+
+- type: microsoft.insights/components
+  typeLabel: Application Insights
+  label: '$r.raw.name'
+  sublabel: "'Application Insights'"
+  icon: azure-app-insights
+  category: management
+  status: *provisioning
+  console: *console

@@ -1,0 +1,120 @@
+# Azure — calcul et conteneurs. Placement via le résumé `_nics` (sous-réseau, IP, NSG, ASG des
+# cartes réseau) ajouté par le scanner, ou via l'identifiant de sous-réseau de la ressource.
+- type: microsoft.compute/virtualmachines
+  typeLabel: Machine virtuelle
+  label: '$r.raw.name'
+  sublabel: "$r.raw.properties.hardwareProfile.vmSize & ' · ' & $lookup({'PowerState/running': 'en marche', 'PowerState/deallocated': 'désallouée', 'PowerState/stopped': 'arrêtée', 'PowerState/starting': 'démarrage', 'PowerState/stopping': 'arrêt'}, $r.raw.properties.extended.instanceView.powerState.code)"
+  icon: azure-vm
+  category: compute
+  placement: { container: subnet, ref: '$r.raw._nics.subnetId', multi: first }
+  securityGroups: '[$r.raw._nics.nsgId, $r.raw._nics.asgIds]'
+  ips: '[$r.raw._nics.privateIp, $r.raw._nics.publicIp]'
+  status:
+    - { when: "$r.raw.properties.extended.instanceView.powerState.code = 'PowerState/running'", value: actif }
+    - {
+        when: "$r.raw.properties.extended.instanceView.powerState.code in ['PowerState/deallocated', 'PowerState/stopped', 'PowerState/deallocating', 'PowerState/stopping']",
+        value: arrete,
+      }
+    - {
+        when: "$r.raw.properties.extended.instanceView.powerState.code = 'PowerState/starting'",
+        value: en-veille,
+      }
+    - { default: inconnu }
+  console: &console "'https://portal.azure.com/#@/resource' & $r.id"
+  details:
+    taille: '$r.raw.properties.hardwareProfile.vmSize'
+    systeme: '$r.raw.properties.storageProfile.osDisk.osType'
+    ipPublique: '$r.raw._nics.publicIp'
+    zones: '$r.raw.zones'
+
+- type: microsoft.compute/virtualmachinescalesets
+  typeLabel: Groupe de machines identiques
+  label: '$r.raw.name'
+  sublabel: "$r.raw.sku.name & ' · ' & $string($r.raw.sku.capacity) & ' instance(s)'"
+  icon: azure-vmss
+  category: compute
+  placement:
+    container: subnet
+    ref: '$r.raw.properties.virtualMachineProfile.networkProfile.networkInterfaceConfigurations.properties.ipConfigurations.properties.subnet.id'
+    multi: first
+  status:
+    - { when: '$r.raw.sku.capacity > 0', value: actif }
+    - { when: '$r.raw.sku.capacity = 0', value: en-veille }
+    - { default: inconnu }
+  console: *console
+
+- type: microsoft.containerservice/managedclusters
+  typeLabel: Cluster AKS
+  label: '$r.raw.name'
+  sublabel: "'Kubernetes ' & $r.raw.properties.kubernetesVersion & ' · ' & $string($sum($r.raw.properties.agentPoolProfiles.count)) & ' nœud(s)'"
+  icon: azure-aks
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.properties.agentPoolProfiles.vnetSubnetID', multi: first }
+  status:
+    - { when: "$r.raw.properties.powerState.code = 'Running'", value: actif }
+    - { when: "$r.raw.properties.powerState.code = 'Stopped'", value: arrete }
+    - { default: inconnu }
+  console: *console
+  details:
+    version: '$r.raw.properties.kubernetesVersion'
+    reseau: '$r.raw.properties.networkProfile.networkPlugin'
+    apiPrivee: '$r.raw.properties.apiServerAccessProfile.enablePrivateCluster'
+
+- type: microsoft.app/managedenvironments
+  typeLabel: Environnement Container Apps
+  label: '$r.raw.name'
+  sublabel: "'Environnement Container Apps'"
+  icon: azure-container-apps
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.properties.vnetConfiguration.infrastructureSubnetId' }
+  status:
+    - { when: "$r.raw.properties.provisioningState = 'Succeeded'", value: actif }
+    - { default: inconnu }
+  console: *console
+
+- type: microsoft.app/containerapps
+  typeLabel: Container App
+  label: '$r.raw.name'
+  sublabel: "$r.raw.properties.configuration.ingress.external ? 'entrée publique' : 'entrée interne'"
+  icon: azure-container-apps
+  category: compute
+  dnsNames: '$r.raw.properties.configuration.ingress.fqdn'
+  status:
+    - { when: "$r.raw.properties.runningStatus = 'Running'", value: actif }
+    - { when: "$r.raw.properties.runningStatus = 'Stopped'", value: arrete }
+    - { default: inconnu }
+  relations:
+    - { kind: dependency, to: '$r.raw.properties.managedEnvironmentId', resolve: arn }
+    - {
+        kind: data,
+        to: '$r.raw.properties.configuration.registries.server',
+        resolve: dns-name,
+        label: images,
+      }
+  console: *console
+
+- type: microsoft.containerregistry/registries
+  typeLabel: Registre de conteneurs
+  label: '$r.raw.name'
+  sublabel: "'Registre · ' & $r.raw.sku.name"
+  icon: azure-container-registry
+  category: compute
+  dnsNames: '$r.raw.properties.loginServer'
+  status:
+    - { when: "$r.raw.properties.provisioningState = 'Succeeded'", value: actif }
+    - { default: inconnu }
+  console: *console
+
+- type: microsoft.containerinstance/containergroups
+  typeLabel: Groupe de conteneurs
+  label: '$r.raw.name'
+  sublabel: "$string($count($r.raw.properties.containers)) & ' conteneur(s)'"
+  icon: azure-container-instances
+  category: compute
+  placement: { container: subnet, ref: '$r.raw.properties.subnetIds.id', multi: first }
+  ips: '$r.raw.properties.ipAddress.ip'
+  status:
+    - { when: "$r.raw.properties.instanceView.state = 'Running'", value: actif }
+    - { when: "$r.raw.properties.instanceView.state = 'Stopped'", value: arrete }
+    - { default: inconnu }
+  console: *console
