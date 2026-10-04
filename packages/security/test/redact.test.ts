@@ -53,4 +53,22 @@ describe('redact()', () => {
     expect(out.err.message).not.toContain(SECRET);
     expect(out.self).toBe('[circulaire]');
   });
+
+  it('masque les secrets Azure et Google Cloud (jetons, secrets clients, clés de comptes de service)', () => {
+    // Valeurs fictives au format réel.
+    const jwt =
+      'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJodHRwczovL21hbmFnZW1lbnQifQ.c2lnbmF0dXJlLWZpY3RpdmU';
+    const google = 'ya29.a0AfB_fictif-jeton-oauth-google-0123456789';
+    const entra = 'abc8Q~0123456789abcdefghijABCDEFGHIJ-_.~';
+    const key = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n-----END PRIVATE KEY-----';
+    const text = `jeton ${jwt} google ${google} secret ${entra} clé ${key} access_token=abc123 "private_key": "x"`;
+    const out = redactString(text);
+    for (const secret of [jwt, google, entra, 'MIIEvQIBADANBgkqhkiG9w0BAQEFAASC', 'abc123'])
+      expect(out).not.toContain(secret);
+    expect(redact({ clientSecret: entra, serviceAccountJson: key, accessToken: google })).toEqual({
+      clientSecret: MASK,
+      serviceAccountJson: MASK,
+      accessToken: MASK,
+    });
+  });
 });

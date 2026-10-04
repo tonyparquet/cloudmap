@@ -1,6 +1,7 @@
 /**
  * Redaction (section 4.3) appliquée au logger, aux erreurs renvoyées au client et au journal d'audit.
- * Couvre : identifiants de clés d'accès, clés secrètes, jetons de session, en-têtes Authorization, cookies.
+ * Couvre : identifiants de clés d'accès, clés secrètes, jetons de session, en-têtes Authorization, cookies,
+ * et pour Azure / Google Cloud : jetons JWT et OAuth, secrets clients, clés privées de comptes de service.
  */
 
 export const MASK = '[MASQUÉ]';
@@ -10,9 +11,13 @@ const SECRET_40 = /(?<![A-Za-z0-9/+])[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])/g;
 const LONG_TOKEN = /[A-Za-z0-9/+=_-]{100,}/g;
 const AUTH_SCHEME = /\b(Bearer|Basic|AWS4-HMAC-SHA256)\s+[^\s"',;]+/gi;
 const NAMED_SECRET =
-  /\b(aws_secret_access_key|aws_session_token|secret_?access_?key|session_?token|x-amz-security-token|authorization|password|client_secret)(["']?\s*[:=]\s*["']?)[^"'\s,;}&]+/gi;
+  /\b(aws_secret_access_key|aws_session_token|secret_?access_?key|session_?token|x-amz-security-token|authorization|password|client_?secret|access_?token|refresh_?token|private_?key|assertion)(["']?\s*[:=]\s*["']?)[^"'\s,;}&]+/gi;
 const COOKIE_PAIR = /\b(__Host-[\w-]+|__Secure-[\w-]+|session|sid|csrf[\w-]*)=[^;\s"',]+/gi;
 const PRIVATE_KEY = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g;
+// Azure et Google Cloud : jetons JWT (Entra ID), jetons OAuth Google, secrets clients d'application Entra.
+const JWT = /\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}/g;
+const GOOGLE_TOKEN = /\bya29\.[\w.-]{16,}/g;
+const ENTRA_SECRET = /(?<![\w.~-])[\w.-]{3}\dQ~[\w.~-]{31,34}(?![\w.~-])/g;
 
 /** Clés d'objet dont la valeur est toujours masquée. */
 const SENSITIVE_KEY =
@@ -27,6 +32,9 @@ export function maskAccessKeyId(id: string): string {
 export function redactString(s: string): string {
   return s
     .replace(PRIVATE_KEY, MASK)
+    .replace(JWT, MASK)
+    .replace(GOOGLE_TOKEN, MASK)
+    .replace(ENTRA_SECRET, MASK)
     .replace(AUTH_SCHEME, (_m, scheme: string) => `${scheme} ${MASK}`)
     .replace(NAMED_SECRET, (_m, name: string, sep: string) => `${name}${sep}${MASK}`)
     .replace(COOKIE_PAIR, (_m, name: string) => `${name}=${MASK}`)
