@@ -62,6 +62,17 @@ export const appSettingsSchema = z.object({
       loginWindowMinutes: z.number().int().min(15).default(15),
     })
     .default({ apiPerMinute: 600, loginAttempts: 5, loginWindowMinutes: 15 }),
+  // Recherche de mise à jour : flux des releases (API GitHub), consulté côté serveur et mis en cache.
+  updates: z
+    .object({
+      enabled: z.boolean().default(true),
+      feedUrl: z
+        .url({ protocol: /^https$/ })
+        .max(2048)
+        .optional(),
+      intervalHours: z.number().int().min(1).max(168).default(24),
+    })
+    .default({ enabled: true, intervalHours: 24 }),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
@@ -83,6 +94,8 @@ export interface ServerConfig {
   tlsFiles: TlsFiles;
   tls: TlsMaterial;
   masterKey: Buffer;
+  /** Jeton de lecture du flux de mises à jour (UPDATES_TOKEN_FILE), jamais renvoyé au navigateur. */
+  updatesToken?: string;
   publicOrigin: string;
   trustedProxyCidrs: string[];
   authMode: 'local' | 'oidc';
@@ -109,10 +122,22 @@ export function ensureConfigDir(configDir: string, appRoot: string): void {
   }
 }
 
-export function loadAppSettings(configDir: string): AppSettings {
-  const file = join(configDir, 'app.yaml');
-  const raw: unknown = existsSync(file) ? parseYaml(readFileSync(file, 'utf8')) : {};
-  const r = appSettingsSchema.safeParse(raw ?? {});
+/**
+ * Paramètres : app.yaml de CONFIG_DIR, complété section par section par les valeurs livrées avec
+ * l'application (une mise à jour apporte ses nouveaux réglages sans écraser ceux de l'utilisateur).
+ */
+export function loadAppSettings(configDir: string, appRoot?: string): AppSettings {
+  const read = (file: string): Record<string, unknown> =>
+    existsSync(file) ? ((parseYaml(readFileSync(file, 'utf8')) as Record<string, unknown> | null) ?? {}) : {};
+  const user = read(join(configDir, 'app.yaml'));
+  const shipped = appRoot ? read(join(appRoot, 'config', 'app.yaml')) : {};
+  const merged: Record<string, unknown> = { ...shipped, ...user };
+  for (const [k, v] of Object.entries(shipped)) {
+    const u = user[k];
+    if (v && typeof v === 'object' && !Array.isArray(v) && u && typeof u === 'object' && !Array.isArray(u))
+      merged[k] = { ...v, ...u };
+  }
+  const r = appSettingsSchema.safeParse(merged);
   if (!r.success) {
     throw new StartupError(r.error.issues.map((i) => `app.yaml : ${i.path.join('.')} — ${i.message}`));
   }
@@ -231,6 +256,16 @@ export function loadConfig(
       problems.push(`TRUSTED_PROXY_CIDRS : plage invalide « ${c} »`);
   }
 
+  // Jeton facultatif pour un flux de mises à jour privé (dépôt GitHub privé) : lecture des releases seule.
+  let updatesToken: string | undefined;
+  if (env.UPDATES_TOKEN_FILE) {
+    try {
+      updatesToken = readFileSync(env.UPDATES_TOKEN_FILE, 'utf8').trim();
+    } catch {
+      problems.push(`Jeton de mises à jour illisible : ${env.UPDATES_TOKEN_FILE}`);
+    }
+  }
+
   if (problems.length || !tls || !masterKey) throw new StartupError(problems);
 
   const appRoot = env.APP_ROOT ?? defaultAppRoot();
@@ -253,6 +288,7 @@ export function loadConfig(
     hubCredentials: hub as 'none' | 'default-chain',
     logLevel: env.LOG_LEVEL ?? 'info',
     demoMode: env.DEMO_MODE === 'true',
-    app: loadAppSettings(configDir),
+    app: loadAppSettings(configDir, appRoot),
+    ...(updatesToken ? { updatesToken } : {}),
   };
 }

@@ -22,6 +22,7 @@ import { applyTheme, type Theme } from './theme.ts';
 import { ReauthDialog, Toast, useLoad } from './ui.tsx';
 import { Icon, Logo } from './icons.tsx';
 import type { ProfileView } from './pages/Profiles.tsx';
+import type { UpdateStatus } from './updates.tsx';
 
 const TITLES: Record<string, MessageKey> = {
   profils: 'nav.profils',
@@ -52,6 +53,21 @@ export async function refreshAuth(): Promise<AuthState> {
   setCsrf(s.csrfToken);
   useApp.getState().setAuth(s);
   return s;
+}
+
+/** Administrateurs : badge discret quand une version plus récente est publiée. */
+function UpdatePill() {
+  const status = useLoad(() => get<UpdateStatus>('/api/updates'), []);
+  if (!status.data?.available) return null;
+  return (
+    <Link
+      to="/configuration"
+      className="update-pill"
+      aria-label={t('maj.disponible', { v: status.data.latest ?? '' })}
+    >
+      {t('maj.badge', { v: status.data.latest ?? '' })}
+    </Link>
+  );
 }
 
 /** Onglets d'un profil, précédés du fil d'Ariane ; un profil « imports uniquement » n'a ni scan ni identifiants. */
@@ -197,6 +213,7 @@ export function App() {
             </option>
           ))}
         </select>
+        {user?.role === 'admin' && <UpdatePill />}
         <span className="who">{user?.username}</span>
         <button
           onClick={() =>

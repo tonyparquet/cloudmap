@@ -1,5 +1,6 @@
 {
   "name": "cartographe-aws",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.8.1",
@@ -17,6 +18,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm audit --prod",
     "cli": "tsx apps/cli/src/main.ts",
     "fetch-icons": "tsx scripts/fetch-icons.ts",
+    "release": "tsx scripts/release.ts",
     "desktop:start": "node scripts/desktop.mjs start",
     "desktop:dist": "node scripts/desktop.mjs dist",
     "desktop:e2e": "node scripts/desktop.mjs stage && playwright test --config apps/desktop/playwright.config.ts"

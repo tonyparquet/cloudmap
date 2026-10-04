@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { get } from '../api.ts';
 import { t } from '../i18n/index.ts';
 import { useApp } from '../store.ts';
 import { Alert, useLoad } from '../ui.tsx';
+import { UpdatesCard, type UpdateStatus } from '../updates.tsx';
 
 interface RulesInfo {
   files: { file: string; types: string[] }[];
@@ -17,9 +19,12 @@ export function ConfigPage() {
     [],
   );
   const themes = useApp((s) => s.themes);
+  const updates = useLoad(() => get<UpdateStatus>('/api/updates'), []);
+  const [checked, setChecked] = useState<UpdateStatus>();
   return (
     <div style={{ maxWidth: 1000 }}>
       <h1>{t('config.titre')}</h1>
+      <UpdatesCard status={checked ?? updates.data} onChecked={setChecked} />
       {rules.error && <Alert kind="error">{rules.error}</Alert>}
       <div className="card">
         <h2>{t('config.erreursRegles')}</h2>

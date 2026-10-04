@@ -448,6 +448,19 @@ export const fr = {
   'form.regionsModifier': 'Ajouter ou retirer des régions',
   'commun.retirerElement': 'Retirer {x}',
   'commun.copieImpossible': 'Copie impossible : sélectionnez le texte',
+  'maj.titre': 'Version et mises à jour',
+  'maj.installee': 'Version installée',
+  'maj.publiee': 'Dernière version publiée',
+  'maj.verifiee': 'Dernière recherche',
+  'maj.desactivee': 'Recherche de mise à jour désactivée (app.yaml : updates).',
+  'maj.disponible': 'La version {v} est disponible.',
+  'maj.aJour': 'Cartographe est à jour.',
+  'maj.rechercher': 'Rechercher les mises à jour',
+  'maj.recherche': 'Recherche…',
+  'maj.telecharger': 'Télécharger la version {v}',
+  'maj.badge': 'Mise à jour {v}',
+  'maj.nouveautes': 'Version {v} : nouveautés',
+  'maj.pasDeNotes': 'Aucune note pour cette version.',
 } as const;
 
 export type MessageKey = keyof typeof fr;

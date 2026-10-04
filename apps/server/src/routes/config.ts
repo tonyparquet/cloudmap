@@ -6,6 +6,8 @@ import type { Ctx } from '../app.ts';
 import { notFound } from '../errors.ts';
 import { requireRole, requireUser } from '../http.ts';
 import { visibleProfile } from './profiles.ts';
+import { changelogSection } from '../changelog.ts';
+import { APP_VERSION } from '../version.ts';
 
 export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
   const { storage, config } = ctx;
@@ -43,6 +45,34 @@ export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
       defaults: config.app.scanner.defaultServices ?? SERVICES.map((s) => s.key),
       hubAvailable: config.hubCredentials === 'default-chain',
     };
+  });
+
+  /** Version installée et dernière version publiée (cache côté serveur). */
+  app.get('/api/updates', async (req) => {
+    requireUser(req);
+    return ctx.updates.status();
+  });
+
+  /** Recherche forcée d'une mise à jour (administrateurs), journalisée. */
+  app.post('/api/updates/check', async (req) => {
+    const user = requireRole(req, 'admin');
+    const status = await ctx.updates.status(true);
+    ctx.audit.log({
+      user: user.username,
+      ip: req.ip,
+      action: 'mise-a-jour.verification',
+      result: status.error ? 'echec' : 'succes',
+      details: { courante: status.current, ...(status.latest ? { publiee: status.latest } : {}) },
+    });
+    return status;
+  });
+
+  /** Notes de la version installée (CHANGELOG.md livré avec l'application). */
+  app.get('/api/changelog', async (req) => {
+    requireUser(req);
+    const file = join(config.appRoot, 'CHANGELOG.md');
+    const text = existsSync(file) ? readFileSync(file, 'utf8') : '';
+    return { version: APP_VERSION, notes: changelogSection(text, APP_VERSION) ?? '' };
   });
 
   /** Aide « rôle IAM client » : documents de docs/iam/, External ID du profil choisi inséré. */

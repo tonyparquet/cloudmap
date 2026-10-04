@@ -73,7 +73,7 @@ pnpm desktop:dist           # installeur de la plateforme courante (Windows : NS
 pnpm desktop:dist --win     # depuis Linux : version Windows portable (ZIP) ; l'installeur NSIS exige Windows
 ```
 
-Résultats dans `apps/desktop/dist/release/`. La CI `.github/workflows/bureau.yml` construit les deux
+Résultats dans `apps/desktop/dist/release/`. La CI `.github/workflows/publication.yml` construit les deux
 plateformes (Windows et macOS) sur leurs machines respectives et publie les artefacts.
 
 Modules natifs (`better-sqlite3`, `argon2`) : binaires N-API précompilés, compatibles avec Electron

@@ -64,7 +64,10 @@ export function testEnv(extra: NodeJS.ProcessEnv = {}): { env: NodeJS.ProcessEnv
   };
 }
 
-export async function startApp(extra: NodeJS.ProcessEnv = {}, opts: { logToFile?: boolean } = {}) {
+export async function startApp(
+  extra: NodeJS.ProcessEnv = {},
+  opts: { logToFile?: boolean; fetchImpl?: typeof fetch } = {},
+) {
   const { env, dir } = testEnv(extra);
   const config = loadConfig(env);
   const logger = createLogger(
@@ -72,7 +75,10 @@ export async function startApp(extra: NodeJS.ProcessEnv = {}, opts: { logToFile?
     opts.logToFile ? config.dataDir : undefined,
     { stdout: false },
   );
-  const { app, ctx } = await buildApp(config, { logger });
+  // Aucun appel réseau sortant pendant les tests (flux de mises à jour) : fetch simulé par défaut.
+  const fetchImpl =
+    opts.fetchImpl ?? ((async () => new Response('{}', { status: 503 })) as unknown as typeof fetch);
+  const { app, ctx } = await buildApp(config, { logger, fetchImpl });
   await app.ready();
   return { app, ctx, env, dir };
 }

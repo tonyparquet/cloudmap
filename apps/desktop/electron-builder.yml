@@ -1,5 +1,5 @@
 # Empaquetage de l'application de bureau : `pnpm desktop:dist` (Windows depuis Windows ou Linux,
-# macOS depuis macOS) ou la CI (.github/workflows/bureau.yml). Signature : fournie par l'environnement de construction
+# macOS depuis macOS) ou la CI (.github/workflows/publication.yml). Signature : fournie par l'environnement de construction
 # (CSC_LINK / CSC_KEY_PASSWORD, APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID), sinon
 # l'application est produite non signée.
 appId: app.cartographe.aws

@@ -25,6 +25,8 @@ import { Storage } from './storage.ts';
 import { tlsOptions } from './tls.ts';
 import { Vault } from './vault.ts';
 import { StartupError } from './config.ts';
+import { UpdateChecker } from './updates.ts';
+import { APP_VERSION } from './version.ts';
 
 /** Dépendances partagées par les routes. */
 export interface Ctx {
@@ -37,6 +39,7 @@ export interface Ctx {
   vault: Vault;
   storage: Storage;
   scans: ScanManager;
+  updates: UpdateChecker;
   oidc?: Oidc;
 }
 
@@ -51,7 +54,7 @@ const isPublicApi = (url: string) => url.startsWith('/api/auth/');
 
 export async function buildApp(
   config: ServerConfig,
-  opts: { logger?: Logger } = {},
+  opts: { logger?: Logger; fetchImpl?: typeof fetch } = {},
 ): Promise<{ app: FastifyInstance; ctx: Ctx }> {
   const log = opts.logger ?? createLogger(config.logLevel, config.dataDir);
   const db = openDb(config.dataDir);
@@ -76,6 +79,7 @@ export async function buildApp(
     vault: new Vault(db, config.masterKey, config.app.credentials, config.hubCredentials),
     storage,
     scans: new ScanManager(storage, audit, config.app),
+    updates: new UpdateChecker(config.app.updates, APP_VERSION, config.updatesToken, opts.fetchImpl),
     ...(config.oidc ? { oidc: new Oidc(config.oidc, config.publicOrigin) } : {}),
   };
 

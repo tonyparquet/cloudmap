@@ -111,6 +111,15 @@ test('parcours démo : connexion admin + TOTP, diagramme, panneau, filtre, expor
   expect(json.nodes.length).toBeGreaterThanOrEqual(16);
   expect(json.containers.length).toBe(9);
 
+  // Version installée et recherche de mise à jour (désactivée pour les tests : aucun appel externe).
+  const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+  await page.goto('/configuration');
+  await expect(page.getByTestId('mises-a-jour')).toContainText(version);
+  await expect(page.getByTestId('mises-a-jour')).toContainText('Recherche de mise à jour désactivée');
+  await page.goto('/aide');
+  await page.getByTestId('version').locator('summary').click();
+  await expect(page.getByTestId('version')).toContainText('Première version publiée');
+
   expect(cspErrors).toEqual([]);
 });
 

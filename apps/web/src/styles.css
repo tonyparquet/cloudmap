@@ -932,3 +932,25 @@ button,
   max-width: 140px;
   flex-shrink: 0;
 }
+
+/* Mises à jour */
+.update-pill {
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.update-pill:hover {
+  text-decoration: none;
+}
+pre.notes {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13px;
+  margin: 8px 0 0;
+  max-height: 360px;
+  overflow: auto;
+}

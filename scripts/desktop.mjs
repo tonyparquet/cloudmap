@@ -2,7 +2,7 @@
 // `dist [--win|--mac|--linux] [--dir]` produit l'installeur (Windows : NSIS, macOS : DMG + ZIP).
 // Modules natifs N-API (better-sqlite3, argon2) : binaires précompilés de chaque plateforme, sans
 // recompilation pour Electron. Windows se construit aussi depuis Linux ; macOS seulement depuis
-// macOS (DMG, signature, argon2 Intel compilé à l'installation) : voir .github/workflows/bureau.yml.
+// macOS (DMG, signature, argon2 Intel compilé à l'installation) : voir .github/workflows/publication.yml.
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,6 +15,8 @@ const stage = join(desktop, 'dist', 'app');
 const win = process.platform === 'win32';
 const bin = (dir, name) => join(dir, 'node_modules', '.bin', win ? `${name}.cmd` : name);
 const [command = 'stage', ...rest] = process.argv.slice(2);
+// Version unique du produit : package.json racine (tag vX.Y.Z, CHANGELOG.md).
+const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
 // Caches dans le projet (aucun dossier personnel), sauf si la CI les fixe déjà.
 const tmp = join(root, '.tmp');
@@ -46,6 +48,7 @@ async function assemble() {
     target: 'node22',
     format: 'esm',
     external: ['electron', 'better-sqlite3', 'argon2'],
+    define: { __CARTO_VERSION__: JSON.stringify(version) },
     banner: {
       js: [
         "import { createRequire as __cr } from 'node:module';",
@@ -69,13 +72,13 @@ async function assemble() {
   });
   cpSync(join(root, 'fixtures'), join(res, 'fixtures'), { recursive: true });
   cpSync(join(root, 'docs', 'iam'), join(res, 'docs', 'iam'), { recursive: true });
+  cpSync(join(root, 'CHANGELOG.md'), join(res, 'CHANGELOG.md'));
 
-  const own = JSON.parse(readFileSync(join(desktop, 'package.json'), 'utf8'));
   const runtime = JSON.parse(readFileSync(join(root, 'deploy', 'runtime', 'package.json'), 'utf8'));
   const manifest = {
     name: 'cartographe-aws',
     productName: 'Cartographe AWS',
-    version: own.version,
+    version,
     description: 'Cartographie en lecture seule de vos comptes AWS',
     author: 'Cartographe AWS',
     main: 'main.mjs',
@@ -102,7 +105,7 @@ if (command === 'stage') {
   const targets = rest.filter((a) => Object.values(HOSTS).includes(a));
   if (targets.includes('--mac') && host !== '--mac')
     throw new Error(
-      'Le DMG macOS (et sa signature) se construit uniquement sur macOS : voir .github/workflows/bureau.yml',
+      'Le DMG macOS (et sa signature) se construit uniquement sur macOS : voir .github/workflows/publication.yml',
     );
   if (!existsSync(join(desktop, 'build', 'icon.png')))
     throw new Error('apps/desktop/build/icon.png manquant');

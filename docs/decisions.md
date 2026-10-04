@@ -296,3 +296,20 @@ external`, `externalType`.
 - Caches de construction dans `.tmp/` (Electron, electron-builder, npm) : rien n'est écrit dans le
   dossier personnel ; le cache d'electron-builder reçoit un `package.json` CommonJS (le projet est en
   ESM).
+
+## Versions, publication et recherche de mise à jour
+
+- Version unique dans le `package.json` racine, injectée à la construction (`__CARTO_VERSION__`) ;
+  tags annotés `vX.Y.Z` ; `CHANGELOG.md` au format Keep a Changelog, en français, livré avec
+  l'application (notes de la version installée dans « Aide »).
+- `pnpm release X.Y.Z` prépare la version localement (journal, versions, commit, tag) et ne pousse
+  rien ; la CI publie sur tag (vérification, Windows et macOS construits sur leurs machines, release
+  GitHub avec les notes du journal).
+- Recherche de mise à jour côté serveur (la CSP interdit tout appel externe au navigateur), en cache
+  24 h, réservée en recherche forcée aux administrateurs et journalisée ; URL du flux dans
+  `config/app.yaml` (configuration, pas de code). Les nouvelles sections de `app.yaml` livrées avec
+  une version sont fusionnées sous celles de l'utilisateur au démarrage.
+- Dépôt privé : jeton facultatif `UPDATES_TOKEN_FILE` côté serveur ; aucun jeton embarqué dans
+  l'application de bureau (il serait extractible). Installation manuelle de la nouvelle version :
+  pas de mise à jour automatique tant que les installeurs ne sont pas signés.
+- Les tests n'appellent jamais le flux réel (fetch simulé ; E2E avec la recherche désactivée).

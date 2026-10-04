@@ -26,6 +26,7 @@ function Block({ title, text }: { title: string; text: string }) {
 
 export function HelpPage() {
   const profiles = useLoad(() => get<{ profiles: ProfileView[] }>('/api/profiles'), []);
+  const changelog = useLoad(() => get<{ version: string; notes: string }>('/api/changelog'), []);
   const [profileId, setProfileId] = useState(
     () => new URLSearchParams(window.location.search).get('profil') ?? '',
   );
@@ -36,6 +37,12 @@ export function HelpPage() {
   return (
     <div style={{ maxWidth: 980 }}>
       <h1>{t('aide.titre')}</h1>
+      {changelog.data && (
+        <details className="card" data-testid="version">
+          <summary>{t('maj.nouveautes', { v: changelog.data.version })}</summary>
+          <pre className="notes">{changelog.data.notes || t('maj.pasDeNotes')}</pre>
+        </details>
+      )}
       <p>{t('aide.intro')}</p>
       <p className="muted">{t('aide.etapes')}</p>
       <Field label={t('aide.profil')}>
