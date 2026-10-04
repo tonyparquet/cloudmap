@@ -355,7 +355,7 @@ export const fr = {
   'form.groupesAide': 'Vide : profil visible des seuls administrateurs.',
   'form.avance': 'Options avancées : description, nœuds externes, sondes, Flow Logs, filtres de tags',
   'form.mode.access-keys':
-    'Je fournis des identifiants (clés temporaires de préférence) : le plus simple pour démarrer.',
+    'Je fournis des identifiants (temporaires de préférence) : le plus simple pour démarrer.',
   'form.mode.assume-role-hub':
     "L'outil assume un rôle du compte avec sa propre identité AWS : aucune clé à saisir.",
   'form.mode.import-only': "Pas d'accès direct : j'importerai des snapshots produits hors-ligne par la CLI.",
@@ -434,7 +434,7 @@ export const fr = {
   'cred.roleOptionnelAide':
     "Vide : les clés de l'utilisateur IAM sont utilisées directement. Indiquez le rôle en lecture seule du compte cible si l'utilisateur appartient à un autre compte.",
   'cred.externalIdIdentique': 'Identique au profil source',
-  'form.identifiants': 'Identifiants AWS',
+  'form.identifiants': 'Identifiants',
   'form.plusTard': "Je fournirai les identifiants à l'étape suivante",
   'form.nePasModifier': 'Ne pas modifier les identifiants actuels',
   'form.profilCree':

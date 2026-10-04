@@ -73,18 +73,20 @@ export function HelpPage() {
       </fieldset>
       <p>{t(`aide.intro.${provider}`)}</p>
       {provider === 'aws' && <p className="muted">{t('aide.etapes')}</p>}
-      <Field label={t('aide.profil')}>
-        <select value={profileId} onChange={(e) => setProfileId(e.target.value)}>
-          <option value="">—</option>
-          {profiles.data?.profiles
-            .filter((p) => p.auth.kind !== 'import-only')
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-        </select>
-      </Field>
+      {(provider === 'aws' || chosen) && (
+        <Field label={t('aide.profil')}>
+          <select value={profileId} onChange={(e) => setProfileId(e.target.value)}>
+            <option value="">—</option>
+            {profiles.data?.profiles
+              .filter((p) => p.auth.kind !== 'import-only')
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </Field>
+      )}
       {provider !== 'aws' &&
         cloud.data?.documents.map((d) => <Block key={d.name} title={d.name} text={d.content} />)}
       {provider === 'aws' && help.data && (

@@ -1,6 +1,6 @@
 {
   "id": "demo-gcp",
-  "name": "Démo Google Cloud",
+  "name": "Google Cloud (exemple)",
   "client": "Exemple fictif",
   "description": "Projet Google Cloud fictif : équilibreur HTTPS avec Cloud Armor devant Cloud Run et un groupe d'instances, VPC avec Cloud NAT, Cloud SQL en IP privée, règle de pare-feu bloquante, appairage vers un second VPC, organisation avec dossiers et liaisons IAM.",
   "provider": "gcp",

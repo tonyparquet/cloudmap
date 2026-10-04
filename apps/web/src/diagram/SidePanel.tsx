@@ -143,14 +143,19 @@ export function SidePanel({
               <div className="mono">
                 {sg.id} {sg.name && <span className="muted">({sg.name})</span>}
               </div>
-              <div className="small muted">{t('panel.entrantes')}</div>
-              <ul className="mono">
-                {sg.inbound.length ? sg.inbound.map((l) => <li key={l}>{l}</li>) : <li>—</li>}
-              </ul>
-              <div className="small muted">{t('panel.sortantes')}</div>
-              <ul className="mono">
-                {sg.outbound.length ? sg.outbound.map((l) => <li key={l}>{l}</li>) : <li>—</li>}
-              </ul>
+              {/* Règles détaillées : groupes de sécurité AWS connus ; ailleurs, les flux déduits suffisent. */}
+              {(sg.name !== undefined || sg.inbound.length + sg.outbound.length > 0) && (
+                <>
+                  <div className="small muted">{t('panel.entrantes')}</div>
+                  <ul className="mono">
+                    {sg.inbound.length ? sg.inbound.map((l) => <li key={l}>{l}</li>) : <li>—</li>}
+                  </ul>
+                  <div className="small muted">{t('panel.sortantes')}</div>
+                  <ul className="mono">
+                    {sg.outbound.length ? sg.outbound.map((l) => <li key={l}>{l}</li>) : <li>—</li>}
+                  </ul>
+                </>
+              )}
             </div>
           ))}
         </>
