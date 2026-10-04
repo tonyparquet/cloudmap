@@ -14,6 +14,7 @@
   seule, diagramme réseau avec flux NSG / pare-feu VPC, vue Organisation, vue multi-comptes,
   comptes d'organisation, imports et profils de démonstration.
 - Page « Aide » par fournisseur (rôle en lecture seule et commandes).
+- CLI : scan hors-ligne Azure et Google Cloud (`--provider`, jeton lu dans `CARTO_ACCESS_TOKEN`).
 
 ### Modifié
 
