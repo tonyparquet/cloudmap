@@ -7,6 +7,11 @@
 
 ## [Non publié]
 
+### Corrigé
+
+- macOS (application non signée) : la signature ad hoc n'active plus le runtime renforcé, dont la
+  validation des bibliothèques pouvait empêcher le lancement de l'application.
+
 ## [1.0.0] - 2026-10-04
 
 Première version publiée.

@@ -158,8 +158,11 @@ if (command === 'stage') {
   // L'application assemblée (dist/app) est un projet npm : lancé via pnpm, electron-builder chercherait
   // un arbre pnpm et empaquetterait les dépendances de apps/desktop au lieu des modules natifs.
   process.env.npm_config_user_agent = `npm/10.0.0 node/${process.version} ${process.platform} ${process.arch}`;
-  // macOS sans certificat Developer ID : signature ad hoc (indispensable pour lancer une app arm64).
-  const adHoc = host === '--mac' && !process.env.CSC_LINK ? ['-c.mac.identity=-'] : [];
+  // macOS sans certificat Developer ID : signature ad hoc (indispensable pour lancer une app arm64), sans
+  // runtime renforcé (il n'a d'effet que pour la notarisation ; avec une signature ad hoc, sa validation
+  // des bibliothèques refuserait Electron et les modules natifs au lancement).
+  const adHoc =
+    host === '--mac' && !process.env.CSC_LINK ? ['-c.mac.identity=-', '-c.mac.hardenedRuntime=false'] : [];
   run(bin(desktop, 'electron-builder'), ['--config', 'electron-builder.yml', ...args, ...adHoc], desktop);
   verifyPackaged();
 } else {
