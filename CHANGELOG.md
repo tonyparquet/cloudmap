@@ -7,6 +7,13 @@
 
 ## [Non publié]
 
+## [1.0.1] - 2026-10-04
+
+### Corrigé
+
+- macOS (application non signée) : la signature ad hoc n'active plus le runtime renforcé, dont la
+  validation des bibliothèques pouvait empêcher le lancement de l'application.
+
 ## [1.0.0] - 2026-10-04
 
 Première version publiée.
@@ -53,5 +60,6 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.0.0...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/tonyparquet/aws_map/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tonyparquet/aws_map/releases/tag/v1.0.0

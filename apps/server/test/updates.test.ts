@@ -41,6 +41,15 @@ describe('versions et journal des modifications', () => {
     expect(() => releaseChangelog(out, '1.1.0', '2026-10-05')).toThrow(/déjà/);
     expect(() => releaseChangelog(out, '1.2.0', '2026-10-05')).toThrow(/Aucune entrée/);
   });
+
+  it('publication : liens de comparaison mis à jour', () => {
+    const base = 'https://exemple.invalid/depot';
+    const md = `## [Non publié]\n\n- B\n\n## [1.0.0] - 2026-10-01\n\n- A\n\n[Non publié]: ${base}/compare/v1.0.0...HEAD\n`;
+    const out = releaseChangelog(md, '1.1.0', '2026-10-04');
+    expect(out).toContain(
+      `[Non publié]: ${base}/compare/v1.1.0...HEAD\n[1.1.0]: ${base}/compare/v1.0.0...v1.1.0`,
+    );
+  });
 });
 
 describe('recherche de mise à jour', () => {
