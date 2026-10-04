@@ -154,7 +154,7 @@ if (command === 'stage') {
     'APPLE_APP_SPECIFIC_PASSWORD',
     'APPLE_TEAM_ID',
   ])
-    if (!process.env[k]) delete process.env[k];
+    if (!process.env[k]) Reflect.deleteProperty(process.env, k);
   // L'application assemblée (dist/app) est un projet npm : lancé via pnpm, electron-builder chercherait
   // un arbre pnpm et empaquetterait les dépendances de apps/desktop au lieu des modules natifs.
   process.env.npm_config_user_agent = `npm/10.0.0 node/${process.version} ${process.platform} ${process.arch}`;
