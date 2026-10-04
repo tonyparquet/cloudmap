@@ -1,12 +1,18 @@
 import type { ExternalNode, Profile } from '@cloudmap/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { get, post, put } from '../api.ts';
 import { t } from '../i18n/index.ts';
 import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Check, Field, useAction, useLoad } from '../ui.tsx';
-import { Icon } from '../icons.tsx';
-import { CredentialFields, credentialBody, emptyDraft, otherAccountOf } from './Credentials.tsx';
+import { Icon, type IconName } from '../icons.tsx';
+import {
+  CredentialFields,
+  credentialBody,
+  draftComplete,
+  emptyDraft,
+  otherAccountOf,
+} from './Credentials.tsx';
 import type { ProfileView } from './Profiles.tsx';
 import {
   ACCOUNT_PATTERN,
@@ -19,15 +25,47 @@ import {
   type Provider,
 } from '../providers.ts';
 
+/** Section numérotée du formulaire ; la pastille devient une coche quand la section est complète. */
+function Section({
+  n,
+  icon,
+  title,
+  done,
+  children,
+}: {
+  n: number;
+  icon: IconName;
+  title: string;
+  done: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="card form-section" style={{ '--i': n } as CSSProperties}>
+      <header className="section-head">
+        <span key={String(done)} className={`step${done ? ' done' : ''}`} aria-hidden="true">
+          {done ? <Icon name="check" size={13} /> : n}
+        </span>
+        <h2>
+          <Icon name={icon} size={16} /> {title}
+        </h2>
+      </header>
+      {children}
+    </section>
+  );
+}
+
 /** Régions groupées par continent, filtrables, sélection résumée en pastilles retirables. */
 export function RegionPicker({
   value,
   onChange,
   provider = 'aws',
+  bare = false,
 }: {
   value: string[];
   onChange: (v: string[]) => void;
   provider?: Provider;
+  /** Titre porté par la section englobante : légende réservée aux lecteurs d'écran. */
+  bare?: boolean;
 }) {
   const [filter, setFilter] = useState('');
   // Liste complète dépliée tant qu'aucune région n'est choisie ; ensuite les pastilles suffisent.
@@ -36,10 +74,12 @@ export function RegionPicker({
   const toggle = (r: string, on: boolean) => onChange(on ? [...value, r] : value.filter((x) => x !== r));
   return (
     <fieldset className="regions">
-      <legend>{t('form.regions')}</legend>
+      <legend className={bare ? 'sr-only' : undefined}>{t('form.regions')}</legend>
       <p className="muted small">{t(`form.regionsAide.${provider}`)}</p>
       <div className="chips" aria-live="polite">
-        <span className="muted small">{t('form.regionsChoisies', { n: value.length })}</span>
+        <span key={value.length} className="muted small bump">
+          {t('form.regionsChoisies', { n: value.length })}
+        </span>
         {value.map((r) => (
           <button
             key={r}
@@ -64,12 +104,32 @@ export function RegionPicker({
         <div className="region-groups">
           {REGION_GROUPS[provider].map(([label, all]) => {
             const list = all.filter(match);
+            const chosen = list.filter((r) => value.includes(r)).length;
+            const allOn = chosen === list.length;
             return list.length === 0 ? null : (
               <div key={label}>
-                <h3>{t(label)}</h3>
-                {list.map((r) => (
-                  <Check key={r} label={r} checked={value.includes(r)} onChange={(v) => toggle(r, v)} />
-                ))}
+                <div className="region-group-head">
+                  <h3>{t(label)}</h3>
+                  <span className="muted small">
+                    {chosen}/{list.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() =>
+                      onChange(
+                        allOn ? value.filter((r) => !list.includes(r)) : [...new Set([...value, ...list])],
+                      )
+                    }
+                  >
+                    {allOn ? t('form.regionsAucune') : t('form.regionsToutes')}
+                  </button>
+                </div>
+                <div className="region-pills">
+                  {list.map((r) => (
+                    <Check key={r} label={r} checked={value.includes(r)} onChange={(v) => toggle(r, v)} />
+                  ))}
+                </div>
               </div>
             );
           })}
@@ -130,6 +190,24 @@ export function ProfileForm({ id }: { id?: string }) {
     if (next !== 'aws' && authKind === 'assume-role-hub') setAuthKind('access-keys');
   };
   const hubAvailable = services.data?.hubAvailable ?? false;
+
+  // Avancement par section : pastilles des sections et résumé de la barre d'actions.
+  const accountOk = new RegExp(`^(?:${ACCOUNT_PATTERN[provider]})$`).test(accountId);
+  const compteDone = name.trim() !== '' && accountOk;
+  const regionsDone = regions.length > 0 || authKind === 'import-only';
+  const accesDone =
+    authKind === 'import-only' ||
+    (authKind === 'assume-role-hub' && roleArn.trim() !== '') ||
+    (authKind === 'assume-role-profile' &&
+      parentId !== '' &&
+      (provider !== 'aws' || roleArn.trim() !== '')) ||
+    (authKind === 'access-keys' && (later || draftComplete(draft)));
+  const missing = [
+    !name.trim() && t('form.manque.nom'),
+    !accountOk && t('form.manque.compte'),
+    !regionsDone && t('form.manque.regions'),
+    !accesDone && t('form.manque.acces'),
+  ].filter((x): x is string => !!x);
 
   useEffect(() => {
     if (!id) return;
@@ -237,7 +315,7 @@ export function ProfileForm({ id }: { id?: string }) {
       className="profile-form"
     >
       <h1>{id ? t('form.titreEdition') : t('form.titreNouveau')}</h1>
-      <div className="card">
+      <Section n={1} icon="cloud" title={t('form.section.compte')} done={compteDone}>
         <fieldset className="choices inline compact" data-testid="fournisseur">
           <legend>{t('form.fournisseur')}</legend>
           {PROVIDER_IDS.map((p) => (
@@ -270,6 +348,7 @@ export function ProfileForm({ id }: { id?: string }) {
           </Field>
           <Field label={t(`form.compte.${provider}`)}>
             <input
+              className="validable"
               value={accountId}
               onChange={(e) => setAccountId(normalizeAccountId(provider, e.target.value))}
               {...(provider === 'aws' ? { inputMode: 'numeric' as const } : {})}
@@ -280,10 +359,13 @@ export function ProfileForm({ id }: { id?: string }) {
             <span className="small">{t(`form.compteAide.${provider}`)}</span>
           </Field>
         </div>
-        <RegionPicker key={provider} value={regions} onChange={setRegions} provider={provider} />
-      </div>
+      </Section>
 
-      <div className="card">
+      <Section n={2} icon="globe" title={t('form.section.regions')} done={regionsDone}>
+        <RegionPicker key={provider} value={regions} onChange={setRegions} provider={provider} bare />
+      </Section>
+
+      <Section n={3} icon="key" title={t('form.section.acces')} done={accesDone}>
         <fieldset className="choices inline">
           <legend>{t('form.mode')}</legend>
           {modes.map((k) => {
@@ -308,58 +390,60 @@ export function ProfileForm({ id }: { id?: string }) {
             );
           })}
         </fieldset>
-        {authKind === 'assume-role-profile' && (
-          <Field label={t('form.hub')}>
-            <select value={parentId} onChange={(e) => setParentId(e.target.value)} required>
-              <option value="">—</option>
-              {hubs.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.accountId})
-                </option>
-              ))}
-            </select>
-            <span className="small">{t('form.hubAide')}</span>
-          </Field>
-        )}
-        {provider === 'aws' && (authKind === 'assume-role-hub' || authKind === 'assume-role-profile') && (
-          <div className="form-grid">
-            <Field label={t('form.roleArn')}>
-              <input
-                value={roleArn}
-                onChange={(e) => setRoleArn(e.target.value)}
-                placeholder="arn:aws:iam::<ACCOUNT_ID>:role/<NOM>"
-                required
-              />
+        <div className="reveal" key={authKind}>
+          {authKind === 'assume-role-profile' && (
+            <Field label={t('form.hub')}>
+              <select value={parentId} onChange={(e) => setParentId(e.target.value)} required>
+                <option value="">—</option>
+                {hubs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.accountId})
+                  </option>
+                ))}
+              </select>
+              <span className="small">{t('form.hubAide')}</span>
             </Field>
-            <Field label={t('form.externalId')}>
-              <input value={externalId} onChange={(e) => setExternalId(e.target.value)} />
-            </Field>
-          </div>
-        )}
-        {authKind === 'access-keys' && (
-          <fieldset data-testid="identifiants-profil">
-            <legend>{t('form.identifiants')}</legend>
-            <Check
-              label={id ? t('form.nePasModifier') : t('form.plusTard')}
-              checked={later}
-              onChange={setLater}
-            />
-            {!later && (
-              <CredentialFields
-                draft={draft}
-                onChange={setDraft}
-                hubAvailable={false}
-                provider={provider}
-                profileId={id ?? createdId}
+          )}
+          {provider === 'aws' && (authKind === 'assume-role-hub' || authKind === 'assume-role-profile') && (
+            <div className="form-grid">
+              <Field label={t('form.roleArn')}>
+                <input
+                  value={roleArn}
+                  onChange={(e) => setRoleArn(e.target.value)}
+                  placeholder="arn:aws:iam::<ACCOUNT_ID>:role/<NOM>"
+                  required
+                />
+              </Field>
+              <Field label={t('form.externalId')}>
+                <input value={externalId} onChange={(e) => setExternalId(e.target.value)} />
+              </Field>
+            </div>
+          )}
+          {authKind === 'access-keys' && (
+            <fieldset data-testid="identifiants-profil">
+              <legend>{t('form.identifiants')}</legend>
+              <Check
+                label={id ? t('form.nePasModifier') : t('form.plusTard')}
+                checked={later}
+                onChange={setLater}
               />
-            )}
-          </fieldset>
-        )}
+              {!later && (
+                <CredentialFields
+                  draft={draft}
+                  onChange={setDraft}
+                  hubAvailable={false}
+                  provider={provider}
+                  profileId={id ?? createdId}
+                />
+              )}
+            </fieldset>
+          )}
+        </div>
         <Field label={t('form.groupes')}>
           <input value={groups} onChange={(e) => setGroups(e.target.value)} />
           <span className="small">{t('form.groupesAide')}</span>
         </Field>
-      </div>
+      </Section>
 
       <details className="card">
         <summary>{t('form.avance')}</summary>
@@ -489,15 +573,26 @@ export function ProfileForm({ id }: { id?: string }) {
         </button>
       )}
       <div className="row form-actions">
+        <span className={`form-status${missing.length ? '' : ' ready'}`} aria-live="polite">
+          {missing.length ? (
+            t('form.etat.manque', { liste: missing.join(', ') })
+          ) : (
+            <>
+              <Icon name="check" /> {id ? t('form.etat.pretEdition') : t('form.etat.pret')}
+            </>
+          )}
+        </span>
+        <span className="spacer" />
+        <button type="button" onClick={() => window.history.back()}>
+          {t('commun.annuler')}
+        </button>
         <button
-          className="primary"
+          className="primary cta"
           type="submit"
           disabled={busy || (regions.length === 0 && authKind !== 'import-only')}
         >
           {id ? t('commun.enregistrer') : t('form.creerContinuer')}
-        </button>
-        <button type="button" onClick={() => window.history.back()}>
-          {t('commun.annuler')}
+          {busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrow" />}
         </button>
       </div>
     </form>

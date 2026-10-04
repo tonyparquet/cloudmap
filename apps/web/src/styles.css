@@ -10,6 +10,12 @@
   --warn: #f59e0b;
   --edge-label-bg: #16131f;
   --edge-label-color: #ffffff;
+  /* Mouvement : décélération à l'arrivée, léger rebond pour les confirmations. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 360ms;
   color-scheme: dark light;
   font-family: 'Inter Variable', Inter, system-ui, sans-serif;
   font-size: 14px;
@@ -979,20 +985,10 @@ pre.notes {
 .form-grid > label.check {
   align-self: center;
 }
-/* Régions : continents côte à côte, chacun sur plusieurs colonnes. */
+/* Régions : continents côte à côte, régions en pastilles à bascule. */
 .region-groups {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 8px 24px;
-}
-.region-groups > div {
-  columns: 2 170px;
-  column-gap: 12px;
-}
-.region-groups > div > h3 {
-  column-span: all;
-}
-.region-groups label.check {
-  break-inside: avoid;
+  gap: 12px 24px;
 }
 /* Enregistrer / Annuler toujours visibles en bas d'un long formulaire ; la barre couvre aussi la
    marge intérieure (24 px) de main.page, sinon le contenu défile visiblement dessous. */
@@ -1004,4 +1000,308 @@ pre.notes {
   margin: 4px 0 -24px;
   background: var(--bg);
   border-top: 1px solid var(--panel-border);
+}
+
+/* ------------------------------------------------------------------ formulaire : mouvement et états */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
+}
+@keyframes bump {
+  from {
+    color: var(--text);
+    transform: scale(1.15);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Sections : entrée échelonnée, section active soulignée, pastille d'avancement. */
+.form-section {
+  animation: rise var(--dur-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+  transition: border-color var(--dur) var(--ease-out);
+}
+.form-section:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--panel-border));
+}
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+}
+.section-head h2 .icon {
+  color: var(--accent);
+}
+.step {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--panel-border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.step.done {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #0b0a10;
+  animation: pop var(--dur-slow) var(--ease-spring);
+}
+
+/* Champs : halo de focus, libellé actif, identifiant validé ou incomplet. */
+input,
+select,
+textarea {
+  transition:
+    border-color var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+label.field {
+  transition: color var(--dur) var(--ease-out);
+}
+label.field:focus-within {
+  color: var(--text);
+}
+.validable:not(:placeholder-shown):valid {
+  border-color: color-mix(in srgb, var(--ok) 65%, var(--panel-border));
+}
+.validable:not(:placeholder-shown):not(:focus):invalid {
+  border-color: color-mix(in srgb, var(--warn) 70%, var(--panel-border));
+}
+
+/* Boutons radio et cases à cocher dessinés, coche et point animés. */
+input[type='radio'],
+input[type='checkbox'] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out);
+}
+input[type='radio'] {
+  border-radius: 50%;
+}
+input[type='checkbox'] {
+  border-radius: 4px;
+}
+input[type='radio']::before,
+input[type='checkbox']::before {
+  content: '';
+  transform: scale(0);
+  transition: transform var(--dur) var(--ease-spring);
+}
+input[type='radio']::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+input[type='checkbox']::before {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+input[type='radio']:checked,
+input[type='checkbox']:checked {
+  border-color: var(--accent);
+}
+input[type='checkbox']:checked {
+  background: var(--accent);
+}
+input[type='radio']:checked::before,
+input[type='checkbox']:checked::before {
+  transform: scale(1);
+}
+input[type='radio']:focus,
+input[type='checkbox']:focus {
+  box-shadow: none;
+}
+input[type='radio']:disabled,
+input[type='checkbox']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Cartes de choix : survol, appui, sélection. */
+.choice {
+  transition:
+    border-color var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.choice:not(.disabled):hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--panel-border));
+  box-shadow: 0 8px 20px -14px color-mix(in srgb, var(--accent) 70%, transparent);
+  transform: translateY(-1px);
+}
+.choice:not(.disabled):active {
+  transform: scale(0.99);
+}
+.choice.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+}
+
+/* Régions en pastilles : case visible (la couleur seule n'indique pas l'état). */
+.region-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.region-group-head h3 {
+  margin: 0;
+}
+.link-btn {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.region-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.region-pills label.check {
+  margin: 0;
+  padding: 4px 10px 4px 7px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  font-size: 12.5px;
+  user-select: none;
+  transition:
+    border-color var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.region-pills label.check input {
+  width: 14px;
+  height: 14px;
+}
+.region-pills label.check:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--panel-border));
+}
+.region-pills label.check:active {
+  transform: scale(0.97);
+}
+.region-pills label.check:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+}
+.chips .chip {
+  animation: pop var(--dur) var(--ease-spring) both;
+}
+.bump {
+  display: inline-block;
+  animation: bump var(--dur-slow) var(--ease-out);
+}
+
+/* Blocs qui dépendent d'un choix (mode d'accès, type d'identifiants) : apparition en fondu. */
+.reveal {
+  animation: reveal var(--dur-slow) var(--ease-out) both;
+}
+
+/* Barre d'actions : translucide, état du formulaire, flèche qui avance au survol. */
+.form-actions {
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+}
+.form-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.form-status.ready {
+  color: var(--ok);
+}
+.form-status.ready .icon {
+  animation: pop var(--dur-slow) var(--ease-spring);
+}
+button.primary {
+  transition:
+    filter var(--dur) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+button.primary:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+button.cta .icon {
+  transition: transform var(--dur) var(--ease-out);
+}
+button.cta:not(:disabled):hover .icon {
+  transform: translateX(3px);
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }

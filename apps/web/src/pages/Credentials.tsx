@@ -88,6 +88,29 @@ export const emptyDraft = (provider: Provider = 'aws'): CredentialDraft => ({
   serviceAccountJson: '',
 });
 
+/** Champs obligatoires du type choisi remplis (avancement affiché par le formulaire de profil). */
+export function draftComplete(d: CredentialDraft): boolean {
+  switch (d.type) {
+    case 'temporary':
+      return !!(d.accessKeyId && d.secretAccessKey && d.sessionToken);
+    case 'user':
+      return !!(d.accessKeyId && d.secretAccessKey);
+    case 'user-role':
+      return !!(d.accessKeyId && d.secretAccessKey && d.roleArn && d.externalId);
+    case 'hub-role':
+      return !!(d.roleArn && d.externalId);
+    case 'stored':
+      return !!d.sourceProfileId;
+    case 'azure-token':
+    case 'gcp-token':
+      return !!d.accessToken;
+    case 'azure-sp':
+      return !!(d.tenantId && d.clientId && d.clientSecret);
+    case 'gcp-sa':
+      return !!d.serviceAccountJson;
+  }
+}
+
 /** Corps de PUT /api/profiles/:id/credentials selon le type choisi. */
 export function credentialBody(d: CredentialDraft) {
   const { type, accessKeyId, secretAccessKey, remember } = d;
@@ -270,111 +293,118 @@ export function CredentialFields({
           </label>
         ))}
       </fieldset>
-      {type === 'user' && <Alert kind="warn">{t('cred.avertUser')}</Alert>}
-      {type === 'stored' && (
-        <StoredPicker draft={draft} set={set} excludeProfileId={profileId} provider={provider} />
-      )}
-      {!aws && <CloudFields draft={draft} set={set} profileId={profileId} />}
-      {aws && type !== 'hub-role' && type !== 'stored' && (
-        <>
-          <Field label={t('cred.coller')}>
-            <input
-              type="password"
-              autoComplete="off"
-              className="paste"
-              value=""
-              onChange={() => undefined}
-              onPaste={onPaste}
-              placeholder="export AWS_ACCESS_KEY_ID=…"
-            />
-            <span className="small">{pasted ?? t('cred.collerAide')}</span>
-          </Field>
-          <details className="help">
-            <summary>{t('cred.aideTitre')}</summary>
-            <ul className="small">
-              <li>{t('cred.aideSso')}</li>
-              <li>{t('cred.aideCli')}</li>
-              <li>
-                <Link to={profileId ? `/aide?profil=${profileId}` : '/aide'}>{t('cred.aideRole')}</Link>
-              </li>
-            </ul>
-          </details>
-          <div className="form-grid">
-            <Field label={t('cred.accessKeyId')}>
+      {/* Champs du type choisi : réapparaissent en fondu à chaque changement de type. */}
+      <div className="reveal" key={type}>
+        {type === 'user' && <Alert kind="warn">{t('cred.avertUser')}</Alert>}
+        {type === 'stored' && (
+          <StoredPicker draft={draft} set={set} excludeProfileId={profileId} provider={provider} />
+        )}
+        {!aws && <CloudFields draft={draft} set={set} profileId={profileId} />}
+        {aws && type !== 'hub-role' && type !== 'stored' && (
+          <>
+            <Field label={t('cred.coller')}>
               <input
                 type="password"
                 autoComplete="off"
-                value={draft.accessKeyId}
-                onChange={(e) => set({ accessKeyId: e.target.value.trim() })}
-                required
+                className="paste"
+                value=""
+                onChange={() => undefined}
+                onPaste={onPaste}
+                placeholder="export AWS_ACCESS_KEY_ID=…"
               />
+              <span className="small">{pasted ?? t('cred.collerAide')}</span>
             </Field>
-            <Field label={t('cred.secret')}>
-              <input
-                type="password"
-                autoComplete="off"
-                value={draft.secretAccessKey}
-                onChange={(e) => set({ secretAccessKey: e.target.value.trim() })}
-                required
-              />
-            </Field>
-            {type === 'temporary' && (
-              <Field label={t('cred.token')}>
+            <details className="help">
+              <summary>{t('cred.aideTitre')}</summary>
+              <ul className="small">
+                <li>{t('cred.aideSso')}</li>
+                <li>{t('cred.aideCli')}</li>
+                <li>
+                  <Link to={profileId ? `/aide?profil=${profileId}` : '/aide'}>{t('cred.aideRole')}</Link>
+                </li>
+              </ul>
+            </details>
+            <div className="form-grid">
+              <Field label={t('cred.accessKeyId')}>
                 <input
                   type="password"
                   autoComplete="off"
-                  value={draft.sessionToken}
-                  onChange={(e) => set({ sessionToken: e.target.value.trim() })}
+                  value={draft.accessKeyId}
+                  onChange={(e) => set({ accessKeyId: e.target.value.trim() })}
                   required
                 />
               </Field>
-            )}
+              <Field label={t('cred.secret')}>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={draft.secretAccessKey}
+                  onChange={(e) => set({ secretAccessKey: e.target.value.trim() })}
+                  required
+                />
+              </Field>
+              {type === 'temporary' && (
+                <Field label={t('cred.token')}>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={draft.sessionToken}
+                    onChange={(e) => set({ sessionToken: e.target.value.trim() })}
+                    required
+                  />
+                </Field>
+              )}
+            </div>
+          </>
+        )}
+        {(type === 'user-role' || type === 'hub-role') && (
+          <div className="form-grid">
+            <Field label={t('form.roleArn')}>
+              <input
+                autoComplete="off"
+                value={draft.roleArn}
+                onChange={(e) => set({ roleArn: e.target.value.trim() })}
+                placeholder="arn:aws:iam::<ACCOUNT_ID>:role/<NOM>"
+                required
+              />
+            </Field>
+            <Field label={t('cred.externalId')}>
+              <input
+                type="password"
+                autoComplete="off"
+                value={draft.externalId}
+                onChange={(e) => set({ externalId: e.target.value.trim() })}
+                required
+              />
+            </Field>
           </div>
-        </>
-      )}
-      {(type === 'user-role' || type === 'hub-role') && (
-        <div className="form-grid">
-          <Field label={t('form.roleArn')}>
-            <input
-              autoComplete="off"
-              value={draft.roleArn}
-              onChange={(e) => set({ roleArn: e.target.value.trim() })}
-              placeholder="arn:aws:iam::<ACCOUNT_ID>:role/<NOM>"
-              required
-            />
-          </Field>
-          <Field label={t('cred.externalId')}>
-            <input
-              type="password"
-              autoComplete="off"
-              value={draft.externalId}
-              onChange={(e) => set({ externalId: e.target.value.trim() })}
-              required
-            />
-          </Field>
-        </div>
-      )}
-      {(type === 'azure-sp' || type === 'gcp-sa') && (
-        <Check label={t('cred.memoriser')} checked={draft.remember} onChange={(v) => set({ remember: v })} />
-      )}
-      {(type === 'user' || type === 'user-role') && (
-        <div className="form-grid">
-          <Field label={t('cred.duree')}>
-            <input
-              type="number"
-              min={900}
-              max={43200}
-              value={draft.duration}
-              onChange={(e) => set({ duration: Number(e.target.value) })}
-            />
-          </Field>
+        )}
+        {(type === 'azure-sp' || type === 'gcp-sa') && (
           <Check
             label={t('cred.memoriser')}
             checked={draft.remember}
             onChange={(v) => set({ remember: v })}
           />
-        </div>
-      )}
+        )}
+        {(type === 'user' || type === 'user-role') && (
+          <div className="form-grid">
+            <Field label={t('cred.duree')}>
+              <input
+                type="number"
+                min={900}
+                max={43200}
+                value={draft.duration}
+                onChange={(e) => set({ duration: Number(e.target.value) })}
+              />
+            </Field>
+            <Check
+              label={t('cred.memoriser')}
+              checked={draft.remember}
+              onChange={(v) => set({ remember: v })}
+            />
+          </div>
+        )}
+      </div>
     </>
   );
 }
