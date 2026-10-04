@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { SERVICES } from '@carto/scanner';
 import type { FastifyInstance } from 'fastify';
@@ -6,6 +6,7 @@ import type { Ctx } from '../app.ts';
 import { notFound } from '../errors.ts';
 import { requireRole, requireUser } from '../http.ts';
 import { visibleProfile } from './profiles.ts';
+import { servicesOf } from './snapshots.ts';
 import { changelogSection } from '../changelog.ts';
 import { APP_VERSION } from '../version.ts';
 
@@ -38,13 +39,32 @@ export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
     };
   });
 
-  app.get('/api/config/services', async (req) => {
+  app.get<{ Querystring: { provider?: string } }>('/api/config/services', async (req) => {
     requireUser(req);
+    const provider = req.query.provider ?? 'aws';
+    const services = servicesOf(provider);
     return {
-      services: SERVICES,
-      defaults: config.app.scanner.defaultServices ?? SERVICES.map((s) => s.key),
+      services,
+      defaults:
+        provider === 'aws'
+          ? (config.app.scanner.defaultServices ?? SERVICES.map((s) => s.key))
+          : services.map((s) => s.key),
       hubAvailable: config.hubCredentials === 'default-chain',
     };
+  });
+
+  /** Aide Azure / Google Cloud : documents de docs/<fournisseur>/ (rôle en lecture seule, commandes). */
+  app.get<{ Params: { provider: string } }>('/api/help/cloud/:provider', async (req) => {
+    requireUser(req);
+    if (!['azure', 'gcp'].includes(req.params.provider)) throw notFound();
+    const dir = join(config.appRoot, 'docs', req.params.provider);
+    const documents = existsSync(dir)
+      ? readdirSync(dir)
+          .filter((f) => /^[\w.-]+\.(md|json|ya?ml|sh)$/.test(f))
+          .sort()
+          .map((name) => ({ name, content: readFileSync(join(dir, name), 'utf8') }))
+      : [];
+    return { documents };
   });
 
   /** Version installée et dernière version publiée (cache côté serveur). */

@@ -3,12 +3,13 @@ import {
   buildOrgGraph,
   diff,
   rawSnapshotSchema,
-  regionSchema,
+  cloudRegionSchema,
+  providerIdProblems,
   resourceKey,
   resourceName,
   type Graph,
 } from '@carto/core';
-import { SERVICES } from '@carto/scanner';
+import { AZURE_SERVICES, GCP_SERVICES, SERVICES } from '@carto/scanner';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
@@ -21,13 +22,13 @@ import { resolveCredentials } from './credentials.ts';
 import { editableProfile, visibleProfile } from './profiles.ts';
 
 const scanInputSchema = z.strictObject({
-  regions: z.array(regionSchema).min(1).max(40).optional(),
-  services: z
-    .array(z.string())
-    .max(64)
-    .refine((s) => s.every((x) => SERVICES.some((y) => y.key === x)), 'Service inconnu')
-    .optional(),
+  regions: z.array(cloudRegionSchema).min(1).max(40).optional(),
+  services: z.array(z.string().max(64)).max(64).optional(),
 });
+
+/** Services proposés au scan, par fournisseur. */
+export const servicesOf = (provider: string) =>
+  provider === 'azure' ? AZURE_SERVICES : provider === 'gcp' ? GCP_SERVICES : SERVICES;
 const expandSchema = z.string().max(4000).optional();
 
 export function registerSnapshotRoutes(app: FastifyInstance, ctx: Ctx): void {
@@ -131,6 +132,11 @@ export function registerSnapshotRoutes(app: FastifyInstance, ctx: Ctx): void {
           'SNAPSHOT_INVALIDE',
         );
       }
+      if ((result.data.meta.provider ?? 'aws') !== (profile.provider ?? 'aws'))
+        throw badRequest(
+          `Ce snapshot vient d'un autre fournisseur (${result.data.meta.provider ?? 'aws'}) que le profil (${profile.provider ?? 'aws'})`,
+          'FOURNISSEUR_DIFFERENT',
+        );
       if (result.data.meta.accountId !== profile.accountId) {
         audit.log({
           user: user.username,
@@ -185,6 +191,14 @@ export function registerSnapshotRoutes(app: FastifyInstance, ctx: Ctx): void {
         throw conflict('Un scan est déjà en cours pour ce profil', 'SCAN_EN_COURS');
       const regions = input.regions ?? profile.regions;
       if (regions.length === 0) throw badRequest('Aucune région sélectionnée');
+      const provider = profile.provider ?? 'aws';
+      const known = servicesOf(provider);
+      const unknown = (input.services ?? []).filter((s) => !known.some((k) => k.key === s));
+      const problems = [
+        ...providerIdProblems({ provider, accountId: profile.accountId, regions }),
+        ...(unknown.length ? [`Service inconnu : ${unknown.join(', ')}`] : []),
+      ];
+      if (problems.length) throw badRequest(problems.join(' ; '), 'VALIDATION');
       const credentials = await resolveCredentials(ctx, req, profile);
       const scanId = ctx.scans.start(
         profile,

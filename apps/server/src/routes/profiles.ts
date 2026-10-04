@@ -2,11 +2,12 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  accountIdSchema,
+  cloudIdSchema,
+  cloudRegionSchema,
   externalIdSchema,
   profileSchema,
+  providerIdProblems,
   rawSnapshotSchema,
-  regionSchema,
   roleArnSchema,
   type Profile,
 } from '@carto/core';
@@ -81,17 +82,32 @@ const profileInputSchema = profileSchema.omit({ id: true, auth: true }).extend({
     z.strictObject({
       kind: z.literal('assume-role-profile'),
       parentProfileId: z.string().regex(/^[\w-]{1,64}$/),
-      roleArn: roleArnSchema,
+      roleArn: roleArnSchema.optional(),
       externalId: externalIdSchema.optional(),
     }),
   ]),
 });
 
+/** Règles propres au fournisseur : identifiants de compte et régions, modes d'accès disponibles. */
+function checkProvider(input: z.infer<typeof profileInputSchema>): void {
+  const provider = input.provider ?? 'aws';
+  const problems = providerIdProblems({ provider, accountId: input.accountId, regions: input.regions });
+  if (input.auth.kind === 'assume-role-hub' && provider !== 'aws')
+    problems.push("Le rôle assumé par l'outil n'existe que pour AWS");
+  if (input.auth.kind === 'assume-role-profile' && provider === 'aws' && !input.auth.roleArn)
+    problems.push('ARN du rôle du compte membre requis');
+  if (problems.length) throw badRequest(problems.join(' ; '), 'VALIDATION');
+}
+
+// AWS : rôle à assumer (nom + External ID). Azure / Google Cloud : mêmes identifiants que le hub.
 const orgAccountsSchema = z.strictObject({
-  accountIds: z.array(accountIdSchema).min(1).max(500),
-  roleName: z.string().regex(/^[\w+=,.@-]{1,64}$/, 'Nom de rôle IAM invalide'),
-  externalId: externalIdSchema,
-  regions: z.array(regionSchema).min(1).max(40),
+  accountIds: z.array(cloudIdSchema).min(1).max(500),
+  roleName: z
+    .string()
+    .regex(/^[\w+=,.@-]{1,64}$/, 'Nom de rôle IAM invalide')
+    .optional(),
+  externalId: externalIdSchema.optional(),
+  regions: z.array(cloudRegionSchema).min(1).max(40),
   allowedGroups: profileSchema.shape.allowedGroups,
 });
 
@@ -109,9 +125,9 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
   };
 
   /** Hub d'un profil « via un autre profil » : modifiable par l'utilisateur et porteur d'identifiants. */
-  const checkParent = (req: FastifyRequest, parentId: string, selfId?: string) => {
+  const checkParent = (req: FastifyRequest, parentId: string, provider: string, selfId?: string) => {
     const { profile: parent } = editableProfile(ctx, req, parentId);
-    if (parent.id === selfId || !canBeHub(parent))
+    if (parent.id === selfId || !canBeHub(parent) || (parent.provider ?? 'aws') !== provider)
       throw badRequest(
         'Ce profil ne peut pas servir de hub : il doit porter ses propres identifiants',
         'HUB_INVALIDE',
@@ -121,6 +137,9 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
 
   const withAuth = (input: z.infer<typeof profileInputSchema>, previous?: Profile): Profile['auth'] => {
     if (input.auth.kind === 'assume-role-profile') {
+      // Azure / Google Cloud : pas de rôle à assumer, donc pas d'External ID.
+      if ((input.provider ?? 'aws') !== 'aws')
+        return { kind: 'assume-role-profile', parentProfileId: input.auth.parentProfileId };
       const prevExt = previous?.auth.kind === 'assume-role-profile' ? previous.auth.externalId : undefined;
       return { ...input.auth, externalId: input.auth.externalId ?? prevExt ?? newExternalId() };
     }
@@ -170,8 +189,10 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
   app.post('/api/profiles', async (req) => {
     const user = requireRole(req, 'admin', 'editor');
     const input = parse(profileInputSchema, req.body);
+    checkProvider(input);
     checkGroups(user, input.allowedGroups);
-    if (input.auth.kind === 'assume-role-profile') checkParent(req, input.auth.parentProfileId);
+    if (input.auth.kind === 'assume-role-profile')
+      checkParent(req, input.auth.parentProfileId, input.provider ?? 'aws');
     const profile = profileSchema.parse({ ...input, id: randomUUID(), auth: withAuth(input) });
     saveProfile(db, profile);
     audit.log({
@@ -189,8 +210,10 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
     if (isDemoProfile(previous.id) && ctx.config.demoMode)
       throw forbidden('Les profils de démonstration sont en lecture seule');
     const input = parse(profileInputSchema, req.body);
+    checkProvider(input);
     checkGroups(user, input.allowedGroups);
-    if (input.auth.kind === 'assume-role-profile') checkParent(req, input.auth.parentProfileId, previous.id);
+    if (input.auth.kind === 'assume-role-profile')
+      checkParent(req, input.auth.parentProfileId, input.provider ?? 'aws', previous.id);
     if (input.accountId !== previous.accountId) {
       // Changer de compte invalide les identifiants mémorisés pour l'ancien compte.
       ctx.vault.wipeProfile(previous.id);
@@ -231,9 +254,16 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
   /** Un profil par compte membre choisi : rôle `roleName` assumé avec les identifiants du hub. */
   app.post<{ Params: { id: string } }>('/api/profiles/:id/org-accounts', async (req) => {
     const user = requireRole(req, 'admin', 'editor');
-    const parent = checkParent(req, req.params.id);
+    const provider = visibleProfile(ctx, req, req.params.id).profile.provider ?? 'aws';
+    const parent = checkParent(req, req.params.id, provider);
     const input = parse(orgAccountsSchema, req.body);
     checkGroups(user, input.allowedGroups);
+    const problems = input.accountIds.flatMap((accountId) =>
+      providerIdProblems({ provider, accountId, regions: input.regions }),
+    );
+    if (provider === 'aws' && (!input.roleName || !input.externalId))
+      problems.push('Nom du rôle et External ID requis pour AWS');
+    if (problems.length) throw badRequest([...new Set(problems)].join(' ; '), 'VALIDATION');
     const known = new Map(orgAccounts(parent).map((a) => [a.id, a]));
     const covered = new Set(
       listProfiles(db)
@@ -248,14 +278,18 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
         id: randomUUID(),
         name: account?.name ?? accountId,
         ...(parent.client ? { client: parent.client } : {}),
+        ...(provider !== 'aws' ? { provider } : {}),
         accountId,
         regions: input.regions,
-        auth: {
-          kind: 'assume-role-profile',
-          parentProfileId: parent.id,
-          roleArn: `arn:${account?.partition ?? 'aws'}:iam::${accountId}:role/${input.roleName}`,
-          externalId: input.externalId,
-        },
+        auth:
+          provider === 'aws'
+            ? {
+                kind: 'assume-role-profile',
+                parentProfileId: parent.id,
+                roleArn: `arn:${account?.partition ?? 'aws'}:iam::${accountId}:role/${input.roleName ?? ''}`,
+                externalId: input.externalId,
+              }
+            : { kind: 'assume-role-profile', parentProfileId: parent.id },
         allowedGroups: input.allowedGroups,
       });
       saveProfile(db, profile);
@@ -272,26 +306,51 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: Ctx): void {
     return { created: created.map((p) => ({ id: p.id, name: p.name, accountId: p.accountId })) };
   });
 
+  /**
+   * Comptes membres vus dans le dernier snapshot du hub : comptes AWS Organizations, abonnements Azure,
+   * projets Google Cloud (types d'actifs des collecteurs de chaque fournisseur).
+   */
   const orgAccounts = (profile: Profile) => {
     const row = ctx.storage.listSnapshots(profile.id)[0];
     const resources = row ? ctx.storage.loadSnapshot(row).resources : [];
-    return resources
-      .filter((r) => r.type === 'AWS::Organizations::Account')
-      .map((r) => {
-        const raw = (r.raw ?? {}) as {
-          Id?: string;
-          Name?: string;
-          Status?: string;
-          State?: string;
-          Arn?: string;
-        };
-        return {
-          id: raw.Id ?? r.id,
-          name: raw.Name ?? r.id,
-          status: raw.State ?? raw.Status ?? 'inconnu',
-          partition: /^arn:(aws[a-z-]*):/.exec(raw.Arn ?? r.arn ?? '')?.[1] ?? 'aws',
-        };
-      });
+    const pick = (raw: Record<string, unknown>, ...keys: string[]) =>
+      keys.map((k) => raw[k]).find((v): v is string => typeof v === 'string' && v !== '');
+    return resources.flatMap((r) => {
+      const raw = (r.raw ?? {}) as Record<string, unknown>;
+      const type = r.type.toLowerCase();
+      if (r.type === 'AWS::Organizations::Account')
+        return [
+          {
+            id: pick(raw, 'Id') ?? r.id,
+            name: pick(raw, 'Name') ?? r.id,
+            status: pick(raw, 'State', 'Status') ?? 'inconnu',
+            partition: /^arn:(aws[a-z-]*):/.exec(pick(raw, 'Arn') ?? r.arn ?? '')?.[1] ?? 'aws',
+          },
+        ];
+      if (type === 'microsoft.resources/subscriptions') {
+        const id = pick(raw, 'subscriptionId') ?? r.id.split('/').pop() ?? r.id;
+        return [
+          {
+            id,
+            name: pick(raw, 'displayName', 'name') ?? id,
+            status: pick(raw, 'state') ?? 'inconnu',
+            partition: 'azure',
+          },
+        ];
+      }
+      if (type === 'cloudresourcemanager.googleapis.com/project') {
+        const id = pick(raw, 'projectId') ?? r.id.split('/').pop() ?? r.id;
+        return [
+          {
+            id,
+            name: pick(raw, 'displayName', 'name') ?? id,
+            status: pick(raw, 'state', 'lifecycleState') ?? 'inconnu',
+            partition: 'gcp',
+          },
+        ];
+      }
+      return [];
+    });
   };
 
   app.delete<{ Params: { id: string } }>('/api/profiles/:id', async (req) => {
