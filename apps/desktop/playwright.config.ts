@@ -15,4 +15,5 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   outputDir: join(root, '.tmp', 'test-results-bureau'),
+  use: { screenshot: 'only-on-failure' },
 });

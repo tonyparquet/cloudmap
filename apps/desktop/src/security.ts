@@ -64,6 +64,19 @@ export function isAppUrl(url: string, origin: string): boolean {
   }
 }
 
+/**
+ * Permissions de la fenêtre : uniquement l'écriture dans le presse-papiers (boutons « Copier »),
+ * pour l'origine locale. Lecture du presse-papiers par script, caméra, notifications… : refusées
+ * (le collage au clavier n'a besoin d'aucune permission).
+ */
+export function permissionAllowed(
+  permission: string,
+  requestingUrl: string | undefined,
+  origin: string,
+): boolean {
+  return permission === 'clipboard-sanitized-write' && !!requestingUrl && isAppUrl(requestingUrl, origin);
+}
+
 /** Lien externe ouvrable dans le navigateur du système (console AWS…) : HTTPS uniquement, hors boucle locale. */
 export function isExternalHttps(url: string): boolean {
   try {

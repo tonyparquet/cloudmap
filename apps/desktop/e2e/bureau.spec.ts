@@ -26,6 +26,20 @@ test('application de bureau : serveur local TLS, compte + TOTP, démo, navigatio
   const secret = (await win.getByTestId('totp-secret').textContent())?.trim() ?? '';
   await win.fill('input[name=code]', await generate({ secret }));
   await win.getByRole('button', { name: 'Activer' }).click();
+  // Bouton « Copier » des codes de secours : le presse-papiers reçoit bien les codes.
+  const codes = await win.getByTestId('codes-secours').locator('span').allTextContents();
+  await win.getByRole('button', { name: 'Copier', exact: true }).click();
+  await expect(win.getByRole('button', { name: 'Copié' })).toBeVisible();
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(codes.join('\n'));
+  // Lecture du presse-papiers par script : toujours refusée.
+  expect(
+    await win.evaluate(() =>
+      navigator.clipboard.readText().then(
+        () => 'lu',
+        () => 'refusé',
+      ),
+    ),
+  ).toBe('refusé');
   await win.getByRole('button', { name: "Continuer vers l'application" }).click();
   await win
     .getByTestId('profil')

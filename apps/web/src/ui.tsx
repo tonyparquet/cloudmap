@@ -71,18 +71,27 @@ export function Modal({
 }
 
 export function CopyButton({ text }: { text: string }) {
-  const [done, setDone] = useState(false);
+  const [state, setState] = useState<'copie' | 'erreur'>();
+  // Retour visible dans les deux cas : un échec silencieux laisse croire que le texte est copié.
+  const show = (s: 'copie' | 'erreur') => {
+    setState(s);
+    setTimeout(() => setState(undefined), 2000);
+  };
   return (
     <button
       type="button"
       onClick={() => {
-        void navigator.clipboard.writeText(text).then(() => {
-          setDone(true);
-          setTimeout(() => setDone(false), 1500);
-        });
+        navigator.clipboard.writeText(text).then(
+          () => show('copie'),
+          () => show('erreur'),
+        );
       }}
     >
-      {done ? t('commun.copie') : t('commun.copier')}
+      {state === 'copie'
+        ? t('commun.copie')
+        : state === 'erreur'
+          ? t('commun.copieImpossible')
+          : t('commun.copier')}
     </button>
   );
 }

@@ -4,7 +4,15 @@ import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'e
 import { loadConfig, StartupError } from '../../server/src/config.ts';
 import { startServer } from '../../server/src/start.ts';
 import { loadOrCreateMasterKey } from './keystore.ts';
-import { ensureLocalCert, isAppUrl, isExternalHttps, isPinned, LOOPBACK, pickPort } from './security.ts';
+import {
+  ensureLocalCert,
+  isAppUrl,
+  isExternalHttps,
+  isPinned,
+  LOOPBACK,
+  permissionAllowed,
+  pickPort,
+} from './security.ts';
 
 /**
  * Application de bureau : le serveur Cartographe AWS tourne dans le processus principal, en HTTPS
@@ -72,7 +80,7 @@ async function start(): Promise<void> {
   createWindow();
 }
 
-/** Session verrouillée : certificat épinglé, aucune permission, navigation limitée à l'application. */
+/** Session verrouillée : certificat épinglé, presse-papiers en écriture seule, navigation limitée à l'application. */
 function lockDown(certPem: string): void {
   const ses = session.defaultSession;
   ses.setCertificateVerifyProc((req, callback) => {
@@ -80,8 +88,12 @@ function lockDown(certPem: string): void {
     if (req.hostname === LOOPBACK) callback(isPinned(req.certificate.data, certPem) ? 0 : -2);
     else callback(-3);
   });
-  ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
-  ses.setPermissionCheckHandler(() => false);
+  ses.setPermissionRequestHandler((_wc, permission, callback, details) =>
+    callback(permissionAllowed(permission, details.requestingUrl, origin)),
+  );
+  ses.setPermissionCheckHandler((_wc, permission, requestingOrigin) =>
+    permissionAllowed(permission, requestingOrigin, origin),
+  );
 }
 
 app.on('web-contents-created', (_event, contents) => {

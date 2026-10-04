@@ -447,6 +447,7 @@ export const fr = {
   'org.regenerer': 'Générer un autre External ID',
   'form.regionsModifier': 'Ajouter ou retirer des régions',
   'commun.retirerElement': 'Retirer {x}',
+  'commun.copieImpossible': 'Copie impossible : sélectionnez le texte',
 } as const;
 
 export type MessageKey = keyof typeof fr;

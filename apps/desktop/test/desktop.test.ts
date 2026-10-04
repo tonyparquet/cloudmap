@@ -3,7 +3,14 @@ import { existsSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadOrCreateMasterKey, type SecretBox } from '../src/keystore.ts';
-import { certNeedsRenewal, ensureLocalCert, isAppUrl, isExternalHttps, isPinned } from '../src/security.ts';
+import {
+  certNeedsRenewal,
+  ensureLocalCert,
+  isAppUrl,
+  isExternalHttps,
+  isPinned,
+  permissionAllowed,
+} from '../src/security.ts';
 
 const tmp = () => mkdtempSync(join(process.cwd(), '.tmp', 'desktop-'));
 
@@ -59,6 +66,18 @@ describe('application de bureau : TLS local', () => {
       'javascript:alert(1)',
     ])
       expect(isExternalHttps(bad)).toBe(false);
+  });
+});
+
+describe('application de bureau : permissions de la fenêtre', () => {
+  it('presse-papiers en écriture seule, pour l’origine locale uniquement', () => {
+    const origin = 'https://127.0.0.1:48443';
+    expect(permissionAllowed('clipboard-sanitized-write', `${origin}/login`, origin)).toBe(true);
+    expect(permissionAllowed('clipboard-sanitized-write', origin, origin)).toBe(true);
+    expect(permissionAllowed('clipboard-sanitized-write', 'https://exemple.fr/', origin)).toBe(false);
+    expect(permissionAllowed('clipboard-sanitized-write', undefined, origin)).toBe(false);
+    for (const p of ['clipboard-read', 'media', 'notifications', 'geolocation', 'openExternal'])
+      expect(permissionAllowed(p, `${origin}/`, origin)).toBe(false);
   });
 });
 
