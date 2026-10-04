@@ -22,8 +22,15 @@ export function releaseChangelog(markdown: string, version: string, date: string
   const after = markdown.slice(i + UNRELEASED.length);
   const next = after.search(/^## \[/m);
   const tail = next === -1 ? '' : after.slice(next);
-  return `${markdown.slice(0, i)}${UNRELEASED}\n\n## [${version}] - ${date}\n\n${pending}\n\n${tail}`.replace(
-    /\n{3,}/g,
-    '\n\n',
+  const out =
+    `${markdown.slice(0, i)}${UNRELEASED}\n\n## [${version}] - ${date}\n\n${pending}\n\n${tail}`.replace(
+      /\n{3,}/g,
+      '\n\n',
+    );
+  // Liens de comparaison en fin de journal : « Non publié » repart de la nouvelle version.
+  return out.replace(
+    /^\[Non publié\]: (\S+)\/compare\/v(\S+)\.\.\.HEAD$/m,
+    (_m, base: string, previous: string) =>
+      `[Non publié]: ${base}/compare/v${version}...HEAD\n[${version}]: ${base}/compare/v${previous}...v${version}`,
   );
 }
