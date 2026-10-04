@@ -1,10 +1,12 @@
 // `pnpm dev` : serveur HTTPS local (certificat de développement) + interface reconstruite à chaque modification.
+// `pnpm start` (--local) : utilisation sur le poste, interface construite une fois, sans démonstration.
 import { execFileSync, spawn } from 'node:child_process';
 import { X509Certificate } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const local = process.argv.includes('--local');
 const root = fileURLToPath(new URL('..', import.meta.url));
 const dev = join(root, '.dev');
 const cert = join(dev, 'dev-cert.pem');
@@ -24,24 +26,23 @@ const env = {
   PUBLIC_ORIGIN: process.env.PUBLIC_ORIGIN ?? `https://localhost:${port}`,
   CONFIG_DIR: process.env.CONFIG_DIR ?? join(root, 'config'),
   DATA_DIR: process.env.DATA_DIR ?? join(root, '.data'),
-  DEMO_MODE: process.env.DEMO_MODE ?? 'true',
+  DEMO_MODE: process.env.DEMO_MODE ?? (local ? 'false' : 'true'),
   LOG_LEVEL: process.env.LOG_LEVEL ?? 'info',
 };
 
 const bin = (name) => join(root, 'node_modules', '.bin', name);
-const children = [
-  spawn(bin('vite'), ['build', '--watch', '--logLevel', 'warn'], {
-    cwd: join(root, 'apps', 'web'),
-    stdio: 'inherit',
-    env,
-  }),
-  spawn(bin('tsx'), ['watch', join(root, 'apps', 'server', 'src', 'main.ts')], {
-    cwd: root,
-    stdio: 'inherit',
-    env,
-  }),
-];
-console.log(`CloudMap (développement) : ${env.PUBLIC_ORIGIN} — mode démo ${env.DEMO_MODE}`);
+const web = { cwd: join(root, 'apps', 'web'), stdio: 'inherit', env };
+if (local) execFileSync(bin('vite'), ['build', '--logLevel', 'warn'], web);
+const server = join(root, 'apps', 'server', 'src', 'main.ts');
+const children = local
+  ? [spawn(bin('tsx'), [server], { cwd: root, stdio: 'inherit', env })]
+  : [
+      spawn(bin('vite'), ['build', '--watch', '--logLevel', 'warn'], web),
+      spawn(bin('tsx'), ['watch', server], { cwd: root, stdio: 'inherit', env }),
+    ];
+console.log(
+  `CloudMap (${local ? 'sur ce poste' : 'développement'}) : ${env.PUBLIC_ORIGIN} — mode démo ${env.DEMO_MODE}`,
+);
 const stop = () => {
   for (const c of children) c.kill('SIGTERM');
   process.exit(0);

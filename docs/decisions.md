@@ -136,7 +136,7 @@ external`, `externalType`.
 - `pnpm e2e` démarre son propre serveur (`scripts/e2e-server.mjs`, port 8444, données vierges dans
   `.tmp/e2e-data`, mode démo) et vérifie : création de l'administrateur + TOTP, profil Démo, nœuds et
   conteneurs de la section 9.5, panneau latéral, filtre, export SVG, absence de violation CSP.
-- Navigateur Playwright et éventuelles bibliothèques système manquantes (poste WSL sans droits root :
+- Navigateur Playwright et éventuelles bibliothèques système manquantes (poste de développement sans droits administrateur :
   `libnss3`, `libnspr4`, `libasound2` extraites par `apt-get download` + `dpkg -x`) sont placés dans
   `.tmp/`, référencés par `playwright.config.ts` : rien n'est installé hors du projet.
 - Exports SVG / PNG : capture du diagramme complet par html-to-image. La police Inter (sous-ensemble

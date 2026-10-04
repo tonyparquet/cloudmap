@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "start": "node scripts/dev.mjs --local",
     "build": "pnpm -r run build",
     "test": "vitest run",
     "e2e": "playwright test",
