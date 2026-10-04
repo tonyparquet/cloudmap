@@ -1,6 +1,6 @@
 /** Textes de l'interface (français). Une autre langue = un autre fichier de même forme. */
 export const fr = {
-  'app.titre': 'Cartographe AWS',
+  'app.titre': 'CloudMap',
   'app.chargement': 'Chargement…',
   'nav.profils': 'Profils',
   'nav.multi': 'Multi-comptes',
@@ -504,7 +504,7 @@ export const fr = {
   'maj.verifiee': 'Dernière recherche',
   'maj.desactivee': 'Recherche de mise à jour désactivée (app.yaml : updates).',
   'maj.disponible': 'La version {v} est disponible.',
-  'maj.aJour': 'Cartographe est à jour.',
+  'maj.aJour': 'CloudMap est à jour.',
   'maj.rechercher': 'Rechercher les mises à jour',
   'maj.recherche': 'Recherche…',
   'maj.telecharger': 'Télécharger la version {v}',

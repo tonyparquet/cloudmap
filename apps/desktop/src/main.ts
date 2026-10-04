@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'electron';
 import { loadConfig, StartupError } from '../../server/src/config.ts';
 import { startServer } from '../../server/src/start.ts';
-import { loadOrCreateMasterKey } from './keystore.ts';
+import { loadOrCreateMasterKey, PRODUCT_NAME, userDataDir } from './keystore.ts';
 import {
   ensureLocalCert,
   isAppUrl,
@@ -15,17 +15,19 @@ import {
 } from './security.ts';
 
 /**
- * Application de bureau : le serveur Cartographe AWS tourne dans le processus principal, en HTTPS
+ * Application de bureau : le serveur CloudMap tourne dans le processus principal, en HTTPS
  * TLS 1.3 sur 127.0.0.1 uniquement ; la fenêtre n'accepte que le certificat de cette installation.
  * Authentification locale + TOTP, CSP, CSRF, chiffrement des identifiants : identiques au serveur.
  */
 const PREFERRED_PORT = 48_443;
-const TITLE = 'Cartographe AWS';
+const TITLE = PRODUCT_NAME;
 
 let server: { close: () => Promise<void> } | undefined;
 let origin = '';
 let quitting = false;
 
+// Avant tout accès au dossier des données, verrou d'instance unique compris.
+app.setPath('userData', userDataDir(app.getPath('appData')));
 if (!app.requestSingleInstanceLock()) app.quit();
 app.enableSandbox();
 
@@ -156,10 +158,27 @@ app.on('before-quit', (event) => {
 });
 
 void app.whenReady().then(() => {
-  // macOS : menus standard (copier-coller, fenêtre) ; ailleurs, aucune barre de menus.
+  // macOS : menus standard (copier-coller, fenêtre) ; ailleurs, aucune barre de menus. Menu de
+  // l'application libellé explicitement : `app.name` garde le nom interne figé (voir LEGACY_NAME).
+  app.setAboutPanelOptions({ applicationName: TITLE, applicationVersion: app.getVersion() });
   Menu.setApplicationMenu(
     process.platform === 'darwin'
-      ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }])
+      ? Menu.buildFromTemplate([
+          {
+            label: TITLE,
+            submenu: [
+              { role: 'about', label: `À propos de ${TITLE}` },
+              { type: 'separator' },
+              { role: 'hide', label: `Masquer ${TITLE}` },
+              { role: 'hideOthers', label: 'Masquer les autres' },
+              { role: 'unhide', label: 'Tout afficher' },
+              { type: 'separator' },
+              { role: 'quit', label: `Quitter ${TITLE}` },
+            ],
+          },
+          { role: 'editMenu' },
+          { role: 'windowMenu' },
+        ])
       : null,
   );
   return start().catch((err: unknown) =>

@@ -19,7 +19,7 @@ import {
 import { parseMasterKey } from '@carto/security';
 import { openDb, rotateMasterKey } from '@carto/server/maintenance';
 
-const USAGE = `Cartographe AWS — outil en ligne de commande
+const USAGE = `CloudMap — outil en ligne de commande
 
   scan --profile <profil-aws> --regions <r1,r2> [--services <s1,s2>] [--out <dossier>]
       Scan hors-ligne en lecture seule avec la chaîne d'identifiants standard du poste

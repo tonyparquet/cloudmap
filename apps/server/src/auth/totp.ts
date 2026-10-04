@@ -1,7 +1,7 @@
 import { generateSecret, generateURI, verify } from 'otplib';
 import QRCode from 'qrcode';
 
-export const TOTP_ISSUER = 'Cartographe AWS';
+export const TOTP_ISSUER = 'CloudMap';
 
 export const newTotpSecret = () => generateSecret();
 

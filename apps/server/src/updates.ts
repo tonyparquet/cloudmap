@@ -66,7 +66,7 @@ export class UpdateChecker {
       const res = await this.fetchImpl(this.settings.feedUrl ?? '', {
         headers: {
           accept: 'application/vnd.github+json',
-          'user-agent': `cartographe-aws/${this.current}`,
+          'user-agent': `cloudmap/${this.current}`,
           ...(this.token ? { authorization: `Bearer ${this.token}` } : {}),
         },
         redirect: 'error',

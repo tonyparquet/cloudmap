@@ -67,17 +67,17 @@ export function OrgAccountsPage({ profileId }: { profileId: string }) {
   const selected = org.data?.canCreate
     ? (chosen ?? candidates.filter((a) => a.status === 'ACTIVE').map((a) => a.id))
     : [];
-  const role = roleName ?? known?.roleArn?.split('/').pop() ?? 'CartographeLectureSeule';
+  const role = roleName ?? known?.roleArn?.split('/').pop() ?? 'CloudMapLectureSeule';
   const extId = known?.externalId ?? externalId;
   const selRegions = regions ?? hub?.regions ?? [];
   const commands = [
-    'aws cloudformation create-stack-set --stack-set-name cartographe-lecture-seule \\',
+    'aws cloudformation create-stack-set --stack-set-name cloudmap-lecture-seule \\',
     '  --template-body file://stackset-lecture-seule.yaml --permission-model SERVICE_MANAGED \\',
     '  --auto-deployment Enabled=true,RetainStacksOnAccountRemoval=false --capabilities CAPABILITY_NAMED_IAM \\',
     `  --parameters ParameterKey=TrustedAccountId,ParameterValue=${hubAccount} \\`,
     `               ParameterKey=ExternalId,ParameterValue=${extId} \\`,
     `               ParameterKey=RoleName,ParameterValue=${role}`,
-    'aws cloudformation create-stack-instances --stack-set-name cartographe-lecture-seule \\',
+    'aws cloudformation create-stack-instances --stack-set-name cloudmap-lecture-seule \\',
     `  --deployment-targets OrganizationalUnitIds=${org.data?.rootId ?? '<ID_RACINE>'} --regions us-east-1`,
   ].join('\n');
 

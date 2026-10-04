@@ -266,7 +266,7 @@ external`, `externalType`.
   diagramme sur écran étroit).
 - Régions : liste complète repliable (dépliée tant qu'aucune région n'est choisie), pastilles
   « Retirer eu-west-3 » accessibles.
-- Identité (skill brandkit) : marque « cadre ouvert + nœud + flux » (le C de Cartographe, le cadre
+- Identité (skill brandkit) : marque « cadre ouvert + nœud + flux » (le C de CloudMap, le cadre
   Région/VPC, la ressource, le trafic qui sort), mêmes formes pour le favicon et le composant
   `Logo` ; signature « Le terrain, tel qu'il est. » (la carte reflète l'état réel, lu en lecture
   seule). Planche d'identité : `docs/identite/planche-identite.svg` (+ rendu PNG). Palette et
@@ -378,3 +378,18 @@ external`, `externalType`.
   plusieurs sous-réseaux d'un VPC Google apparaît en « plage externe » ; pas d'icônes officielles
   Azure / Google (repli sur l'icône de catégorie) ; requêtes jamais exécutées contre un vrai compte
   (validées par des réponses simulées).
+
+## Renommage en CloudMap
+
+- Nom affiché partout : CloudMap (interface, titres, installeurs, image Docker, CLI, documentation,
+  émetteur TOTP, noms par défaut des rôles en lecture seule).
+- Identifiants techniques figés, car liés à des données existantes : sel HKDF et libellé de contrôle
+  de la clé maître (`cartographe-aws/v1`) ; `appId` de l'application de bureau (l'installeur Windows
+  remplace l'ancienne installation) ; `productName` du manifeste empaqueté, dont Electron dérive le
+  secret du Trousseau macOS qui scelle la clé maître ; noms des volumes Docker
+  (`cartographe-aws_config`, `cartographe-aws_data`).
+- Application de bureau : dossier de données « CloudMap » pour une nouvelle installation ; une
+  installation antérieure (dossier `Cartographe AWS` contenant `donnees/`) garde le sien. Menu macOS
+  libellé explicitement en français, `app.name` restant le nom interne.
+- Noms de paquets internes `@carto/*`, service compose `carto` et routeur Traefik inchangés
+  (invisibles pour l'utilisateur).

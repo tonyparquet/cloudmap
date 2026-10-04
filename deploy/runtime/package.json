@@ -1,5 +1,5 @@
 {
-  "name": "cartographe-aws-runtime",
+  "name": "cloudmap-runtime",
   "private": true,
   "description": "Dépendances natives chargées par le serveur et la CLI bundlés (image Docker).",
   "dependencies": {

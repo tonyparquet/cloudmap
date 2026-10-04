@@ -260,7 +260,7 @@ describe('vue Organisation Google Cloud', () => {
     ]);
     expect(g.containers[1]?.sublabel).toBe('gcp.resourceLocations');
     expect(node('acct:projects/123456789012')).toMatchObject({
-      label: 'Démo Cartographe',
+      label: 'Démo CloudMap',
       sublabel: 'projet-demo-carto · scanné',
       containerId: 'ou:folders/200000000001',
       status: 'actif',

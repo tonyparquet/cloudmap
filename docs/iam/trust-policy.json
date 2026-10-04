@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "CartographeAwsLectureSeule",
+      "Sid": "CloudMapLectureSeule",
       "Effect": "Allow",
       "Principal": { "AWS": "arn:aws:iam::<ACCOUNT_ID_OUTIL>:root" },
       "Action": "sts:AssumeRole",

@@ -1,6 +1,6 @@
 # Application de bureau (Windows et macOS)
 
-La même application que la version serveur, installée sur un poste : le serveur Cartographe AWS
+La même application que la version serveur, installée sur un poste : le serveur CloudMap
 tourne dans l'application, sur **127.0.0.1 uniquement** (aucun port ouvert sur le réseau), en
 HTTPS TLS 1.3, et s'affiche dans sa propre fenêtre. Mêmes règles de sécurité que le déploiement
 serveur : compte local + TOTP obligatoire, lecture seule stricte côté AWS, identifiants saisis dans
@@ -8,11 +8,11 @@ l'interface, chiffrés s'ils sont mémorisés.
 
 ## Installation
 
-| Système                   | Fichier                                     | Remarque                                        |
-| ------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| Windows 10/11 (x64)       | `Cartographe-AWS-<version>-windows-x64.exe` | Installeur (par utilisateur, sans droits admin) |
-| Windows 10/11 (x64)       | `Cartographe-AWS-<version>-windows-x64.zip` | Version portable : décompresser, lancer l'exe   |
-| macOS 12+ (Apple Silicon) | `Cartographe-AWS-<version>-macos-arm64.dmg` | Glisser l'application dans « Applications »     |
+| Système                   | Fichier                              | Remarque                                        |
+| ------------------------- | ------------------------------------ | ----------------------------------------------- |
+| Windows 10/11 (x64)       | `CloudMap-<version>-windows-x64.exe` | Installeur (par utilisateur, sans droits admin) |
+| Windows 10/11 (x64)       | `CloudMap-<version>-windows-x64.zip` | Version portable : décompresser, lancer l'exe   |
+| macOS 12+ (Apple Silicon) | `CloudMap-<version>-macos-arm64.dmg` | Glisser l'application dans « Applications »     |
 
 **Builds non signés** (tant que l'organisation n'a pas fourni ses certificats) :
 
@@ -20,7 +20,7 @@ l'interface, chiffrés s'ils sont mémorisés.
   complémentaires » → « Exécuter quand même ».
 - macOS : clic droit sur l'application → « Ouvrir » → « Ouvrir » (une seule fois). Si macOS indique
   que l'application est endommagée (téléchargement mis en quarantaine) :
-  `xattr -dr com.apple.quarantine "/Applications/Cartographe AWS.app"`.
+  `xattr -dr com.apple.quarantine "/Applications/CloudMap.app"`.
 
 ## Premier lancement
 
@@ -30,10 +30,14 @@ l'interface, chiffrés s'ils sont mémorisés.
 
 ## Données
 
-| Système | Dossier                                          |
-| ------- | ------------------------------------------------ |
-| Windows | `%APPDATA%\Cartographe AWS\`                     |
-| macOS   | `~/Library/Application Support/Cartographe AWS/` |
+| Système | Dossier                                   |
+| ------- | ----------------------------------------- |
+| Windows | `%APPDATA%\CloudMap\`                     |
+| macOS   | `~/Library/Application Support/CloudMap/` |
+
+Une installation antérieure au renommage en CloudMap garde son dossier `Cartographe AWS` (données,
+comptes et clé maître conservés). Sur macOS, supprimez l'ancienne application « Cartographe AWS »
+du dossier Applications après l'installation de CloudMap ; sous Windows, l'installeur la remplace.
 
 - `donnees/` : base SQLite (comptes, profils, identifiants chiffrés, journal d'audit), snapshots,
   mises en page, journaux.

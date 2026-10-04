@@ -1,4 +1,4 @@
-# Cartographe AWS
+# CloudMap
 
 Application web auto-hébergée qui scanne un compte AWS, un abonnement Azure ou un projet Google Cloud
 **en lecture seule**, découvre les services utilisés, déduit les flux réseau et génère un diagramme d'architecture interactif.

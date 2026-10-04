@@ -1,14 +1,14 @@
 # Déploiement : voir docs/deploiement.md. Depuis le dossier deploy/ :
 #   PUBLIC_ORIGIN=https://carto.exemple.fr PUBLIC_HOST=carto.exemple.fr docker compose up -d
 # Les secrets sont des fichiers fournis par l'exploitant dans deploy/secrets/ (jamais versionnés).
-name: cartographe-aws
+name: cloudmap
 
 services:
   carto:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
-    image: cartographe-aws:latest
+    image: cloudmap:latest
     restart: unless-stopped
     user: '10001:10001'
     read_only: true
@@ -59,9 +59,12 @@ secrets:
   tls_key:
     file: ./secrets/tls_key.pem
 
+# Noms figés : volumes créés avant le renommage en CloudMap (configuration et données conservées).
 volumes:
   config:
+    name: cartographe-aws_config
   data:
+    name: cartographe-aws_data
 
 networks:
   web:

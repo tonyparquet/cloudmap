@@ -1,10 +1,10 @@
-# Rôle en lecture seule pour Cartographe AWS, à déployer dans tous les comptes d'une organisation
+# Rôle en lecture seule pour CloudMap, à déployer dans tous les comptes d'une organisation
 # par un StackSet (modèle de permissions « service-managed », depuis le compte de gestion ou un
 # administrateur délégué CloudFormation). Le compte « hub » (profil qui porte les identifiants dans
-# Cartographe AWS) assume ce rôle dans chaque compte membre, avec l'External ID choisi.
+# CloudMap) assume ce rôle dans chaque compte membre, avec l'External ID choisi.
 #
 #   aws cloudformation create-stack-set \
-#     --stack-set-name cartographe-lecture-seule \
+#     --stack-set-name cloudmap-lecture-seule \
 #     --template-body file://stackset-lecture-seule.yaml \
 #     --permission-model SERVICE_MANAGED \
 #     --auto-deployment Enabled=true,RetainStacksOnAccountRemoval=false \
@@ -12,14 +12,14 @@
 #     --parameters ParameterKey=TrustedAccountId,ParameterValue=<ACCOUNT_ID_HUB> \
 #                  ParameterKey=ExternalId,ParameterValue=<EXTERNAL_ID>
 #   aws cloudformation create-stack-instances \
-#     --stack-set-name cartographe-lecture-seule \
+#     --stack-set-name cloudmap-lecture-seule \
 #     --deployment-targets OrganizationalUnitIds=<ID_RACINE_OU_OU> \
 #     --regions us-east-1
 #
 # Un StackSet « service-managed » ne se déploie pas dans le compte de gestion lui-même : ce compte
 # est couvert par le profil hub (ou par une pile créée à la main avec le même modèle).
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Rôle en lecture seule pour Cartographe AWS (aucune lecture de valeur secrète)
+Description: Rôle en lecture seule pour CloudMap (aucune lecture de valeur secrète)
 
 Parameters:
   TrustedAccountId:
@@ -30,17 +30,17 @@ Parameters:
     Type: String
     MinLength: 16
     NoEcho: true
-    Description: External ID affiché par Cartographe AWS (page « Comptes de l'organisation »)
+    Description: External ID affiché par CloudMap (page « Comptes de l'organisation »)
   RoleName:
     Type: String
-    Default: CartographeLectureSeule
+    Default: CloudMapLectureSeule
 
 Resources:
   RoleLectureSeule:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref RoleName
-      Description: Lecture seule pour Cartographe AWS
+      Description: Lecture seule pour CloudMap
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: '2012-10-17'

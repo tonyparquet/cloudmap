@@ -1,6 +1,6 @@
 # Azure : accès en lecture seule
 
-Le Cartographe lit un abonnement Azure **uniquement** par Azure Resource Graph
+CloudMap lit un abonnement Azure **uniquement** par Azure Resource Graph
 (`POST /providers/Microsoft.ResourceGraph/resources`, requêtes KQL en lecture) et par la lecture de
 l'abonnement (`GET /subscriptions/<id>`). Le client HTTP du scanner n'accepte que des GET et ce seul
 POST de requête vers `management.azure.com` : tout autre appel est refusé avant d'atteindre le réseau.
@@ -43,8 +43,8 @@ az role definition create --role-definition @role-lecture-seule.json
 ### 2. Principal de service et attribution
 
 ```sh
-az ad sp create-for-rbac --name cartographe-lecture-seule --years 1 \
-  --role "Cartographe - lecture seule" \
+az ad sp create-for-rbac --name cloudmap-lecture-seule --years 1 \
+  --role "CloudMap - lecture seule" \
   --scopes /subscriptions/<SUBSCRIPTION_ID>
 ```
 
@@ -56,7 +56,7 @@ Abonnement supplémentaire pour le même principal :
 
 ```sh
 az role assignment create --assignee <APP_ID> \
-  --role "Cartographe - lecture seule" \
+  --role "CloudMap - lecture seule" \
   --scope /subscriptions/<SUBSCRIPTION_ID>
 ```
 
@@ -68,7 +68,7 @@ au niveau du groupe d'administration racine (ou de celui qui couvre le périmèt
 
 ```sh
 az role assignment create --assignee <APP_ID> \
-  --role "Cartographe - lecture seule" \
+  --role "CloudMap - lecture seule" \
   --scope /providers/Microsoft.Management/managementGroups/<MANAGEMENT_GROUP_ID>
 ```
 
@@ -81,5 +81,5 @@ de leur identifiant : leurs noms nécessiteraient Microsoft Graph, qui n'est pas
 
 ```sh
 az ad sp delete --id <APP_ID>
-az role definition delete --name "Cartographe - lecture seule"
+az role definition delete --name "CloudMap - lecture seule"
 ```

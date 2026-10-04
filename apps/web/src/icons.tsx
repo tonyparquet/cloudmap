@@ -36,7 +36,7 @@ export function Icon({ name, size = 14 }: { name: IconName; size?: number }) {
 }
 
 /**
- * Marque Cartographe : cadre ouvert en « C » (le cadre Région / VPC du diagramme), nœud au centre,
+ * Marque CloudMap : cadre ouvert en « C » (le cadre Région / VPC du diagramme), nœud au centre,
  * flux qui sort par l'ouverture. Mêmes formes que public/favicon.svg.
  */
 export function Logo({ size = 22 }: { size?: number }) {

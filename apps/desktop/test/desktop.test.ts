@@ -1,8 +1,8 @@
 import { X509Certificate } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadOrCreateMasterKey, type SecretBox } from '../src/keystore.ts';
+import { loadOrCreateMasterKey, type SecretBox, userDataDir } from '../src/keystore.ts';
 import {
   certNeedsRenewal,
   ensureLocalCert,
@@ -78,6 +78,19 @@ describe('application de bureau : permissions de la fenêtre', () => {
     expect(permissionAllowed('clipboard-sanitized-write', undefined, origin)).toBe(false);
     for (const p of ['clipboard-read', 'media', 'notifications', 'geolocation', 'openExternal'])
       expect(permissionAllowed(p, `${origin}/`, origin)).toBe(false);
+  });
+});
+
+describe('application de bureau : dossier des données après le renommage en CloudMap', () => {
+  it('nouvelle installation : « CloudMap » ; installation antérieure : son dossier est conservé', () => {
+    const appData = tmp();
+    expect(userDataDir(appData)).toBe(join(appData, 'CloudMap'));
+    // Dossier vide créé par le système : pas une installation, le nouveau nom s'applique.
+    mkdirSync(join(appData, 'Cartographe AWS'));
+    expect(userDataDir(appData)).toBe(join(appData, 'CloudMap'));
+    mkdirSync(join(appData, 'Cartographe AWS', 'donnees'));
+    expect(userDataDir(appData)).toBe(join(appData, 'Cartographe AWS'));
+    expect(existsSync(join(appData, 'CloudMap'))).toBe(false);
   });
 });
 

@@ -208,7 +208,7 @@ export function toDrawio(nodes: Node[], graph: Graph, theme: Theme): string {
     );
   }
   return `<?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="cartographe-aws"><diagram name="Cartographe AWS" id="carto"><mxGraphModel background="${theme.bg}" grid="0" page="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells.join('')}</root></mxGraphModel></diagram></mxfile>`;
+<mxfile host="cloudmap"><diagram name="CloudMap" id="carto"><mxGraphModel background="${theme.bg}" grid="0" page="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/>${cells.join('')}</root></mxGraphModel></diagram></mxfile>`;
 }
 
 export type ExportFormat = 'svg' | 'png' | 'pdf' | 'drawio' | 'json';

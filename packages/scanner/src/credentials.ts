@@ -67,7 +67,7 @@ export async function assumeRole(
   const out = await sts(credentials).send(
     new AssumeRoleCommand({
       RoleArn: roleArn,
-      RoleSessionName: `cartographe-${Date.now()}`,
+      RoleSessionName: `cloudmap-${Date.now()}`,
       DurationSeconds: durationSeconds,
       ...(externalId ? { ExternalId: externalId } : {}),
     }),

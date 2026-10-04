@@ -11,7 +11,7 @@ export async function startServer(config: ServerConfig): Promise<{ close: () => 
     info: (m) => app.log.info(m),
     error: (m) => app.log.error(m),
   });
-  app.log.info(`Cartographe AWS en écoute sur ${config.publicOrigin} (HTTPS TLS 1.3, port ${config.port})`);
+  app.log.info(`CloudMap en écoute sur ${config.publicOrigin} (HTTPS TLS 1.3, port ${config.port})`);
   return {
     close: async () => {
       stopWatch();

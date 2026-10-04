@@ -1,6 +1,6 @@
 # Image unique pour tous les clients : aucune donnée client n'y est incluse (tout passe par
 # CONFIG_DIR, DATA_DIR et les secrets Docker). Construction depuis la racine du dépôt :
-#   docker build -f deploy/Dockerfile -t cartographe-aws .
+#   docker build -f deploy/Dockerfile -t cloudmap .
 ARG NODE_IMAGE=node:22-alpine
 
 # ---------------------------------------------------------------- construction

@@ -41,7 +41,7 @@ const children = [
     env,
   }),
 ];
-console.log(`Cartographe AWS (développement) : ${env.PUBLIC_ORIGIN} — mode démo ${env.DEMO_MODE}`);
+console.log(`CloudMap (développement) : ${env.PUBLIC_ORIGIN} — mode démo ${env.DEMO_MODE}`);
 const stop = () => {
   for (const c of children) c.kill('SIGTERM');
   process.exit(0);

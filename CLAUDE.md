@@ -1,4 +1,4 @@
-# CLAUDE.md — Cartographe AWS
+# CLAUDE.md — CloudMap
 
 Application web auto-hébergée qui **scanne un compte AWS**, **découvre tous les services utilisés**, **déduit les flux réseau** et génère un **diagramme d'architecture interactif** dans le style défini plus bas (thème sombre, conteneurs imbriqués Région > VPC > Zone > Sous-réseau, pastilles d'état, ports sur les liens).
 

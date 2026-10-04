@@ -148,7 +148,7 @@ function requestOnce(url: URL, opts: ProbeOptions): Promise<{ status: number; lo
         method: 'GET',
         lookup: guardedLookup(opts.allowPrivate ?? false) as never,
         timeout: opts.timeoutMs ?? 5000,
-        headers: { 'user-agent': 'cartographe-aws-probe', accept: '*/*' },
+        headers: { 'user-agent': 'cloudmap-probe', accept: '*/*' },
         agent: false,
       },
       (res) => {

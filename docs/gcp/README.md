@@ -1,6 +1,6 @@
 # Google Cloud : accès en lecture seule
 
-Cartographe inventorie un projet Google Cloud avec **Cloud Asset Inventory** (types de ressources de
+CloudMap inventorie un projet Google Cloud avec **Cloud Asset Inventory** (types de ressources de
 la page Scan), lit la hiérarchie **Resource Manager** (organisation, dossiers, projets), les
 **règles d'administration** (Org Policy v2) et les **liaisons IAM** des groupes et utilisateurs
 (`searchAllIamPolicies`). Tous les appels sont des `GET` vers `*.googleapis.com` ; aucune écriture,
@@ -20,14 +20,14 @@ gcloud services enable cloudasset.googleapis.com cloudresourcemanager.googleapis
 Vue complète de l'organisation (recommandé) :
 
 ```sh
-gcloud iam roles create cartographeLecture --organization=<ID_ORGANISATION> \
+gcloud iam roles create cloudmapLecture --organization=<ID_ORGANISATION> \
   --file=docs/gcp/role-lecture-seule.yaml
 ```
 
 Un seul projet :
 
 ```sh
-gcloud iam roles create cartographeLecture --project=<PROJET> \
+gcloud iam roles create cloudmapLecture --project=<PROJET> \
   --file=docs/gcp/role-lecture-seule-projet.yaml
 ```
 
@@ -46,22 +46,22 @@ d'identifiants Google Cloud. Préférez un jeton d'une heure, collé dans la pag
 **Option A : emprunt d'identité d'un compte de service, sans clé.**
 
 ```sh
-gcloud iam service-accounts create cartographe-lecture --project=<PROJET> \
-  --display-name="Cartographe (lecture seule)"
+gcloud iam service-accounts create cloudmap-lecture --project=<PROJET> \
+  --display-name="CloudMap (lecture seule)"
 
 # Rôle sur l'organisation (ou --project=<PROJET> et le rôle de projet)
 gcloud organizations add-iam-policy-binding <ID_ORGANISATION> \
-  --member="serviceAccount:cartographe-lecture@<PROJET>.iam.gserviceaccount.com" \
-  --role="organizations/<ID_ORGANISATION>/roles/cartographeLecture"
+  --member="serviceAccount:cloudmap-lecture@<PROJET>.iam.gserviceaccount.com" \
+  --role="organizations/<ID_ORGANISATION>/roles/cloudmapLecture"
 
 # Autoriser votre compte à emprunter l'identité du compte de service
 gcloud iam service-accounts add-iam-policy-binding \
-  cartographe-lecture@<PROJET>.iam.gserviceaccount.com \
+  cloudmap-lecture@<PROJET>.iam.gserviceaccount.com \
   --member="user:<VOUS@DOMAINE>" --role="roles/iam.serviceAccountTokenCreator"
 
-# Jeton d'une heure à coller dans Cartographe
+# Jeton d'une heure à coller dans CloudMap
 gcloud auth print-access-token \
-  --impersonate-service-account=cartographe-lecture@<PROJET>.iam.gserviceaccount.com
+  --impersonate-service-account=cloudmap-lecture@<PROJET>.iam.gserviceaccount.com
 ```
 
 **Option B : votre propre compte**, s'il dispose du rôle ci-dessus et d'aucun autre droit inutile :
@@ -70,7 +70,7 @@ gcloud auth print-access-token \
 gcloud auth print-access-token
 ```
 
-Un jeton collé hérite de **tous** les droits du compte qui l'a émis : Cartographe ne lit qu'en `GET`,
+Un jeton collé hérite de **tous** les droits du compte qui l'a émis : CloudMap ne lit qu'en `GET`,
 mais affiche un avertissement si le compte possède des droits d'écriture sur le projet.
 
 Si Google répond qu'un « projet de quota » est requis, utilisez l'option A : le jeton d'un compte de
@@ -85,9 +85,9 @@ dans Google Cloud dès qu'elle n'est plus utile :
 
 ```sh
 gcloud iam service-accounts keys list \
-  --iam-account=cartographe-lecture@<PROJET>.iam.gserviceaccount.com
+  --iam-account=cloudmap-lecture@<PROJET>.iam.gserviceaccount.com
 gcloud iam service-accounts keys delete <ID_CLE> \
-  --iam-account=cartographe-lecture@<PROJET>.iam.gserviceaccount.com
+  --iam-account=cloudmap-lecture@<PROJET>.iam.gserviceaccount.com
 ```
 
 ## Ce qui est lu, et ce qui ne l'est jamais

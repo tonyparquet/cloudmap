@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
-  <title>Cartographe AWS — planche d'identité</title>
+  <title>CloudMap — planche d'identité</title>
   <defs>
     <pattern id="points" width="16" height="16" patternUnits="userSpaceOnUse">
       <circle cx="1" cy="1" r="1" fill="#2e2a40"/>
@@ -22,7 +22,7 @@
   <g transform="translate(40 40)">
     <rect width="490" height="448" rx="14" fill="#16131f"/>
     <use href="#marque" transform="translate(173 72) scale(4.5)"/>
-    <text x="245" y="300" text-anchor="middle" font-size="40" font-weight="700" fill="#ffffff">Cartographe</text>
+    <text x="245" y="300" text-anchor="middle" font-size="40" font-weight="700" fill="#ffffff">CloudMap</text>
     <text x="245" y="334" text-anchor="middle" font-size="14" font-weight="600" letter-spacing="7" fill="#a1a1aa">AWS</text>
     <text x="24" y="424" font-size="12" fill="#6b6680">01 · Marque</text>
   </g>
@@ -54,7 +54,7 @@
     <rect x="24" y="28" width="442" height="364" rx="10" fill="#16131f" stroke="#2e2a40"/>
     <path d="M24 38a10 10 0 0 1 10-10h422a10 10 0 0 1 10 10v24H24z" fill="#1f1b2e"/>
     <use href="#marque" transform="translate(36 34) scale(0.72)"/>
-    <text x="64" y="50" font-size="12" font-weight="700" fill="#e4e4e7">Cartographe AWS</text>
+    <text x="64" y="50" font-size="12" font-weight="700" fill="#e4e4e7">CloudMap</text>
     <rect x="176" y="36" width="54" height="20" rx="5" fill="#8b5cf6" fill-opacity="0.18"/>
     <text x="186" y="50" font-size="11" fill="#e4e4e7">Profils</text>
     <text x="242" y="50" font-size="11" fill="#a1a1aa">Multi-comptes</text>

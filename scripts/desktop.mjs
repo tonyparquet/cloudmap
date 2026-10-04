@@ -87,11 +87,13 @@ async function assemble() {
 
   const runtime = JSON.parse(readFileSync(join(root, 'deploy', 'runtime', 'package.json'), 'utf8'));
   const manifest = {
+    // Identité interne figée depuis le renommage en CloudMap (LEGACY_NAME, apps/desktop/src/keystore.ts) :
+    // Electron en dérive le secret du Trousseau macOS qui scelle la clé maître des installations existantes.
     name: 'cartographe-aws',
     productName: 'Cartographe AWS',
     version,
-    description: 'Cartographie en lecture seule de vos comptes AWS',
-    author: 'Cartographe AWS',
+    description: 'CloudMap : cartographie en lecture seule de vos comptes AWS, Azure et Google Cloud',
+    author: 'CloudMap',
     main: 'main.mjs',
     type: 'module',
     dependencies: runtime.dependencies,

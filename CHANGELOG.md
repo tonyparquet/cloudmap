@@ -1,11 +1,21 @@
 # Journal des modifications
 
-Évolutions notables de Cartographe AWS. Format inspiré de
+Évolutions notables de CloudMap (anciennement Cartographe AWS). Format inspiré de
 [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon le
 [versionnage sémantique](https://semver.org/lang/fr/). Chaque version publiée porte le tag `vX.Y.Z`
 (`pnpm release X.Y.Z`, voir `docs/publication.md`).
 
 ## [Non publié]
+
+### Modifié
+
+- L'application s'appelle désormais **CloudMap** (interface, application de bureau, installeurs
+  `CloudMap-<version>-…`, image Docker `cloudmap`). Les données existantes sont conservées : dossier
+  de l'application de bureau, volumes Docker, clé maître et identifiants chiffrés.
+- Noms par défaut des rôles en lecture seule (AWS, Azure, Google Cloud) : `CloudMap…`. Les rôles
+  déjà créés continuent de fonctionner (l'ARN complet est enregistré dans chaque profil).
+- Nouvelles inscriptions TOTP émises au nom de « CloudMap » (les entrées existantes de
+  l'application d'authentification restent valables).
 
 ## [1.1.0] - 2026-10-04
 

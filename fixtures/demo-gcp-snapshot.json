@@ -993,7 +993,7 @@
       "raw": {
         "name": "projects/123456789012",
         "projectId": "projet-demo-carto",
-        "displayName": "Démo Cartographe",
+        "displayName": "Démo CloudMap",
         "parent": "folders/200000000001",
         "state": "ACTIVE"
       }

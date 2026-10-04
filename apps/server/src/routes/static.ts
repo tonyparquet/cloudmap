@@ -5,7 +5,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Ctx } from '../app.ts';
 
 const FALLBACK_HTML =
-  '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Cartographe AWS</title><body><p>Interface non construite : lancez « pnpm build ».</p></body></html>';
+  '<!doctype html><html lang="fr"><meta charset="utf-8"><title>CloudMap</title><body><p>Interface non construite : lancez « pnpm build ».</p></body></html>';
 
 /**
  * Interface web : `/login` et les ressources statiques sont publiques ; toute autre page exige une

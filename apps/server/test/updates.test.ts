@@ -8,7 +8,7 @@ const release = (tag: string) =>
   new Response(
     JSON.stringify({
       tag_name: tag,
-      name: `Cartographe ${tag}`,
+      name: `CloudMap ${tag}`,
       html_url: `https://github.com/exemple/depot/releases/tag/${tag}`,
       published_at: '2026-10-04T10:00:00Z',
       body: '### Ajouté\n- Une nouveauté',
@@ -61,7 +61,7 @@ describe('recherche de mise à jour', () => {
     ) => {
       calls++;
       expect(url).toBe(settings.feedUrl);
-      expect((init.headers as Record<string, string>)['user-agent']).toBe('cartographe-aws/1.0.0');
+      expect((init.headers as Record<string, string>)['user-agent']).toBe('cloudmap/1.0.0');
       return release('v1.1.0');
     }) as unknown as typeof fetch);
     expect(await checker.status()).toMatchObject({

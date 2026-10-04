@@ -219,7 +219,7 @@ describe('identifiants AWS saisis dans l’interface (section 4.3)', () => {
   it('hub d’organisation : profils membres créés en lot, rôle assumé avec les identifiants du hub', async () => {
     const body = {
       accountIds: ['222222222222', ACCOUNT],
-      roleName: 'CartographeLectureSeule',
+      roleName: 'CloudMapLectureSeule',
       externalId: 'ext-org-0123456789',
       regions: ['eu-west-3'],
       allowedGroups: [],
@@ -250,7 +250,7 @@ describe('identifiants AWS saisis dans l’interface (section 4.3)', () => {
     const test = await admin.client.req('POST', `${childUrl}/test`);
     expect(test.json()).toMatchObject({ account: '222222222222', matches: true });
     expect(sts.commandCalls(AssumeRoleCommand).at(-1)?.args[0].input).toMatchObject({
-      RoleArn: 'arn:aws:iam::222222222222:role/CartographeLectureSeule',
+      RoleArn: 'arn:aws:iam::222222222222:role/CloudMapLectureSeule',
       ExternalId: 'ext-org-0123456789',
     });
 

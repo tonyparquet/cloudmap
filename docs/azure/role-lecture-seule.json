@@ -1,7 +1,7 @@
 {
-  "Name": "Cartographe - lecture seule",
+  "Name": "CloudMap - lecture seule",
   "IsCustom": true,
-  "Description": "Inventaire Azure Resource Graph en lecture seule pour le Cartographe : aucune action, aucune lecture de clé, de secret ni de chaîne de connexion.",
+  "Description": "Inventaire Azure Resource Graph en lecture seule pour CloudMap : aucune action, aucune lecture de clé, de secret ni de chaîne de connexion.",
   "Actions": ["*/read"],
   "NotActions": [
     "Microsoft.Storage/storageAccounts/listKeys/action",

@@ -3,6 +3,22 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseMasterKey } from '@carto/security';
 
+/** Nom affiché de l'application. */
+export const PRODUCT_NAME = 'CloudMap';
+
+/**
+ * Nom d'avant le renommage en CloudMap, figé : `productName` du manifeste empaqueté (scripts/desktop.mjs),
+ * dont Electron dérive le secret du Trousseau macOS qui scelle la clé maître. Le changer rendrait la
+ * clé maître des installations existantes indéchiffrable.
+ */
+export const LEGACY_NAME = 'Cartographe AWS';
+
+/** Dossier des données : « CloudMap », sauf installation antérieure au renommage (son dossier est conservé). */
+export function userDataDir(appData: string): string {
+  const legacy = join(appData, LEGACY_NAME);
+  return existsSync(join(legacy, 'donnees')) ? legacy : join(appData, PRODUCT_NAME);
+}
+
 /** Sous-ensemble de `safeStorage` d'Electron (injecté pour les tests). */
 export interface SecretBox {
   isEncryptionAvailable(): boolean;

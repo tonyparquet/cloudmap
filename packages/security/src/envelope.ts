@@ -12,6 +12,8 @@ import { z } from 'zod';
 const ALGO = 'aes-256-gcm';
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
+// Sel (et libellé de masterKeyCheck) figés, au nom d'origine de l'application : les changer rendrait
+// les données chiffrées existantes illisibles.
 const HKDF_SALT = 'cartographe-aws/v1';
 
 export const envelopeSchema = z.object({

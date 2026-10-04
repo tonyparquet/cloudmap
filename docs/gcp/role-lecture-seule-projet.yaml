@@ -1,8 +1,8 @@
-# Variante du rôle Cartographe pour un seul projet (sans vue d'organisation complète).
+# Variante du rôCloudMap pour un seul projet (sans vue d'organisation complète).
 # Mêmes exclusions que role-lecture-seule.yaml : aucune valeur de secret, aucun objet Cloud Storage,
 # aucune clé de compte de service, aucune écriture.
-title: Cartographe - lecture seule (projet)
-description: Inventaire en lecture seule d'un projet pour Cartographe. Aucune valeur de secret, aucun objet Cloud Storage.
+title: CloudMap - lecture seule (projet)
+description: Inventaire en lecture seule d'un projet pour CloudMap. Aucune valeur de secret, aucun objet Cloud Storage.
 stage: GA
 includedPermissions:
   - cloudasset.assets.listResource

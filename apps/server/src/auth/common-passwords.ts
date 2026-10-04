@@ -11,7 +11,7 @@ doudou chouchou marseille paris france nicolas camille julien thomas alexandre a
 admin root toor letmein welcome bienvenue monkey dragon master shadow sunshine princess football baseball
 superman batman starwars trustno1 secret secrets changeme changezmoi default motdepassse password1
 passwordpassword motdepassemotdepasse azertyazerty qwertyqwerty aaaaaaaaaaaaaa abcdefghijklmn
-correcthorsebatterystaple cartographe cartographeaws amazon amazonwebservices aws awsaws cloud cloudcloud
+correcthorsebatterystaple cloudmap cloudmapcloudmap cartographe cartographeaws amazon amazonwebservices aws awsaws cloud cloudcloud
 infrastructure diagramme securite security production prod staging developpement development test testtest
 utilisateur user username login connexion ordinateur computer internet network reseau serveur server
 entreprise company societe client clients janvier fevrier mars avril mai juin juillet aout septembre

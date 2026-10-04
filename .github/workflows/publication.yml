@@ -55,7 +55,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
-          name: cartographe-aws-${{ runner.os }}
+          name: cloudmap-${{ runner.os }}
           path: |
             apps/desktop/dist/release/*.exe
             apps/desktop/dist/release/*.dmg
@@ -79,6 +79,6 @@ jobs:
         with:
           path: artefacts
       - run: node_modules/.bin/tsx scripts/release.ts notes "${GITHUB_REF_NAME#v}" > notes.md
-      - run: gh release create "$GITHUB_REF_NAME" --title "Cartographe AWS ${GITHUB_REF_NAME#v}" --notes-file notes.md artefacts/*/*
+      - run: gh release create "$GITHUB_REF_NAME" --title "CloudMap ${GITHUB_REF_NAME#v}" --notes-file notes.md artefacts/*/*
         env:
           GH_TOKEN: ${{ github.token }}

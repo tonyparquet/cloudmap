@@ -2,9 +2,11 @@
 # macOS depuis macOS) ou la CI (.github/workflows/publication.yml). Signature : fournie par l'environnement de construction
 # (CSC_LINK / CSC_KEY_PASSWORD, APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID), sinon
 # l'application est produite non signée.
+# appId figé depuis le renommage en CloudMap : l'installeur Windows reconnaît et remplace ainsi
+# l'installation précédente (même identifiant de désinstallation).
 appId: app.cartographe.aws
-productName: Cartographe AWS
-copyright: Cartographe AWS
+productName: CloudMap
+copyright: CloudMap
 electronVersion: 44.5.1
 directories:
   app: dist/app
@@ -40,13 +42,13 @@ win:
       arch: [x64]
     - target: zip
       arch: [x64]
-  artifactName: Cartographe-AWS-${version}-windows-${arch}.${ext}
+  artifactName: CloudMap-${version}-windows-${arch}.${ext}
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
-  shortcutName: Cartographe AWS
+  shortcutName: CloudMap
   installerLanguages: [fr_FR]
   language: '1036'
 
@@ -62,11 +64,12 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  artifactName: Cartographe-AWS-${version}-macos-${arch}.${ext}
+  artifactName: CloudMap-${version}-macos-${arch}.${ext}
 dmg:
-  title: Cartographe AWS
+  title: CloudMap
 
 # Linux : uniquement pour vérifier l'application en développement (dossier non empaqueté).
 linux:
   target: [dir]
+  executableName: cloudmap
   category: Development
