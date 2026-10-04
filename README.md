@@ -1,14 +1,15 @@
 # Cartographe AWS
 
-Application web auto-hébergée qui scanne un compte AWS **en lecture seule**, découvre les services
-utilisés, déduit les flux réseau et génère un diagramme d'architecture interactif.
+Application web auto-hébergée qui scanne un compte AWS, un abonnement Azure ou un projet Google Cloud
+**en lecture seule**, découvre les services utilisés, déduit les flux réseau et génère un diagramme d'architecture interactif.
 
 - Spécification complète : [CLAUDE.md](CLAUDE.md)
 - Déploiement (Docker, Traefik, sauvegarde, rotation de clé) : [docs/deploiement.md](docs/deploiement.md)
 - Application de bureau Windows et macOS : [docs/bureau.md](docs/bureau.md)
 - Versions, publication et mises à jour : [docs/publication.md](docs/publication.md) — [CHANGELOG.md](CHANGELOG.md)
 - Sécurité (modèle de menace, chiffrement, authentification) : [docs/securite.md](docs/securite.md)
-- Rôle IAM à créer chez le client : [docs/iam/](docs/iam/)
+- Rôle IAM à créer chez le client : [docs/iam/](docs/iam/) — Azure : [docs/azure/](docs/azure/) —
+  Google Cloud : [docs/gcp/](docs/gcp/)
 - Décisions d'implémentation : [docs/decisions.md](docs/decisions.md)
 
 ## Démarrage rapide (développement, mode démo)

@@ -313,3 +313,68 @@ external`, `externalType`.
   l'application de bureau (il serait extractible). Installation manuelle de la nouvelle version :
   pas de mise à jour automatique tant que les installeurs ne sont pas signés.
 - Les tests n'appellent jamais le flux réel (fetch simulé ; E2E avec la recherche désactivée).
+
+## Multi-cloud (Azure et Google Cloud)
+
+- Un profil porte un fournisseur (`aws` par défaut, `azure`, `gcp`) fixé à la création ; l'ID de
+  compte devient l'ID d'abonnement (GUID) ou de projet, validé par fournisseur. Le moteur de règles,
+  le graphe, le diff, les exports, les mises en page et la vue multi-comptes restent communs ; seuls
+  le scanner, le modèle réseau et la vue Organisation sont propres à chaque fournisseur (registres
+  `NETWORK_PROVIDERS` et `ORG_GRAPH_BUILDERS`).
+- Lecture seule : client HTTP unique qui n'autorise que `GET` et une liste blanche de `POST` de
+  requête (Resource Graph), sur les seuls hôtes `management.azure.com` et `*.googleapis.com` ;
+  testé comme la liste blanche SDK AWS.
+- Identifiants saisis dans l'interface, mêmes règles qu'AWS (écriture seule, mémoire de session par
+  défaut, chiffrement d'enveloppe si « Mémoriser », expurgation) : jeton de la CLI (recommandé,
+  présenté en premier) ou principal de service Entra / clé JSON de compte de service. La clé JSON
+  est lue dans le navigateur puis envoyée ; seule l'adresse du compte est affichée. Le serveur
+  n'en obtient qu'un jeton de portée `cloud-platform.read-only` et refuse un `token_uri` étranger.
+- Avertissement non bloquant si l'identité dispose de droits d'écriture (équivalent de
+  `SimulatePrincipalPolicy`).
+- Organisation : pas de StackSet hors AWS ; les profils membres réutilisent le jeton du hub (le
+  rôle « Lecteur » s'accorde au niveau du groupe d'administration ou de l'organisation).
+- Azure : inventaire uniquement par Azure Resource Graph (POST de requête en lecture, pagination
+  `$skipToken`) + GET de l'abonnement. Types et identifiants ARM normalisés en minuscules ;
+  l'identifiant ARM sert d'ARN ; région = location ou « global ».
+- Azure : toute propriété nommée appSettings, connectionStrings, *Password, *Key(s),
+  *ConnectionString, sasToken, secretValue, customData, protectedSettings ou value est supprimée
+  avant enregistrement ; les secrets Key Vault ne sont jamais lus (noms et métadonnées seulement).
+- Azure : sous-réseau public = carte réseau avec IP publique, Application Gateway à frontal public
+  ou route 0.0.0.0/0 → Internet ; privé NAT = passerelle NAT associée ; sinon privé isolé. Pas de
+  zone de disponibilité pour les sous-réseaux (régionaux sur Azure) : libellé « régional ».
+- Azure : flux déduits des seules règles NSG entrantes personnalisées (règles par défaut et
+  sortantes non évaluées) ; une règle Deny prioritaire du même NSG, ou une Deny de l'autre NSG
+  (sous-réseau / carte réseau), marque le flux « bloqué ». Balises prises en compte : Internet
+  (adresses non privées), VirtualNetwork, *, ASG ; les autres balises de service sont ignorées.
+- Azure, vue Organisation : groupe d'administration racine = organisation, autres = unités ;
+  abonnements, affectations Azure Policy (« en veille » si DoNotEnforce) et attributions de rôles
+  par principal. Noms des principaux non résolus (Microsoft Graph hors périmètre).
+- Rôle Azure documenté : rôle personnalisé « */read » sans action ni action de données, actions de
+  lecture de clés exclues explicitement ; le rôle intégré Lecteur convient aussi.
+- Google Cloud : inventaire par Cloud Asset Inventory (`assets.list`, contenu RESOURCE), un appel
+  paginé par service sélectionné ; organisation par Resource Manager v3, Org Policy v2 et
+  `searchAllIamPolicies`, tous en GET. Un refus sur l'organisation marque le projet « membre »
+  (avertissement dans la vue Organisation, pas d'erreur de scan) ; un refus sur les contraintes
+  n'est une erreur que pour le projet scanné.
+- Google Cloud : toutes les références (selfLink, chemins `projects/…/global|regions|zones/…`) sont
+  converties en noms d'actifs Cloud Asset par le scanner ; le cœur compare ces noms tels quels.
+- Google Cloud : données expurgées à la collecte — variables d'environnement réduites à leur nom
+  (références de secrets conservées), `environmentVariables`, `buildEnvironmentVariables`,
+  `envVariables`, `substitutions`, `secretEnv` réduits à leurs clés, métadonnées d'instance hors
+  `created-by` / `instance-template` sans valeur, `masterAuth` GKE retiré.
+- Google Cloud : un sous-réseau est « public » si une instance y a une IP externe (la route par
+  défaut existe dans presque tous les VPC), « privé (NAT) » si Cloud NAT le couvre, « privé isolé »
+  sinon. Les VPC sont globaux (cadre « Global »), la zone de disponibilité affichée est la région.
+- Google Cloud : flux du pare-feu VPC en entrée, sur les VM uniquement (instances, clusters GKE) :
+  la priorité la plus basse l'emporte, refus prioritaire à égalité ; un flux autorisé masqué par un
+  refus est dessiné « bloqué ». Tags réseau et comptes de service → arêtes de nœud à nœud ; plages →
+  Internet (si IP externe), sous-réseau, VPC ou plage externe. Sortie Internet des VM privées vers
+  Cloud NAT ; Internet → règles de transfert externes.
+- Google Cloud : la documentation recommande un jeton temporaire (`gcloud auth print-access-token`,
+  idéalement par emprunt d'identité d'un compte de service sans clé) plutôt qu'une clé de compte
+  de service.
+- Limites connues (non bloquantes, documentées dans `docs/azure` et `docs/gcp`) : règles de sortie
+  NSG / pare-feu VPC et politiques de pare-feu hiérarchiques non évaluées ; une plage couvrant
+  plusieurs sous-réseaux d'un VPC Google apparaît en « plage externe » ; pas d'icônes officielles
+  Azure / Google (repli sur l'icône de catégorie) ; requêtes jamais exécutées contre un vrai compte
+  (validées par des réponses simulées).

@@ -7,6 +7,18 @@
 
 ## [Non publié]
 
+### Ajouté
+
+- Microsoft Azure et Google Cloud : profils par abonnement ou projet, identifiants saisis dans
+  l'interface (jeton de la CLI, principal de service, clé de compte de service), scan en lecture
+  seule, diagramme réseau avec flux NSG / pare-feu VPC, vue Organisation, vue multi-comptes,
+  comptes d'organisation, imports et profils de démonstration.
+- Page « Aide » par fournisseur (rôle en lecture seule et commandes).
+
+### Modifié
+
+- Le journal des modifications met à jour ses liens de comparaison à chaque version.
+
 ## [1.0.1] - 2026-10-04
 
 ### Corrigé
