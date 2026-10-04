@@ -1,0 +1,1089 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "profileId": "demo-gcp",
+    "provider": "gcp",
+    "accountId": "projet-demo-carto",
+    "regions": ["europe-west9"],
+    "startedAt": "2026-10-01T08:00:00Z",
+    "finishedAt": "2026-10-01T08:00:37Z",
+    "scannerVersion": "demo"
+  },
+  "resources": [
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+      "type": "compute.googleapis.com/Network",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "name": "vpc-principal",
+        "autoCreateSubnetworks": false,
+        "routingConfig": {
+          "routingMode": "REGIONAL"
+        },
+        "subnetworks": [
+          "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-front",
+          "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app"
+        ],
+        "peerings": [
+          {
+            "name": "vers-donnees",
+            "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+            "state": "ACTIVE",
+            "exchangeSubnetRoutes": true
+          },
+          {
+            "name": "servicenetworking-googleapis-com",
+            "network": "//compute.googleapis.com/projects/k3x9w2p4qa-tp/global/networks/servicenetworking",
+            "state": "ACTIVE",
+            "exchangeSubnetRoutes": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+      "type": "compute.googleapis.com/Network",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+        "name": "vpc-donnees",
+        "autoCreateSubnetworks": false,
+        "subnetworks": [
+          "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-donnees"
+        ],
+        "peerings": [
+          {
+            "name": "vers-principal",
+            "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+            "state": "ACTIVE",
+            "exchangeSubnetRoutes": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-front",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-front",
+      "type": "compute.googleapis.com/Subnetwork",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-front",
+        "name": "sn-front",
+        "ipCidrRange": "10.20.0.0/24",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "region": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9",
+        "privateIpGoogleAccess": true,
+        "gatewayAddress": "10.20.0.1"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+      "type": "compute.googleapis.com/Subnetwork",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+        "name": "sn-app",
+        "ipCidrRange": "10.20.10.0/24",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "region": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9",
+        "privateIpGoogleAccess": true,
+        "gatewayAddress": "10.20.10.1"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-donnees",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-donnees",
+      "type": "compute.googleapis.com/Subnetwork",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-donnees",
+        "name": "sn-donnees",
+        "ipCidrRange": "10.30.0.0/24",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+        "region": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9",
+        "privateIpGoogleAccess": true,
+        "gatewayAddress": "10.30.0.1"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/routers/routeur-principal",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/routers/routeur-principal",
+      "type": "compute.googleapis.com/Router",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/routers/routeur-principal",
+        "name": "routeur-principal",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "region": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9",
+        "bgp": {
+          "asn": 64514
+        },
+        "nats": [
+          {
+            "name": "nat-principal",
+            "natIpAllocateOption": "AUTO_ONLY",
+            "sourceSubnetworkIpRangesToNat": "LIST_OF_SUBNETWORKS",
+            "subnetworks": [
+              {
+                "name": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+                "sourceIpRangesToNat": ["ALL_IP_RANGES"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-iap-ssh",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-iap-ssh",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-iap-ssh",
+        "name": "autoriser-iap-ssh",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 800,
+        "disabled": false,
+        "allowed": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["22"]
+          }
+        ],
+        "sourceRanges": ["35.235.240.0/20"],
+        "targetTags": ["bastion"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/bloquer-ssh-internet",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/bloquer-ssh-internet",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/bloquer-ssh-internet",
+        "name": "bloquer-ssh-internet",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 900,
+        "disabled": false,
+        "denied": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["22"]
+          }
+        ],
+        "sourceRanges": ["0.0.0.0/0"],
+        "targetTags": ["bastion"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-ssh-bastion",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-ssh-bastion",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-ssh-bastion",
+        "name": "autoriser-ssh-bastion",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "disabled": false,
+        "allowed": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["22"]
+          }
+        ],
+        "sourceRanges": ["0.0.0.0/0"],
+        "targetTags": ["bastion"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-bastion-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-bastion-web",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-bastion-web",
+        "name": "autoriser-bastion-web",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "disabled": false,
+        "allowed": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["22"]
+          }
+        ],
+        "sourceTags": ["bastion"],
+        "targetTags": ["web"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-controles-sante",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-controles-sante",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-controles-sante",
+        "name": "autoriser-controles-sante",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "disabled": false,
+        "allowed": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["8080"]
+          }
+        ],
+        "sourceRanges": ["35.191.0.0/16", "130.211.0.0/22"],
+        "targetTags": ["web"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-donnees-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-donnees-web",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-donnees-web",
+        "name": "autoriser-donnees-web",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "disabled": false,
+        "allowed": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["8080"]
+          }
+        ],
+        "sourceRanges": ["10.30.0.0/24"],
+        "targetTags": ["web"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/ancienne-regle-tout-ouvert",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/ancienne-regle-tout-ouvert",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/ancienne-regle-tout-ouvert",
+        "name": "ancienne-regle-tout-ouvert",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "direction": "INGRESS",
+        "priority": 100,
+        "disabled": true,
+        "allowed": [
+          {
+            "IPProtocol": "all"
+          }
+        ],
+        "sourceRanges": ["0.0.0.0/0"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-principal-batch",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-principal-batch",
+      "type": "compute.googleapis.com/Firewall",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/firewalls/autoriser-principal-batch",
+        "name": "autoriser-principal-batch",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+        "direction": "INGRESS",
+        "priority": 1000,
+        "disabled": false,
+        "allowed": [
+          {
+            "IPProtocol": "tcp",
+            "ports": ["9000-9100"]
+          }
+        ],
+        "sourceRanges": ["10.20.10.0/24"],
+        "targetTags": ["batch"]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/vm-bastion",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/vm-bastion",
+      "type": "compute.googleapis.com/Instance",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/vm-bastion",
+        "name": "vm-bastion",
+        "zone": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a",
+        "canIpForward": false,
+        "machineType": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/machineTypes/e2-micro",
+        "status": "RUNNING",
+        "tags": {
+          "items": ["bastion"]
+        },
+        "networkInterfaces": [
+          {
+            "name": "nic0",
+            "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+            "subnetwork": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-front",
+            "networkIP": "10.20.0.5",
+            "accessConfigs": [
+              {
+                "name": "External NAT",
+                "type": "ONE_TO_ONE_NAT",
+                "natIP": "34.155.10.20"
+              }
+            ]
+          }
+        ],
+        "serviceAccounts": [
+          {
+            "email": "bastion@projet-demo-carto.iam.gserviceaccount.com"
+          }
+        ],
+        "metadata": {
+          "items": [
+            {
+              "key": "enable-oslogin"
+            },
+            {
+              "key": "startup-script"
+            }
+          ]
+        },
+        "labels": {
+          "role": "bastion",
+          "environnement": "demo"
+        }
+      },
+      "tags": {
+        "role": "bastion",
+        "environnement": "demo"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/web-7k2p",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/web-7k2p",
+      "type": "compute.googleapis.com/Instance",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/web-7k2p",
+        "name": "web-7k2p",
+        "zone": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a",
+        "canIpForward": false,
+        "machineType": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/machineTypes/e2-standard-2",
+        "status": "RUNNING",
+        "tags": {
+          "items": ["web"]
+        },
+        "networkInterfaces": [
+          {
+            "name": "nic0",
+            "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+            "subnetwork": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+            "networkIP": "10.20.10.11"
+          }
+        ],
+        "serviceAccounts": [
+          {
+            "email": "web@projet-demo-carto.iam.gserviceaccount.com"
+          }
+        ],
+        "metadata": {
+          "items": [
+            {
+              "key": "created-by",
+              "value": "//compute.googleapis.com/projects/123456789012/zones/europe-west9-a/instanceGroupManagers/mig-web"
+            },
+            {
+              "key": "instance-template",
+              "value": "//compute.googleapis.com/projects/123456789012/global/instanceTemplates/modele-web-v3"
+            },
+            {
+              "key": "ssh-keys"
+            }
+          ]
+        },
+        "labels": {
+          "role": "web",
+          "environnement": "demo"
+        }
+      },
+      "tags": {
+        "role": "web",
+        "environnement": "demo"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/web-9x4d",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/web-9x4d",
+      "type": "compute.googleapis.com/Instance",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instances/web-9x4d",
+        "name": "web-9x4d",
+        "zone": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a",
+        "canIpForward": false,
+        "machineType": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/machineTypes/e2-standard-2",
+        "status": "RUNNING",
+        "tags": {
+          "items": ["web"]
+        },
+        "networkInterfaces": [
+          {
+            "name": "nic0",
+            "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+            "subnetwork": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+            "networkIP": "10.20.10.12"
+          }
+        ],
+        "serviceAccounts": [
+          {
+            "email": "web@projet-demo-carto.iam.gserviceaccount.com"
+          }
+        ],
+        "metadata": {
+          "items": [
+            {
+              "key": "created-by",
+              "value": "//compute.googleapis.com/projects/123456789012/zones/europe-west9-a/instanceGroupManagers/mig-web"
+            },
+            {
+              "key": "instance-template",
+              "value": "//compute.googleapis.com/projects/123456789012/global/instanceTemplates/modele-web-v3"
+            },
+            {
+              "key": "ssh-keys"
+            }
+          ]
+        },
+        "labels": {
+          "role": "web",
+          "environnement": "demo"
+        }
+      },
+      "tags": {
+        "role": "web",
+        "environnement": "demo"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-b/instances/vm-batch",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-b/instances/vm-batch",
+      "type": "compute.googleapis.com/Instance",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-b/instances/vm-batch",
+        "name": "vm-batch",
+        "zone": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-b",
+        "canIpForward": false,
+        "machineType": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-b/machineTypes/e2-standard-4",
+        "status": "TERMINATED",
+        "tags": {
+          "items": ["batch"]
+        },
+        "networkInterfaces": [
+          {
+            "name": "nic0",
+            "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-donnees",
+            "subnetwork": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-donnees",
+            "networkIP": "10.30.0.7"
+          }
+        ],
+        "serviceAccounts": [
+          {
+            "email": "batch@projet-demo-carto.iam.gserviceaccount.com"
+          }
+        ],
+        "labels": {
+          "role": "batch",
+          "environnement": "demo"
+        }
+      },
+      "tags": {
+        "role": "batch",
+        "environnement": "demo"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroups/mig-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroups/mig-web",
+      "type": "compute.googleapis.com/InstanceGroup",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroups/mig-web",
+        "name": "mig-web",
+        "network": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal",
+        "subnetwork": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/subnetworks/sn-app",
+        "size": 2,
+        "namedPorts": [
+          {
+            "name": "http",
+            "port": 8080
+          }
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroupManagers/mig-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroupManagers/mig-web",
+      "type": "compute.googleapis.com/InstanceGroupManager",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroupManagers/mig-web",
+        "name": "mig-web",
+        "baseInstanceName": "web",
+        "instanceGroup": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroups/mig-web",
+        "instanceTemplate": "//compute.googleapis.com/projects/projet-demo-carto/global/instanceTemplates/modele-web-v3",
+        "targetSize": 2,
+        "status": {
+          "isStable": true
+        }
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/addresses/ip-lb-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/addresses/ip-lb-web",
+      "type": "compute.googleapis.com/GlobalAddress",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/addresses/ip-lb-web",
+        "name": "ip-lb-web",
+        "address": "34.120.50.10",
+        "addressType": "EXTERNAL",
+        "status": "IN_USE"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/forwardingRules/fr-web-https",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/forwardingRules/fr-web-https",
+      "type": "compute.googleapis.com/GlobalForwardingRule",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/forwardingRules/fr-web-https",
+        "name": "fr-web-https",
+        "IPAddress": "34.120.50.10",
+        "IPProtocol": "TCP",
+        "portRange": "443-443",
+        "target": "//compute.googleapis.com/projects/projet-demo-carto/global/targetHttpsProxies/proxy-web-https",
+        "loadBalancingScheme": "EXTERNAL_MANAGED",
+        "networkTier": "PREMIUM"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/targetHttpsProxies/proxy-web-https",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/targetHttpsProxies/proxy-web-https",
+      "type": "compute.googleapis.com/TargetHttpsProxy",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/targetHttpsProxies/proxy-web-https",
+        "name": "proxy-web-https",
+        "urlMap": "//compute.googleapis.com/projects/projet-demo-carto/global/urlMaps/um-web",
+        "sslCertificates": [
+          "//compute.googleapis.com/projects/projet-demo-carto/global/sslCertificates/certificat-web"
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/urlMaps/um-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/urlMaps/um-web",
+      "type": "compute.googleapis.com/UrlMap",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/urlMaps/um-web",
+        "name": "um-web",
+        "defaultService": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-web",
+        "hostRules": [
+          {
+            "hosts": ["*"],
+            "pathMatcher": "chemins"
+          }
+        ],
+        "pathMatchers": [
+          {
+            "name": "chemins",
+            "defaultService": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-web",
+            "pathRules": [
+              {
+                "paths": ["/api/*"],
+                "service": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-api"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-web",
+      "type": "compute.googleapis.com/BackendService",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-web",
+        "name": "bs-web",
+        "protocol": "HTTP",
+        "portName": "http",
+        "loadBalancingScheme": "EXTERNAL_MANAGED",
+        "backends": [
+          {
+            "group": "//compute.googleapis.com/projects/projet-demo-carto/zones/europe-west9-a/instanceGroups/mig-web",
+            "balancingMode": "UTILIZATION"
+          }
+        ],
+        "healthChecks": ["//compute.googleapis.com/projects/projet-demo-carto/global/healthChecks/hc-web"],
+        "securityPolicy": "//compute.googleapis.com/projects/projet-demo-carto/global/securityPolicies/armor-web"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-api",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-api",
+      "type": "compute.googleapis.com/BackendService",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/backendServices/bs-api",
+        "name": "bs-api",
+        "protocol": "HTTPS",
+        "loadBalancingScheme": "EXTERNAL_MANAGED",
+        "backends": [
+          {
+            "group": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/networkEndpointGroups/neg-api"
+          }
+        ],
+        "securityPolicy": "//compute.googleapis.com/projects/projet-demo-carto/global/securityPolicies/armor-web"
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/global/securityPolicies/armor-web",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/global/securityPolicies/armor-web",
+      "type": "compute.googleapis.com/SecurityPolicy",
+      "region": "global",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/global/securityPolicies/armor-web",
+        "name": "armor-web",
+        "type": "CLOUD_ARMOR",
+        "rules": [
+          {
+            "priority": 1000,
+            "action": "deny(403)",
+            "match": {
+              "expr": {
+                "expression": "evaluatePreconfiguredWaf('sqli-v33-stable')"
+              }
+            }
+          },
+          {
+            "priority": 2000,
+            "action": "deny(403)",
+            "match": {
+              "expr": {
+                "expression": "origin.region_code == 'XX'"
+              }
+            }
+          },
+          {
+            "priority": 2147483647,
+            "action": "allow",
+            "match": {
+              "versionedExpr": "SRC_IPS_V1",
+              "config": {
+                "srcIpRanges": ["*"]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/networkEndpointGroups/neg-api",
+      "arn": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/networkEndpointGroups/neg-api",
+      "type": "compute.googleapis.com/NetworkEndpointGroup",
+      "region": "europe-west9",
+      "raw": {
+        "selfLink": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9/networkEndpointGroups/neg-api",
+        "name": "neg-api",
+        "networkEndpointType": "SERVERLESS",
+        "region": "//compute.googleapis.com/projects/projet-demo-carto/regions/europe-west9",
+        "cloudRun": {
+          "service": "api-commandes"
+        }
+      }
+    },
+    {
+      "id": "//vpcaccess.googleapis.com/projects/projet-demo-carto/locations/europe-west9/connectors/connecteur-run",
+      "arn": "//vpcaccess.googleapis.com/projects/projet-demo-carto/locations/europe-west9/connectors/connecteur-run",
+      "type": "vpcaccess.googleapis.com/Connector",
+      "region": "europe-west9",
+      "raw": {
+        "name": "projects/projet-demo-carto/locations/europe-west9/connectors/connecteur-run",
+        "network": "vpc-principal",
+        "ipCidrRange": "10.8.0.0/28",
+        "state": "READY",
+        "minInstances": 2,
+        "maxInstances": 3
+      }
+    },
+    {
+      "id": "//run.googleapis.com/projects/projet-demo-carto/locations/europe-west9/services/api-commandes",
+      "arn": "//run.googleapis.com/projects/projet-demo-carto/locations/europe-west9/services/api-commandes",
+      "type": "run.googleapis.com/Service",
+      "region": "europe-west9",
+      "raw": {
+        "apiVersion": "serving.knative.dev/v1",
+        "kind": "Service",
+        "metadata": {
+          "name": "api-commandes",
+          "namespace": "123456789012",
+          "labels": {
+            "cloud.googleapis.com/location": "europe-west9",
+            "environnement": "demo"
+          },
+          "annotations": {
+            "run.googleapis.com/ingress": "internal-and-cloud-load-balancing"
+          }
+        },
+        "spec": {
+          "template": {
+            "metadata": {
+              "annotations": {
+                "autoscaling.knative.dev/maxScale": "10",
+                "run.googleapis.com/vpc-access-connector": "connecteur-run",
+                "run.googleapis.com/vpc-access-egress": "private-ranges-only",
+                "run.googleapis.com/cloudsql-instances": "projet-demo-carto:europe-west9:sql-commandes"
+              }
+            },
+            "spec": {
+              "serviceAccountName": "api-commandes@projet-demo-carto.iam.gserviceaccount.com",
+              "containers": [
+                {
+                  "image": "europe-west9-docker.pkg.dev/projet-demo-carto/images/api-commandes:1.4.2",
+                  "ports": [
+                    {
+                      "containerPort": 8080
+                    }
+                  ],
+                  "env": [
+                    {
+                      "name": "DB_USER"
+                    },
+                    {
+                      "name": "DB_PASSWORD",
+                      "valueFrom": {
+                        "secretKeyRef": {
+                          "name": "mdp-base",
+                          "key": "latest"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "status": {
+          "url": "https://api-commandes-k3x9w2p4qa-od.a.run.app",
+          "conditions": [
+            {
+              "type": "Ready",
+              "status": "True"
+            }
+          ],
+          "latestReadyRevisionName": "api-commandes-00042-abc"
+        }
+      },
+      "tags": {
+        "cloud.googleapis.com/location": "europe-west9",
+        "environnement": "demo"
+      }
+    },
+    {
+      "id": "//cloudsql.googleapis.com/projects/projet-demo-carto/instances/sql-commandes",
+      "arn": "//cloudsql.googleapis.com/projects/projet-demo-carto/instances/sql-commandes",
+      "type": "sqladmin.googleapis.com/Instance",
+      "region": "europe-west9",
+      "raw": {
+        "name": "sql-commandes",
+        "project": "projet-demo-carto",
+        "region": "europe-west9",
+        "databaseVersion": "POSTGRES_16",
+        "state": "RUNNABLE",
+        "connectionName": "projet-demo-carto:europe-west9:sql-commandes",
+        "settings": {
+          "tier": "db-custom-2-7680",
+          "availabilityType": "REGIONAL",
+          "activationPolicy": "ALWAYS",
+          "ipConfiguration": {
+            "ipv4Enabled": false,
+            "privateNetwork": "//compute.googleapis.com/projects/projet-demo-carto/global/networks/vpc-principal"
+          },
+          "userLabels": {
+            "environnement": "demo"
+          }
+        },
+        "ipAddresses": [
+          {
+            "type": "PRIVATE",
+            "ipAddress": "10.50.0.3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "//storage.googleapis.com/projet-demo-carto-medias",
+      "arn": "//storage.googleapis.com/projet-demo-carto-medias",
+      "type": "storage.googleapis.com/Bucket",
+      "region": "europe-west9",
+      "raw": {
+        "name": "projet-demo-carto-medias",
+        "location": "EUROPE-WEST9",
+        "storageClass": "STANDARD",
+        "versioning": {
+          "enabled": true
+        },
+        "iamConfiguration": {
+          "uniformBucketLevelAccess": {
+            "enabled": true
+          },
+          "publicAccessPrevention": "enforced"
+        },
+        "labels": {
+          "environnement": "demo"
+        }
+      },
+      "tags": {
+        "environnement": "demo"
+      }
+    },
+    {
+      "id": "//cloudfunctions.googleapis.com/projects/projet-demo-carto/locations/europe-west9/functions/fn-vignettes",
+      "arn": "//cloudfunctions.googleapis.com/projects/projet-demo-carto/locations/europe-west9/functions/fn-vignettes",
+      "type": "cloudfunctions.googleapis.com/Function",
+      "region": "europe-west9",
+      "raw": {
+        "name": "projects/projet-demo-carto/locations/europe-west9/functions/fn-vignettes",
+        "environment": "GEN_2",
+        "state": "ACTIVE",
+        "buildConfig": {
+          "runtime": "nodejs22",
+          "entryPoint": "vignettes"
+        },
+        "serviceConfig": {
+          "uri": "https://fn-vignettes-k3x9w2p4qa-od.a.run.app",
+          "vpcConnector": "projects/projet-demo-carto/locations/europe-west9/connectors/connecteur-run",
+          "serviceAccountEmail": "vignettes@projet-demo-carto.iam.gserviceaccount.com",
+          "environmentVariables": {
+            "BUCKET_SORTIE": "(valeur masquée)",
+            "CLE_API_FICTIVE": "(valeur masquée)"
+          }
+        },
+        "eventTrigger": {
+          "eventType": "google.cloud.storage.object.v1.finalized",
+          "pubsubTopic": "projects/projet-demo-carto/topics/eventarc-europe-west9-fn-vignettes-481",
+          "eventFilters": [
+            {
+              "attribute": "bucket",
+              "value": "projet-demo-carto-medias"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "//pubsub.googleapis.com/projects/projet-demo-carto/topics/commandes",
+      "arn": "//pubsub.googleapis.com/projects/projet-demo-carto/topics/commandes",
+      "type": "pubsub.googleapis.com/Topic",
+      "region": "global",
+      "raw": {
+        "name": "projects/projet-demo-carto/topics/commandes",
+        "messageRetentionDuration": "86400s"
+      }
+    },
+    {
+      "id": "//pubsub.googleapis.com/projects/projet-demo-carto/subscriptions/commandes-vers-api",
+      "arn": "//pubsub.googleapis.com/projects/projet-demo-carto/subscriptions/commandes-vers-api",
+      "type": "pubsub.googleapis.com/Subscription",
+      "region": "global",
+      "raw": {
+        "name": "projects/projet-demo-carto/subscriptions/commandes-vers-api",
+        "topic": "projects/projet-demo-carto/topics/commandes",
+        "pushConfig": {
+          "pushEndpoint": "https://api-commandes-k3x9w2p4qa-od.a.run.app/evenements",
+          "oidcToken": {
+            "serviceAccountEmail": "pubsub@projet-demo-carto.iam.gserviceaccount.com"
+          }
+        },
+        "ackDeadlineSeconds": 30,
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "id": "//secretmanager.googleapis.com/projects/123456789012/secrets/mdp-base",
+      "arn": "//secretmanager.googleapis.com/projects/123456789012/secrets/mdp-base",
+      "type": "secretmanager.googleapis.com/Secret",
+      "region": "global",
+      "raw": {
+        "name": "projects/123456789012/secrets/mdp-base",
+        "replication": {
+          "automatic": {}
+        },
+        "createTime": "2026-03-02T09:15:00Z"
+      }
+    },
+    {
+      "id": "//artifactregistry.googleapis.com/projects/projet-demo-carto/locations/europe-west9/repositories/images",
+      "arn": "//artifactregistry.googleapis.com/projects/projet-demo-carto/locations/europe-west9/repositories/images",
+      "type": "artifactregistry.googleapis.com/Repository",
+      "region": "europe-west9",
+      "raw": {
+        "name": "projects/projet-demo-carto/locations/europe-west9/repositories/images",
+        "format": "DOCKER",
+        "mode": "STANDARD_REPOSITORY"
+      }
+    },
+    {
+      "id": "//cloudbuild.googleapis.com/projects/projet-demo-carto/locations/global/triggers/0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "arn": "//cloudbuild.googleapis.com/projects/projet-demo-carto/locations/global/triggers/0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "type": "cloudbuild.googleapis.com/BuildTrigger",
+      "region": "global",
+      "raw": {
+        "id": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+        "name": "build-api",
+        "github": {
+          "owner": "exemple",
+          "name": "api-commandes",
+          "push": {
+            "branch": "^main$"
+          }
+        },
+        "substitutions": {
+          "_REGION": "(valeur masquée)",
+          "_JETON_FICTIF": "(valeur masquée)"
+        },
+        "build": {
+          "steps": [
+            {
+              "name": "gcr.io/cloud-builders/docker",
+              "args": [
+                "build",
+                "-t",
+                "europe-west9-docker.pkg.dev/projet-demo-carto/images/api-commandes:$SHORT_SHA",
+                "."
+              ],
+              "env": [
+                {
+                  "name": "DOCKER_BUILDKIT"
+                }
+              ]
+            }
+          ],
+          "images": ["europe-west9-docker.pkg.dev/projet-demo-carto/images/api-commandes:$SHORT_SHA"]
+        }
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/projects/123456789012",
+      "arn": "//cloudresourcemanager.googleapis.com/projects/123456789012",
+      "type": "cloudresourcemanager.googleapis.com/Project",
+      "region": "global",
+      "raw": {
+        "name": "projects/123456789012",
+        "projectId": "projet-demo-carto",
+        "displayName": "Démo Cartographe",
+        "parent": "folders/200000000001",
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/folders/200000000001",
+      "arn": "//cloudresourcemanager.googleapis.com/folders/200000000001",
+      "type": "cloudresourcemanager.googleapis.com/Folder",
+      "region": "global",
+      "raw": {
+        "name": "folders/200000000001",
+        "displayName": "Production",
+        "parent": "organizations/100000000001",
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/folders/200000000002",
+      "arn": "//cloudresourcemanager.googleapis.com/folders/200000000002",
+      "type": "cloudresourcemanager.googleapis.com/Folder",
+      "region": "global",
+      "raw": {
+        "name": "folders/200000000002",
+        "displayName": "Partagé",
+        "parent": "organizations/100000000001",
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/projects/123456789013",
+      "arn": "//cloudresourcemanager.googleapis.com/projects/123456789013",
+      "type": "cloudresourcemanager.googleapis.com/Project",
+      "region": "global",
+      "raw": {
+        "name": "projects/123456789013",
+        "projectId": "projet-reseau-partage",
+        "displayName": "Réseau partagé",
+        "parent": "folders/200000000002",
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/organizations/100000000001",
+      "arn": "//cloudresourcemanager.googleapis.com/organizations/100000000001",
+      "type": "cloudresourcemanager.googleapis.com/Organization",
+      "region": "global",
+      "raw": {
+        "name": "organizations/100000000001",
+        "displayName": "exemple.fr",
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "id": "//orgpolicy.googleapis.com/folders/200000000001/policies/gcp.resourceLocations",
+      "arn": "//orgpolicy.googleapis.com/folders/200000000001/policies/gcp.resourceLocations",
+      "type": "orgpolicy.googleapis.com/Policy",
+      "region": "global",
+      "raw": {
+        "name": "folders/200000000001/policies/gcp.resourceLocations",
+        "spec": {
+          "rules": [
+            {
+              "values": {
+                "allowedValues": ["in:eu-locations"]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/folders/200000000001#roles/editor#group:equipe-plateforme@exemple.fr",
+      "type": "iam.googleapis.com/Binding",
+      "region": "global",
+      "raw": {
+        "resource": "folders/200000000001",
+        "role": "roles/editor",
+        "member": "group:equipe-plateforme@exemple.fr"
+      }
+    },
+    {
+      "id": "//cloudresourcemanager.googleapis.com/projects/123456789012#roles/viewer#group:auditeurs@exemple.fr",
+      "type": "iam.googleapis.com/Binding",
+      "region": "global",
+      "raw": {
+        "resource": "projects/123456789012",
+        "role": "roles/viewer",
+        "member": "group:auditeurs@exemple.fr"
+      }
+    }
+  ],
+  "errors": []
+}

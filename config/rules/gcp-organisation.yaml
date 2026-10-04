@@ -1,0 +1,36 @@
+# Google Cloud — organisation : dessinée par la vue « Organisation » (organisation > dossiers > projets,
+# contraintes, liaisons IAM des groupes et utilisateurs), masquée dans le diagramme d'architecture.
+- type: cloudresourcemanager.googleapis.com/Organization
+  typeLabel: Organisation
+  label: '$r.raw.displayName'
+  icon: ou
+  category: management
+  hidden: true
+
+- type: cloudresourcemanager.googleapis.com/Folder
+  typeLabel: Dossier
+  label: '$r.raw.displayName'
+  icon: ou
+  category: management
+  hidden: true
+
+- type: cloudresourcemanager.googleapis.com/Project
+  typeLabel: Projet
+  label: '$r.raw.projectId'
+  icon: account
+  category: management
+  hidden: true
+
+- type: orgpolicy.googleapis.com/Policy
+  typeLabel: Règle d'administration
+  label: "$split($r.raw.name, '/')[-1]"
+  icon: policy
+  category: security
+  hidden: true
+
+- type: iam.googleapis.com/Binding
+  typeLabel: Liaison IAM
+  label: '$r.raw.member'
+  icon: group
+  category: security
+  hidden: true

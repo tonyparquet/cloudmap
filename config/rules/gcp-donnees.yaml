@@ -1,0 +1,126 @@
+# Google Cloud — données : Cloud SQL, Firestore, Bigtable, Spanner, Memorystore, Cloud Storage, Pub/Sub.
+- type: sqladmin.googleapis.com/Instance
+  typeLabel: Instance Cloud SQL
+  label: '$r.raw.name'
+  sublabel: "$r.raw.databaseVersion & ($r.raw.settings.ipConfiguration.privateNetwork ? ' · IP privée' : '')"
+  icon: gcp-cloud-sql
+  category: database
+  placement: { container: vpc, ref: '$r.raw.settings.ipConfiguration.privateNetwork' }
+  ips: '$r.raw.ipAddresses.ipAddress'
+  status:
+    - { when: "$r.raw.settings.activationPolicy = 'NEVER'", value: arrete }
+    - { when: "$r.raw.state = 'RUNNABLE'", value: actif }
+    - { when: "$r.raw.state in ['SUSPENDED', 'STOPPED']", value: arrete }
+    - { when: "$r.raw.state = 'FAILED'", value: erreur }
+    - { when: "$r.raw.state in ['PENDING_CREATE', 'MAINTENANCE']", value: en-veille }
+    - { default: inconnu }
+  console: &console "'https://console.cloud.google.com/home/dashboard?project=' & ($r.account ? $r.account : $all.meta.accountId)"
+  details:
+    version: '$r.raw.databaseVersion'
+    niveau: '$r.raw.settings.tier'
+    hauteDisponibilite: "$r.raw.settings.availabilityType = 'REGIONAL'"
+    ipPublique: '$r.raw.settings.ipConfiguration.ipv4Enabled'
+    connexion: '$r.raw.connectionName'
+
+- type: firestore.googleapis.com/Database
+  typeLabel: Base Firestore
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: "$lookup({'FIRESTORE_NATIVE': 'Firestore natif', 'DATASTORE_MODE': 'mode Datastore'}, $r.raw.type)"
+  icon: gcp-firestore
+  category: database
+  status: [{ default: actif }]
+  console: *console
+
+- type: bigtableadmin.googleapis.com/Instance
+  typeLabel: Instance Bigtable
+  label: "$r.raw.displayName ? $r.raw.displayName : $split($r.raw.name, '/')[-1]"
+  sublabel: "'Bigtable · ' & $lowercase($r.raw.type)"
+  icon: gcp-bigtable
+  category: database
+  status:
+    - { when: "$r.raw.state = 'READY'", value: actif }
+    - { when: "$r.raw.state = 'CREATING'", value: en-veille }
+    - { default: inconnu }
+  console: *console
+
+- type: spanner.googleapis.com/Instance
+  typeLabel: Instance Spanner
+  label: "$r.raw.displayName ? $r.raw.displayName : $split($r.raw.name, '/')[-1]"
+  sublabel: "'Spanner · ' & $split($r.raw.config, '/')[-1]"
+  icon: gcp-spanner
+  category: database
+  status:
+    - { when: "$r.raw.state = 'READY'", value: actif }
+    - { when: "$r.raw.state = 'CREATING'", value: en-veille }
+    - { default: inconnu }
+  console: *console
+
+- type: redis.googleapis.com/Instance
+  typeLabel: Memorystore pour Redis
+  label: "$r.raw.displayName ? $r.raw.displayName : $split($r.raw.name, '/')[-1]"
+  sublabel: "'Redis ' & $r.raw.redisVersion & ' · ' & $string($r.raw.memorySizeGb) & ' Go'"
+  icon: gcp-memorystore
+  category: database
+  placement: { container: vpc, ref: '$r.raw.authorizedNetwork' }
+  ips: '$r.raw.host'
+  status:
+    - { when: "$r.raw.state = 'READY'", value: actif }
+    - { when: "$r.raw.state in ['CREATING', 'UPDATING', 'MAINTENANCE']", value: en-veille }
+    - { default: inconnu }
+  console: *console
+
+- type: storage.googleapis.com/Bucket
+  typeLabel: Bucket Cloud Storage
+  label: '$r.raw.name'
+  sublabel: "$lowercase($r.raw.storageClass) & ' · ' & $lowercase($r.raw.location)"
+  icon: gcp-cloud-storage
+  category: storage
+  status: [{ default: actif }]
+  console: *console
+  details:
+    accesPublicEmpeche: "$r.raw.iamConfiguration.publicAccessPrevention = 'enforced'"
+    accesUniforme: '$r.raw.iamConfiguration.uniformBucketLevelAccess.enabled'
+    versionnage: '$r.raw.versioning.enabled'
+    site: '$r.raw.website.mainPageSuffix'
+
+- type: pubsub.googleapis.com/Topic
+  typeLabel: Sujet Pub/Sub
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: sujet Pub/Sub
+  icon: gcp-pubsub
+  category: integration
+  status: [{ default: actif }]
+  console: *console
+  relations:
+    - {
+        kind: dependency,
+        to: "$r.raw.kmsKeyName ? '//cloudkms.googleapis.com/' & $r.raw.kmsKeyName",
+        label: chiffrement,
+      }
+
+- type: pubsub.googleapis.com/Subscription
+  typeLabel: Abonnement Pub/Sub
+  label: "$split($r.raw.name, '/')[-1]"
+  sublabel: "$r.raw.pushConfig.pushEndpoint ? 'abonnement push' : 'abonnement pull'"
+  icon: gcp-pubsub
+  category: integration
+  status:
+    - { when: "$r.raw.state = 'RESOURCE_ERROR'", value: erreur }
+    - { default: actif }
+  console: *console
+  relations:
+    - { kind: data, reverse: true, to: "$r.raw.topic ? '//pubsub.googleapis.com/' & $r.raw.topic" }
+    - {
+        kind: data,
+        label: push,
+        to: '$r.raw.pushConfig.pushEndpoint',
+        resolve: dns-name,
+        unresolved: external,
+      }
+    - {
+        kind: data,
+        to: "$ofType('storage.googleapis.com/Bucket')[raw.name = $r.raw.cloudStorageConfig.bucket].id",
+      }
+    - kind: dependency
+      label: lettres mortes
+      to: "$r.raw.deadLetterPolicy.deadLetterTopic ? '//pubsub.googleapis.com/' & $r.raw.deadLetterPolicy.deadLetterTopic"

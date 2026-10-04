@@ -23,7 +23,7 @@ export type Resolver = (typeof RESOLVERS)[number];
 const expr = z.string().min(1).max(4000);
 
 export const ruleSchema = z.strictObject({
-  type: z.string().regex(/^[\w:.*-]{1,256}$/, 'Type invalide'),
+  type: z.string().regex(/^[\w:./*-]{1,256}$/, 'Type invalide'),
   typeLabel: z.string().max(80).optional(),
   label: expr,
   sublabel: expr.optional(),
