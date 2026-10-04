@@ -4,7 +4,16 @@
 // recompilation pour Electron. Windows se construit aussi depuis Linux ; macOS seulement depuis
 // macOS (DMG, signature, argon2 Intel compilé à l'installation) : voir .github/workflows/publication.yml.
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
@@ -94,6 +103,27 @@ async function assemble() {
 
 const HOSTS = { win32: '--win', darwin: '--mac', linux: '--linux' };
 
+/** Contrôle après empaquetage : modules natifs présents hors de l'archive asar (sinon artefact inutilisable). */
+function verifyPackaged() {
+  const release = join(desktop, 'dist', 'release');
+  const found = [];
+  const walk = (dir, depth) => {
+    if (depth > 6 || !existsSync(dir)) return;
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (name === 'app.asar.unpacked') found.push(path);
+      else if (statSync(path).isDirectory() && !name.endsWith('.asar')) walk(path, depth + 1);
+    }
+  };
+  walk(release, 0);
+  if (found.length === 0) throw new Error('Aucune application empaquetée trouvée dans dist/release');
+  for (const dir of found)
+    for (const mod of ['better-sqlite3', 'argon2'])
+      if (!existsSync(join(dir, 'node_modules', mod, 'package.json')))
+        throw new Error(`Module natif ${mod} absent de ${dir} : artefact refusé`);
+  console.log(`Modules natifs vérifiés dans ${found.length} application(s) empaquetée(s).`);
+}
+
 if (command === 'stage') {
   await assemble();
 } else if (command === 'start') {
@@ -115,9 +145,23 @@ if (command === 'stage') {
   const args = (targets.length ? rest : [host, ...rest]).flatMap((a) =>
     a === '--win' && crossWin ? [a, 'zip'] : [a],
   );
+  // Secrets de signature absents (CI sans certificat) : variables vides retirées, sinon electron-builder
+  // les prend pour un chemin de certificat.
+  for (const k of [
+    'CSC_LINK',
+    'CSC_KEY_PASSWORD',
+    'APPLE_ID',
+    'APPLE_APP_SPECIFIC_PASSWORD',
+    'APPLE_TEAM_ID',
+  ])
+    if (!process.env[k]) delete process.env[k];
+  // L'application assemblée (dist/app) est un projet npm : lancé via pnpm, electron-builder chercherait
+  // un arbre pnpm et empaquetterait les dépendances de apps/desktop au lieu des modules natifs.
+  process.env.npm_config_user_agent = `npm/10.0.0 node/${process.version} ${process.platform} ${process.arch}`;
   // macOS sans certificat Developer ID : signature ad hoc (indispensable pour lancer une app arm64).
   const adHoc = host === '--mac' && !process.env.CSC_LINK ? ['-c.mac.identity=-'] : [];
   run(bin(desktop, 'electron-builder'), ['--config', 'electron-builder.yml', ...args, ...adHoc], desktop);
+  verifyPackaged();
 } else {
   throw new Error(`Commande inconnue : ${command} (stage | start | dist)`);
 }
