@@ -1,4 +1,4 @@
-import type { RawSnapshot, Resource } from '@carto/core';
+import type { RawSnapshot, Resource } from '@cloudmap/core';
 import { SCANNER_VERSION } from '../../context.ts';
 import type { ScanEvent } from '../../scan.ts';
 import { CloudHttpError, ReadOnlyHttp } from '../http.ts';

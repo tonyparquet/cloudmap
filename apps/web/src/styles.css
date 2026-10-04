@@ -954,3 +954,54 @@ pre.notes {
   max-height: 360px;
   overflow: auto;
 }
+
+/* ------------------------------------------------------------------ formulaire de profil dense */
+.profile-form {
+  max-width: 1440px;
+}
+/* Choix en ligne (fournisseur, mode d'accès, type d'identifiants) ; empilés sur écran étroit. */
+.choices.inline {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.choices.inline.compact {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.choices.inline .choice {
+  height: 100%;
+}
+/* Champs courts côte à côte ; l'aide reste sous son champ. */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 16px;
+  align-items: start;
+}
+.form-grid > label.check {
+  align-self: center;
+}
+/* Régions : continents côte à côte, chacun sur plusieurs colonnes. */
+.region-groups {
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 8px 24px;
+}
+.region-groups > div {
+  columns: 2 170px;
+  column-gap: 12px;
+}
+.region-groups > div > h3 {
+  column-span: all;
+}
+.region-groups label.check {
+  break-inside: avoid;
+}
+/* Enregistrer / Annuler toujours visibles en bas d'un long formulaire ; la barre couvre aussi la
+   marge intérieure (24 px) de main.page, sinon le contenu défile visiblement dessous. */
+.form-actions {
+  position: sticky;
+  bottom: -24px;
+  z-index: 2;
+  padding: 12px 0 36px;
+  margin: 4px 0 -24px;
+  background: var(--bg);
+  border-top: 1px solid var(--panel-border);
+}

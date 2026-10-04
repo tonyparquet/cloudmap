@@ -1,4 +1,4 @@
-import type { Graph, GraphNode } from '@carto/core';
+import type { Graph, GraphNode } from '@cloudmap/core';
 import { t, tOr } from '../i18n/index.ts';
 import { Icon } from '../icons.tsx';
 

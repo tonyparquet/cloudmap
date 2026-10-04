@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import type { Profile } from '@carto/core';
+import type { Profile } from '@cloudmap/core';
 import type { FastifyRequest } from 'fastify';
 import type { SessionRow } from './auth/sessions.ts';
 import { forbidden, unauthorized } from './errors.ts';

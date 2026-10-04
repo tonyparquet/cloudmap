@@ -6,7 +6,7 @@ import {
   type GraphDiff,
   type GraphEdge,
   type GraphNode,
-} from '@carto/core';
+} from '@cloudmap/core';
 import {
   Background,
   Controls,

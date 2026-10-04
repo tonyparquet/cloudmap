@@ -1,8 +1,14 @@
 import { X509Certificate } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadOrCreateMasterKey, type SecretBox, userDataDir } from '../src/keystore.ts';
+import {
+  adoptLegacyInstall,
+  loadOrCreateMasterKey,
+  sealKeyFile,
+  type SecretBox,
+  takeOverLegacyKey,
+} from '../src/keystore.ts';
 import {
   certNeedsRenewal,
   ensureLocalCert,
@@ -81,16 +87,68 @@ describe('application de bureau : permissions de la fenêtre', () => {
   });
 });
 
-describe('application de bureau : dossier des données après le renommage en CloudMap', () => {
-  it('nouvelle installation : « CloudMap » ; installation antérieure : son dossier est conservé', () => {
+describe('application de bureau : reprise d’une installation antérieure au renommage', () => {
+  const legacyInstall = (appData: string) => {
+    mkdirSync(join(appData, 'Cartographe AWS', 'donnees'), { recursive: true });
+    writeFileSync(join(appData, 'Cartographe AWS', 'cle-maitre.chiffree'), 'scellé-ancien');
+  };
+
+  it('le dossier devient « CloudMap » ; hors Windows, la clé scellée est mise de côté', () => {
     const appData = tmp();
-    expect(userDataDir(appData)).toBe(join(appData, 'CloudMap'));
-    // Dossier vide créé par le système : pas une installation, le nouveau nom s'applique.
-    mkdirSync(join(appData, 'Cartographe AWS'));
-    expect(userDataDir(appData)).toBe(join(appData, 'CloudMap'));
-    mkdirSync(join(appData, 'Cartographe AWS', 'donnees'));
-    expect(userDataDir(appData)).toBe(join(appData, 'Cartographe AWS'));
-    expect(existsSync(join(appData, 'CloudMap'))).toBe(false);
+    expect(adoptLegacyInstall(appData, 'darwin')).toBe(false);
+    legacyInstall(appData);
+    mkdirSync(join(appData, 'CloudMap')); // dossier vide créé par le système : remplacé
+    expect(adoptLegacyInstall(appData, 'darwin')).toBe(true);
+    expect(existsSync(join(appData, 'Cartographe AWS'))).toBe(false);
+    expect(existsSync(join(appData, 'CloudMap', 'donnees'))).toBe(true);
+    expect(existsSync(join(appData, 'CloudMap', 'cle-maitre.chiffree'))).toBe(false);
+    expect(readFileSync(join(appData, 'CloudMap', 'cle-maitre.ancien-nom'), 'utf8')).toBe('scellé-ancien');
+    // Windows : clé de DPAPI dans le dossier, rien à mettre de côté.
+    const win = tmp();
+    legacyInstall(win);
+    expect(adoptLegacyInstall(win, 'win32')).toBe(true);
+    expect(existsSync(join(win, 'CloudMap', 'cle-maitre.chiffree'))).toBe(true);
+    // Une installation CloudMap déjà utilisée n'est jamais écrasée.
+    const both = tmp();
+    legacyInstall(both);
+    mkdirSync(join(both, 'CloudMap', 'donnees'), { recursive: true });
+    expect(adoptLegacyInstall(both, 'darwin')).toBe(false);
+    expect(existsSync(join(both, 'Cartographe AWS', 'donnees'))).toBe(true);
+  });
+
+  it('clé relue sous l’ancien nom puis rescellée ; échec : ancien fichier conservé', async () => {
+    const dir = tmp();
+    const key = Buffer.alloc(32, 9).toString('base64');
+    const b = box();
+    writeFileSync(join(dir, 'cle-maitre.ancien-nom'), b.encryptString(key));
+    expect(await takeOverLegacyKey(tmp(), b, async () => undefined)).toBeUndefined();
+
+    // Échec du processus auxiliaire : la clé sert quand même, la reprise sera retentée.
+    const failed = await takeOverLegacyKey(dir, b, () => Promise.reject(new Error('refus')));
+    expect(failed?.toString('base64')).toBe(key);
+    expect(existsSync(join(dir, 'cle-maitre.ancien-nom'))).toBe(true);
+
+    const sealed: string[] = [];
+    const ok = await takeOverLegacyKey(dir, b, async (k) => {
+      sealed.push(k);
+      sealKeyFile(dir, b, k);
+    });
+    expect(ok?.toString('base64')).toBe(key);
+    expect(sealed).toEqual([key]);
+    expect(existsSync(join(dir, 'cle-maitre.ancien-nom'))).toBe(false);
+    expect(loadOrCreateMasterKey(dir, b).key.toString('base64')).toBe(key);
+    // Jamais d'écrasement d'une clé déjà scellée.
+    expect(() => sealKeyFile(dir, b, key)).toThrow(/déjà scellée/);
+    // Ancien trousseau illisible : erreur explicite, rien n'est modifié.
+    writeFileSync(join(dir, 'cle-maitre.ancien-nom'), 'illisible');
+    const broken = {
+      ...b,
+      decryptString: () => {
+        throw new Error('trousseau');
+      },
+    };
+    await expect(takeOverLegacyKey(dir, broken, async () => undefined)).rejects.toThrow(/aucune donnée/);
+    expect(existsSync(join(dir, 'cle-maitre.ancien-nom'))).toBe(true);
   });
 });
 

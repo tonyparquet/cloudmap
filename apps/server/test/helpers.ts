@@ -11,7 +11,7 @@ import { loadConfig } from '../src/config.ts';
 import { createLogger } from '../src/logger.ts';
 
 export const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-export const ORIGIN = 'https://carto.test';
+export const ORIGIN = 'https://cloudmap.test';
 const TMP = join(ROOT, '.tmp', 'tests');
 mkdirSync(TMP, { recursive: true });
 

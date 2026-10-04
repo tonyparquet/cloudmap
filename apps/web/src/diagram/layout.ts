@@ -1,4 +1,4 @@
-import type { Graph } from '@carto/core';
+import type { Graph } from '@cloudmap/core';
 import ELK, { type ElkExtendedEdge, type ElkNode } from 'elkjs/lib/elk.bundled.js';
 
 export const NODE_W = 150;

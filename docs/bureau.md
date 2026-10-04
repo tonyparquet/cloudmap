@@ -35,9 +35,10 @@ l'interface, chiffrés s'ils sont mémorisés.
 | Windows | `%APPDATA%\CloudMap\`                     |
 | macOS   | `~/Library/Application Support/CloudMap/` |
 
-Une installation antérieure au renommage en CloudMap garde son dossier `Cartographe AWS` (données,
-comptes et clé maître conservés). Sur macOS, supprimez l'ancienne application « Cartographe AWS »
-du dossier Applications après l'installation de CloudMap ; sous Windows, l'installeur la remplace.
+Mise à jour depuis une version antérieure à 1.2.0 : au premier lancement, CloudMap reprend le
+dossier de l'ancienne application (comptes, profils, identifiants et clé maître conservés). Sous
+macOS, ce premier lancement peut demander l'accès au trousseau : acceptez, puis supprimez l'ancienne
+application du dossier Applications. Sous Windows, l'installeur remplace l'ancienne version.
 
 - `donnees/` : base SQLite (comptes, profils, identifiants chiffrés, journal d'audit), snapshots,
   mises en page, journaux.
@@ -105,4 +106,4 @@ confirmation, voir « Installation »).
 | Clé maître                                  | Docker secret (`MASTER_KEY_FILE`) | Trousseau du système (DPAPI / Keychain)           |
 | Authentification                            | Locale + TOTP ou OIDC             | Locale + TOTP                                     |
 | Identité AWS de l'outil (`HUB_CREDENTIALS`) | Possible                          | Désactivée : identifiants saisis dans l'interface |
-| Mode démo                                   | `DEMO_MODE=true`                  | `CARTO_DEMO=true` au lancement (développement)    |
+| Mode démo                                   | `DEMO_MODE=true`                  | `CLOUDMAP_DEMO=true` au lancement (développement) |

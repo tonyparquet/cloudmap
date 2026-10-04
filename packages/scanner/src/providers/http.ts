@@ -1,4 +1,4 @@
-import { redactString } from '@carto/security';
+import { redactString } from '@cloudmap/security';
 
 /**
  * Client HTTP en lecture seule des fournisseurs Azure et Google Cloud : uniquement GET, plus les

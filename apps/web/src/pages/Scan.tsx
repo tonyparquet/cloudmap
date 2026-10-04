@@ -1,4 +1,4 @@
-import type { Profile } from '@carto/core';
+import type { Profile } from '@cloudmap/core';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, get, post } from '../api.ts';
 import { t } from '../i18n/index.ts';

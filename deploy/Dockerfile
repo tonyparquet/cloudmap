@@ -26,8 +26,8 @@ ENV NODE_ENV=production \
     CONFIG_DIR=/config \
     DATA_DIR=/data
 WORKDIR /app
-RUN addgroup -S -g 10001 carto \
- && adduser -S -D -H -u 10001 -G carto -s /sbin/nologin carto \
+RUN addgroup -S -g 10001 cloudmap \
+ && adduser -S -D -H -u 10001 -G cloudmap -s /sbin/nologin cloudmap \
  && mkdir -p /config /data \
  && chown 10001:10001 /config /data \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack

@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { SERVICES } from '@carto/scanner';
+import { SERVICES } from '@cloudmap/scanner';
 import type { FastifyInstance } from 'fastify';
 import type { Ctx } from '../app.ts';
 import { notFound } from '../errors.ts';

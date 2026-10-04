@@ -1,4 +1,4 @@
-import type { GraphContainer, GraphNode } from '@carto/core';
+import type { GraphContainer, GraphNode } from '@cloudmap/core';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { memo } from 'react';
 import { tOr } from '../i18n/index.ts';

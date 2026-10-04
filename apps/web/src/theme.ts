@@ -1,4 +1,4 @@
-import type { ContainerKind } from '@carto/core';
+import type { ContainerKind } from '@cloudmap/core';
 
 /** Jetons de thème (section 9.2), fournis par CONFIG_DIR/theme.yaml via /api/config/theme. */
 

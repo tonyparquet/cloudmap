@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { masterKeyCheck } from '@carto/security';
+import { envelopeSchema, masterKeyCheck, upgradeLegacyEnvelope, type Envelope } from '@cloudmap/security';
 import Database from 'better-sqlite3';
 import { MIGRATIONS } from './migrations/index.ts';
 
@@ -53,8 +53,42 @@ export function setMeta(db: Db, key: string, value: string): void {
 export const keyVersion = (db: Db) => Number(getMeta(db, 'master_key_version') ?? '1');
 
 /**
+ * Rechiffre chaque enveloppe de la base (identifiants mémorisés, secrets TOTP) avec `rewrap`, à
+ * appeler dans une transaction. Renvoie le nombre d'enveloppes de chaque sorte.
+ */
+export function rewrapAll(
+  db: Db,
+  rewrap: (env: Envelope, aad: string) => Envelope,
+  version?: number,
+): { credentials: number; totp: number } {
+  const creds = db.prepare('SELECT ref, profile_id, envelope FROM credentials').all() as {
+    ref: string;
+    profile_id: string;
+    envelope: string;
+  }[];
+  for (const c of creds) {
+    const next = rewrap(envelopeSchema.parse(JSON.parse(c.envelope)), `${c.profile_id}|${c.ref}`);
+    db.prepare('UPDATE credentials SET envelope = ?, key_version = ? WHERE ref = ?').run(
+      JSON.stringify(next),
+      version ?? next.v,
+      c.ref,
+    );
+  }
+  const users = db.prepare('SELECT id, totp_secret FROM users WHERE totp_secret IS NOT NULL').all() as {
+    id: string;
+    totp_secret: string;
+  }[];
+  for (const u of users) {
+    const next = rewrap(envelopeSchema.parse(JSON.parse(u.totp_secret)), `totp|${u.id}`);
+    db.prepare('UPDATE users SET totp_secret = ? WHERE id = ?').run(JSON.stringify(next), u.id);
+  }
+  return { credentials: creds.length, totp: users.length };
+}
+
+/**
  * Vérifie que la clé maître est celle qui a chiffré les données existantes ; enregistre son empreinte
- * au premier démarrage. Renvoie un message d'erreur si elle ne correspond pas.
+ * au premier démarrage. Données d'avant le renommage en CloudMap : migrées vers la dérivation courante
+ * (même clé maître), en une transaction. Renvoie un message d'erreur si la clé ne correspond pas.
  */
 export function checkMasterKey(db: Db, masterKey: Buffer): string | undefined {
   const expected = getMeta(db, 'master_key_check');
@@ -64,7 +98,13 @@ export function checkMasterKey(db: Db, masterKey: Buffer): string | undefined {
     setMeta(db, 'master_key_version', '1');
     return undefined;
   }
-  return expected === actual
-    ? undefined
-    : 'La clé maître (MASTER_KEY_FILE) ne correspond pas aux données chiffrées existantes de DATA_DIR';
+  if (expected === actual) return undefined;
+  if (expected === masterKeyCheck(masterKey, true)) {
+    db.transaction(() => {
+      rewrapAll(db, (env, aad) => upgradeLegacyEnvelope(masterKey, env, aad));
+      setMeta(db, 'master_key_check', actual);
+    })();
+    return undefined;
+  }
+  return 'La clé maître (MASTER_KEY_FILE) ne correspond pas aux données chiffrées existantes de DATA_DIR';
 }

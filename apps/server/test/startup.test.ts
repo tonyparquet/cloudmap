@@ -31,7 +31,7 @@ describe('contrôles de démarrage (section 4.1)', () => {
   );
 
   it('refuse PUBLIC_ORIGIN en http', () => {
-    const { env } = testEnv({ PUBLIC_ORIGIN: 'http://carto.exemple.fr' });
+    const { env } = testEnv({ PUBLIC_ORIGIN: 'http://cloudmap.exemple.fr' });
     expect(problems(env)).toMatch(/PUBLIC_ORIGIN doit commencer par https/);
   });
 

@@ -20,7 +20,7 @@ const rules = parseRules(ruleFiles.map((name) => ({ name, content: read(`config/
 const snapshot = rawSnapshotSchema.parse(JSON.parse(read('fixtures/demo-gcp-snapshot.json')));
 const profile = profileSchema.parse(JSON.parse(read('fixtures/demo-gcp-profile.json')));
 
-const P = '//compute.googleapis.com/projects/projet-demo-carto';
+const P = '//compute.googleapis.com/projects/projet-demo-cloudmap';
 
 function must<T>(v: T | undefined | null, what: string): T {
   if (v === undefined || v === null) throw new Error(`${what} introuvable`);
@@ -148,7 +148,7 @@ describe('graphe de démonstration Google Cloud', async () => {
     expect(edges('build-api', 'images', 'cicd')).toHaveLength(1);
     expect(edges('commandes', 'commandes-vers-api', 'data')).toHaveLength(1);
     expect(edges('commandes-vers-api', 'api-commandes', 'data')[0]?.label).toBe('push');
-    expect(edges('projet-demo-carto-medias', 'fn-vignettes')[0]?.label).toBe('déclencheur');
+    expect(edges('projet-demo-cloudmap-medias', 'fn-vignettes')[0]?.label).toBe('déclencheur');
     const peering = g.edges.filter((e) => e.label === 'appairage');
     expect(peering).toHaveLength(1); // l'appairage vers servicenetworking (Cloud SQL) n'a pas de VPC connu
     expect([peering[0]?.source, peering[0]?.target].sort()).toEqual([
@@ -261,7 +261,7 @@ describe('vue Organisation Google Cloud', () => {
     expect(g.containers[1]?.sublabel).toBe('gcp.resourceLocations');
     expect(node('acct:projects/123456789012')).toMatchObject({
       label: 'Démo CloudMap',
-      sublabel: 'projet-demo-carto · scanné',
+      sublabel: 'projet-demo-cloudmap · scanné',
       containerId: 'ou:folders/200000000001',
       status: 'actif',
     });

@@ -8,11 +8,11 @@ tls:
 
 http:
   serversTransports:
-    carto-transport:
+    cloudmap-transport:
       # Nom présent dans le certificat de l'application et autorité qui l'a signé.
-      serverName: carto.internal
+      serverName: cloudmap.internal
       rootCAs:
-        - /etc/traefik/certs/carto-ca.pem
+        - /etc/traefik/certs/cloudmap-ca.pem
 
   middlewares:
     redirect-https:

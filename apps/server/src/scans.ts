@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { Profile } from '@carto/core';
-import { scanAccount, scanAzure, scanGcp, type ScanEvent } from '@carto/scanner';
-import { redactString } from '@carto/security';
+import type { Profile } from '@cloudmap/core';
+import { scanAccount, scanAzure, scanGcp, type ScanEvent } from '@cloudmap/scanner';
+import { redactString } from '@cloudmap/security';
 import type { Audit } from './audit.ts';
 import type { AppSettings } from './config.ts';
 import type { Storage } from './storage.ts';

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
-import { providerIdProblems, rawSnapshotSchema, type RawSnapshot } from '@carto/core';
+import { providerIdProblems, rawSnapshotSchema, type RawSnapshot } from '@cloudmap/core';
 import {
   AZURE_SERVICES,
   azureTokenFromPasted,
@@ -15,9 +15,9 @@ import {
   scanGcp,
   SERVICES,
   type ScanEvent,
-} from '@carto/scanner';
-import { parseMasterKey } from '@carto/security';
-import { openDb, rotateMasterKey } from '@carto/server/maintenance';
+} from '@cloudmap/scanner';
+import { parseMasterKey } from '@cloudmap/security';
+import { openDb, rotateMasterKey } from '@cloudmap/server/maintenance';
 
 const USAGE = `CloudMap — outil en ligne de commande
 
@@ -27,9 +27,9 @@ const USAGE = `CloudMap — outil en ligne de commande
       importable dans l'interface (page « Import »).
 
   scan --provider azure|gcp --account <abonnement|projet> --regions <r1,r2> [--services …] [--out …]
-      Azure / Google Cloud : jeton d'accès lu dans la variable CARTO_ACCESS_TOKEN (jamais en argument) :
-        CARTO_ACCESS_TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
-        CARTO_ACCESS_TOKEN=$(gcloud auth print-access-token)
+      Azure / Google Cloud : jeton d'accès lu dans la variable CLOUDMAP_ACCESS_TOKEN (jamais en argument) :
+        CLOUDMAP_ACCESS_TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
+        CLOUDMAP_ACCESS_TOKEN=$(gcloud auth print-access-token)
 
   rotate-master-key --new-key-file <fichier> [--old-key-file <fichier>] [--data-dir <dossier>]
       Rechiffre les clés de données avec une nouvelle clé maître (serveur arrêté).
@@ -95,8 +95,8 @@ async function scan(args: string[]): Promise<void> {
   let snapshot: RawSnapshot;
   if (provider === 'aws') snapshot = await scanAws(values.profile, common);
   else {
-    const token = process.env.CARTO_ACCESS_TOKEN?.trim();
-    if (!token) fail("variable CARTO_ACCESS_TOKEN absente (voir l'aide : pnpm cli)");
+    const token = process.env.CLOUDMAP_ACCESS_TOKEN?.trim();
+    if (!token) fail("variable CLOUDMAP_ACCESS_TOKEN absente (voir l'aide : pnpm cli)");
     process.stderr.write(
       `${provider === 'azure' ? 'Abonnement' : 'Projet'} ${accountId} — régions ${regions.join(', ')}\n`,
     );

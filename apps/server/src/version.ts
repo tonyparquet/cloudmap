@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 
-declare const __CARTO_VERSION__: string | undefined;
+declare const __CLOUDMAP_VERSION__: string | undefined;
 
 /** Version du produit : injectée à la construction (esbuild), sinon lue dans le package.json racine. */
 export const APP_VERSION: string =
-  typeof __CARTO_VERSION__ === 'string'
-    ? __CARTO_VERSION__
+  typeof __CLOUDMAP_VERSION__ === 'string'
+    ? __CLOUDMAP_VERSION__
     : (
         JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as {
           version: string;

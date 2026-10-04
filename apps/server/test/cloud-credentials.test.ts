@@ -9,14 +9,14 @@ const SUB = '00000000-0000-4000-8000-0000000000aa';
 const TENANT = '00000000-0000-4000-8000-0000000000bb';
 const CLIENT = '00000000-0000-4000-8000-0000000000cc';
 const CLIENT_SECRET = 'abc8Q~SecretClientFictif0123456789abcdef';
-const PROJECT = 'projet-test-carto';
+const PROJECT = 'projet-test-cloudmap';
 const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const AZ_TOKEN = `${b64({ alg: 'none' })}.${b64({ aud: 'https://management.azure.com/', exp: Math.floor(Date.now() / 1000) + 3600 })}.c2lnbmF0dXJlLWZpY3RpdmU`;
 const GCP_TOKEN = 'ya29.jeton-google-fictif-0123456789abcdef';
 const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const SA_KEY = JSON.stringify({
   type: 'service_account',
-  client_email: 'lecteur@projet-test-carto.iam.gserviceaccount.com',
+  client_email: 'lecteur@projet-test-cloudmap.iam.gserviceaccount.com',
   private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }),
   token_uri: 'https://oauth2.googleapis.com/token',
 });

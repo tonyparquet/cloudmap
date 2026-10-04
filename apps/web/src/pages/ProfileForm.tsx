@@ -1,4 +1,4 @@
-import type { ExternalNode, Profile } from '@carto/core';
+import type { ExternalNode, Profile } from '@cloudmap/core';
 import { useEffect, useState } from 'react';
 import { get, post, put } from '../api.ts';
 import { t } from '../i18n/index.ts';
@@ -37,7 +37,7 @@ export function RegionPicker({
   return (
     <fieldset className="regions">
       <legend>{t('form.regions')}</legend>
-      <p className="muted small">{t('form.regionsAide')}</p>
+      <p className="muted small">{t(`form.regionsAide.${provider}`)}</p>
       <div className="chips" aria-live="polite">
         <span className="muted small">{t('form.regionsChoisies', { n: value.length })}</span>
         {value.map((r) => (
@@ -234,11 +234,11 @@ export function ProfileForm({ id }: { id?: string }) {
         e.preventDefault();
         void submit();
       }}
-      style={{ maxWidth: 820 }}
+      className="profile-form"
     >
       <h1>{id ? t('form.titreEdition') : t('form.titreNouveau')}</h1>
       <div className="card">
-        <fieldset className="choices providers" data-testid="fournisseur">
+        <fieldset className="choices inline compact" data-testid="fournisseur">
           <legend>{t('form.fournisseur')}</legend>
           {PROVIDER_IDS.map((p) => (
             <label key={p} className={`choice${provider === p ? ' selected' : ''}${id ? ' disabled' : ''}`}>
@@ -255,34 +255,36 @@ export function ProfileForm({ id }: { id?: string }) {
             </label>
           ))}
         </fieldset>
-        <Field label={t('form.nom')}>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            maxLength={100}
-            autoFocus={!id}
-          />
-        </Field>
-        <Field label={t('form.client')}>
-          <input value={client} onChange={(e) => setClient(e.target.value)} maxLength={100} />
-        </Field>
-        <Field label={t(`form.compte.${provider}`)}>
-          <input
-            value={accountId}
-            onChange={(e) => setAccountId(normalizeAccountId(provider, e.target.value))}
-            {...(provider === 'aws' ? { inputMode: 'numeric' as const } : {})}
-            pattern={ACCOUNT_PATTERN[provider]}
-            placeholder={ACCOUNT_PLACEHOLDER[provider]}
-            required
-          />
-          <span className="small">{t(`form.compteAide.${provider}`)}</span>
-        </Field>
+        <div className="form-grid">
+          <Field label={t('form.nom')}>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              maxLength={100}
+              autoFocus={!id}
+            />
+          </Field>
+          <Field label={t('form.client')}>
+            <input value={client} onChange={(e) => setClient(e.target.value)} maxLength={100} />
+          </Field>
+          <Field label={t(`form.compte.${provider}`)}>
+            <input
+              value={accountId}
+              onChange={(e) => setAccountId(normalizeAccountId(provider, e.target.value))}
+              {...(provider === 'aws' ? { inputMode: 'numeric' as const } : {})}
+              pattern={ACCOUNT_PATTERN[provider]}
+              placeholder={ACCOUNT_PLACEHOLDER[provider]}
+              required
+            />
+            <span className="small">{t(`form.compteAide.${provider}`)}</span>
+          </Field>
+        </div>
         <RegionPicker key={provider} value={regions} onChange={setRegions} provider={provider} />
       </div>
 
       <div className="card">
-        <fieldset className="choices">
+        <fieldset className="choices inline">
           <legend>{t('form.mode')}</legend>
           {modes.map((k) => {
             const disabled = k === 'assume-role-hub' && !hubAvailable && authKind !== k;
@@ -320,7 +322,7 @@ export function ProfileForm({ id }: { id?: string }) {
           </Field>
         )}
         {provider === 'aws' && (authKind === 'assume-role-hub' || authKind === 'assume-role-profile') && (
-          <>
+          <div className="form-grid">
             <Field label={t('form.roleArn')}>
               <input
                 value={roleArn}
@@ -332,7 +334,7 @@ export function ProfileForm({ id }: { id?: string }) {
             <Field label={t('form.externalId')}>
               <input value={externalId} onChange={(e) => setExternalId(e.target.value)} />
             </Field>
-          </>
+          </div>
         )}
         {authKind === 'access-keys' && (
           <fieldset data-testid="identifiants-profil">
@@ -486,7 +488,7 @@ export function ProfileForm({ id }: { id?: string }) {
           {t('cred.utiliserCompte', { compte: otherAccount })}
         </button>
       )}
-      <div className="row">
+      <div className="row form-actions">
         <button
           className="primary"
           type="submit"

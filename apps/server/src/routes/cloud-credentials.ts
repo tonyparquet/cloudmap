@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Profile } from '@carto/core';
+import type { Profile } from '@cloudmap/core';
 import {
   azureHasWriteAccess,
   azureSubscription,
@@ -10,7 +10,7 @@ import {
   gcpProject,
   gcpTokenFromPasted,
   gcpTokenFromServiceAccount,
-} from '@carto/scanner';
+} from '@cloudmap/scanner';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';
 import { AppError } from '../errors.ts';

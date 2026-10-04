@@ -54,7 +54,7 @@ export function HelpPage() {
           <pre className="notes">{changelog.data.notes || t('maj.pasDeNotes')}</pre>
         </details>
       )}
-      <fieldset className="choices providers" data-testid="aide-fournisseur">
+      <fieldset className="choices inline compact" data-testid="aide-fournisseur">
         <legend>{t('form.fournisseur')}</legend>
         {PROVIDER_IDS.map((p) => (
           <label key={p} className={`choice${provider === p ? ' selected' : ''}${chosen ? ' disabled' : ''}`}>

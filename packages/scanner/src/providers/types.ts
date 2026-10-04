@@ -1,4 +1,4 @@
-import type { RawSnapshot } from '@carto/core';
+import type { RawSnapshot } from '@cloudmap/core';
 import type { ScanEvent } from '../scan.ts';
 import type { AzureToken } from './azure/auth.ts';
 import type { GcpToken } from './gcp/auth.ts';

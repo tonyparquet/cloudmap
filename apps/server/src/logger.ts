@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { MASK, redact, redactString } from '@carto/security';
+import { MASK, redact, redactString } from '@cloudmap/security';
 import pino, { type Logger } from 'pino';
 
 /**

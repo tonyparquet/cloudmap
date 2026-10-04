@@ -2,9 +2,7 @@
 # macOS depuis macOS) ou la CI (.github/workflows/publication.yml). Signature : fournie par l'environnement de construction
 # (CSC_LINK / CSC_KEY_PASSWORD, APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID), sinon
 # l'application est produite non signée.
-# appId figé depuis le renommage en CloudMap : l'installeur Windows reconnaît et remplace ainsi
-# l'installation précédente (même identifiant de désinstallation).
-appId: app.cartographe.aws
+appId: app.cloudmap
 productName: CloudMap
 copyright: CloudMap
 electronVersion: 44.5.1
@@ -14,11 +12,11 @@ directories:
   buildResources: build
 files:
   - '**/*'
-  - '!carto/**'
+  - '!cloudmap/**'
 # Interface, règles, fixtures et politiques IAM hors de l'archive : lus par le serveur (APP_ROOT).
 extraResources:
-  - from: dist/app/carto
-    to: carto
+  - from: dist/app/cloudmap
+    to: cloudmap
 asar: true
 # Modules natifs N-API (better-sqlite3, argon2) : binaires précompilés par plateforme, compatibles
 # avec Electron sans recompilation (aucun en-tête téléchargé, aucune chaîne de compilation requise).
@@ -44,6 +42,9 @@ win:
       arch: [x64]
   artifactName: CloudMap-${version}-windows-${arch}.${ext}
 nsis:
+  # Identifiant de désinstallation des versions précédentes (dérivé de leur appId) : l'installeur
+  # remplace l'installation existante au lieu de s'installer à côté.
+  guid: 7810aec5-8273-567e-9b32-fe5c2079dc34
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true

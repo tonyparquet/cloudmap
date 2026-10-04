@@ -1,5 +1,5 @@
 {
-  "name": "@carto/web",
+  "name": "@cloudmap/web",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@carto/core": "workspace:*",
+    "@cloudmap/core": "workspace:*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",

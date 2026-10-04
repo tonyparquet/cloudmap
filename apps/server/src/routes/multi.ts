@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { buildGraph, mergeSnapshots, type Graph } from '@carto/core';
+import { buildGraph, mergeSnapshots, type Graph } from '@cloudmap/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';

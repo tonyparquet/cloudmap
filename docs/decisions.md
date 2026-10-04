@@ -381,15 +381,21 @@ external`, `externalType`.
 
 ## Renommage en CloudMap
 
-- Nom affiché partout : CloudMap (interface, titres, installeurs, image Docker, CLI, documentation,
-  émetteur TOTP, noms par défaut des rôles en lecture seule).
-- Identifiants techniques figés, car liés à des données existantes : sel HKDF et libellé de contrôle
-  de la clé maître (`cartographe-aws/v1`) ; `appId` de l'application de bureau (l'installeur Windows
-  remplace l'ancienne installation) ; `productName` du manifeste empaqueté, dont Electron dérive le
-  secret du Trousseau macOS qui scelle la clé maître ; noms des volumes Docker
-  (`cartographe-aws_config`, `cartographe-aws_data`).
-- Application de bureau : dossier de données « CloudMap » pour une nouvelle installation ; une
-  installation antérieure (dossier `Cartographe AWS` contenant `donnees/`) garde le sien. Menu macOS
-  libellé explicitement en français, `app.name` restant le nom interne.
-- Noms de paquets internes `@carto/*`, service compose `carto` et routeur Traefik inchangés
-  (invisibles pour l'utilisateur).
+- Nom unique partout : CloudMap (interface, application de bureau et son identifiant `app.cloudmap`,
+  installeurs, image et service Docker, paquets `@cloudmap/*`, variables `CLOUDMAP_*`, CLI,
+  documentation, émetteur TOTP, sel de dérivation des clés, rôles en lecture seule par défaut).
+- L'ancien nom ne subsiste que là où il faut relire les données d'une version antérieure :
+  - dérivation d'origine (sel et libellé de l'empreinte de clé maître) : au démarrage, si l'empreinte
+    enregistrée est l'ancienne, chaque enveloppe (identifiants mémorisés, secrets TOTP) est
+    rechiffrée avec la dérivation courante, même clé maître, en une transaction ;
+  - application de bureau : le dossier `Cartographe AWS` devient `CloudMap`. Sous macOS et Linux, la
+    clé maître est scellée dans le trousseau sous le nom de l'application : le premier lancement
+    tourne sous l'ancien nom pour la relire, puis un processus auxiliaire (même exécutable, nom
+    CloudMap) la rescelle ; la clé passe par un tube, jamais par le disque ni la ligne de commande.
+    Échec : ancien fichier conservé, reprise retentée au lancement suivant ;
+  - installeur Windows : identifiant de désinstallation des versions précédentes conservé (`nsis.guid`)
+    pour remplacer l'ancienne installation ;
+  - Docker : copie documentée des anciens volumes (aucune copie automatique, les anciens restent
+    intacts) ;
+  - liste des mots de passe refusés : l'ancien nom y reste (toujours devinable).
+- Préférence de thème du navigateur (clé locale renommée) : non reprise, simple réglage.

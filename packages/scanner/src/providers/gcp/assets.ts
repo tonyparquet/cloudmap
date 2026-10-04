@@ -1,4 +1,4 @@
-import type { Resource } from '@carto/core';
+import type { Resource } from '@cloudmap/core';
 
 /** Types Cloud Asset Inventory collectés, par service sélectionnable dans l'interface. */
 export const GCP_ASSET_TYPES: Record<string, string[]> = {

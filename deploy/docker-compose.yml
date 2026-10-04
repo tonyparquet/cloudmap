@@ -1,10 +1,10 @@
 # Déploiement : voir docs/deploiement.md. Depuis le dossier deploy/ :
-#   PUBLIC_ORIGIN=https://carto.exemple.fr PUBLIC_HOST=carto.exemple.fr docker compose up -d
+#   PUBLIC_ORIGIN=https://cloudmap.exemple.fr PUBLIC_HOST=cloudmap.exemple.fr docker compose up -d
 # Les secrets sont des fichiers fournis par l'exploitant dans deploy/secrets/ (jamais versionnés).
 name: cloudmap
 
 services:
-  carto:
+  cloudmap:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
@@ -19,7 +19,7 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?PUBLIC_ORIGIN est obligatoire (ex. https://carto.exemple.fr)}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?PUBLIC_ORIGIN est obligatoire (ex. https://cloudmap.exemple.fr)}
       TLS_CERT_FILE: /run/secrets/tls_cert
       TLS_KEY_FILE: /run/secrets/tls_key
       MASTER_KEY_FILE: /run/secrets/master_key
@@ -43,13 +43,13 @@ services:
     labels:
       traefik.enable: 'true'
       traefik.docker.network: web
-      traefik.http.routers.carto.rule: Host(`${PUBLIC_HOST:-carto.localhost}`)
-      traefik.http.routers.carto.entrypoints: websecure
-      traefik.http.routers.carto.tls: 'true'
-      traefik.http.routers.carto.tls.options: modern@file
-      traefik.http.services.carto.loadbalancer.server.port: '8443'
-      traefik.http.services.carto.loadbalancer.server.scheme: https
-      traefik.http.services.carto.loadbalancer.serversTransport: carto-transport@file
+      traefik.http.routers.cloudmap.rule: Host(`${PUBLIC_HOST:-cloudmap.localhost}`)
+      traefik.http.routers.cloudmap.entrypoints: websecure
+      traefik.http.routers.cloudmap.tls: 'true'
+      traefik.http.routers.cloudmap.tls.options: modern@file
+      traefik.http.services.cloudmap.loadbalancer.server.port: '8443'
+      traefik.http.services.cloudmap.loadbalancer.server.scheme: https
+      traefik.http.services.cloudmap.loadbalancer.serversTransport: cloudmap-transport@file
 
 secrets:
   master_key:
@@ -59,12 +59,9 @@ secrets:
   tls_key:
     file: ./secrets/tls_key.pem
 
-# Noms figés : volumes créés avant le renommage en CloudMap (configuration et données conservées).
 volumes:
   config:
-    name: cartographe-aws_config
   data:
-    name: cartographe-aws_data
 
 networks:
   web:

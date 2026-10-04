@@ -1,5 +1,5 @@
 {
-  "name": "@carto/cli",
+  "name": "@cloudmap/cli",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@aws-sdk/credential-providers": "^3.1144.0",
-    "@carto/core": "workspace:*",
-    "@carto/scanner": "workspace:*",
-    "@carto/security": "workspace:*",
-    "@carto/server": "workspace:*",
+    "@cloudmap/core": "workspace:*",
+    "@cloudmap/scanner": "workspace:*",
+    "@cloudmap/security": "workspace:*",
+    "@cloudmap/server": "workspace:*",
     "better-sqlite3": "^13.0.3"
   }
 }

@@ -1,5 +1,5 @@
-import type { Profile, RawSnapshot, Resource } from '@carto/core';
-import { probeUrl, redactString } from '@carto/security';
+import type { Profile, RawSnapshot, Resource } from '@cloudmap/core';
+import { probeUrl, redactString } from '@cloudmap/security';
 import pLimit from 'p-limit';
 import { ecsCollector, eksCollector, lambdaCollector, autoscalingCollector } from './collectors/compute.ts';
 import {

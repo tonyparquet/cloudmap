@@ -10,7 +10,7 @@ import {
   rawSnapshotSchema,
   roleArnSchema,
   type Profile,
-} from '@carto/core';
+} from '@cloudmap/core';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';

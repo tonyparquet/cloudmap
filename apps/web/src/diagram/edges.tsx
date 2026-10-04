@@ -1,4 +1,4 @@
-import type { GraphEdge } from '@carto/core';
+import type { GraphEdge } from '@cloudmap/core';
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type Edge, type EdgeProps } from '@xyflow/react';
 import { memo, type CSSProperties } from 'react';
 import type { Theme } from '../theme.ts';

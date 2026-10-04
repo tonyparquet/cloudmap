@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseMasterKey } from '@carto/security';
+import { parseMasterKey } from '@cloudmap/security';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { readTlsMaterial, type TlsFiles, type TlsMaterial } from './tls.ts';
@@ -168,7 +168,7 @@ export function loadConfig(
   const masterKeyFile = options.masterKey
     ? ''
     : required('MASTER_KEY_FILE', 'clé maître de chiffrement des identifiants (32 octets en base64)');
-  const originText = required('PUBLIC_ORIGIN', 'origine publique HTTPS, ex. https://carto.exemple.fr');
+  const originText = required('PUBLIC_ORIGIN', 'origine publique HTTPS, ex. https://cloudmap.exemple.fr');
 
   let publicOrigin = '';
   if (originText) {

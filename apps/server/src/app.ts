@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import rateLimit from '@fastify/rate-limit';
-import { redactString } from '@carto/security';
+import { redactString } from '@cloudmap/security';
 import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 import { Audit } from './audit.ts';

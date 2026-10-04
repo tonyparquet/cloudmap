@@ -348,8 +348,12 @@ export const fr = {
     'Identifiant du projet (pas son numéro) : sélecteur de projet de la console ou « gcloud config get-value project ».',
   'form.compteAide.aws':
     '12 chiffres, visibles dans le menu du compte en haut à droite de la console AWS (tirets acceptés).',
-  'form.regionsAide':
+  'form.regionsAide.aws':
     'Cochez les régions où le compte héberge des ressources. Les services globaux (CloudFront, Route 53…) sont toujours inclus.',
+  'form.regionsAide.azure':
+    "Cochez les régions où l'abonnement héberge des ressources. Les ressources globales (Front Door, DNS…) sont toujours incluses.",
+  'form.regionsAide.gcp':
+    'Cochez les régions où le projet héberge des ressources. Les ressources globales (VPC, équilibreurs globaux…) sont toujours incluses.',
   'form.regionsFiltre': 'Filtrer les régions…',
   'form.regionsChoisies': '{n} région(s) choisie(s)',
   'form.groupesAide': 'Vide : profil visible des seuls administrateurs.',

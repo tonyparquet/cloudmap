@@ -1,5 +1,5 @@
-import type { RawSnapshot, Resource } from '@carto/core';
-import { redactString } from '@carto/security';
+import type { RawSnapshot, Resource } from '@cloudmap/core';
+import { redactString } from '@cloudmap/security';
 import pLimit from 'p-limit';
 import { SCANNER_VERSION, type ScanError } from '../../context.ts';
 import { CloudHttpError, isCloudDenied, ReadOnlyHttp } from '../http.ts';

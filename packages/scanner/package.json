@@ -1,5 +1,5 @@
 {
-  "name": "@carto/scanner",
+  "name": "@cloudmap/scanner",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -50,8 +50,8 @@
     "@aws-sdk/client-wafv2": "^3.1144.0",
     "@aws-sdk/credential-providers": "^3.1144.0",
     "@aws-sdk/types": "^3.974.6",
-    "@carto/core": "workspace:*",
-    "@carto/security": "workspace:*",
+    "@cloudmap/core": "workspace:*",
+    "@cloudmap/security": "workspace:*",
     "@smithy/node-http-handler": "^4.12.1",
     "p-limit": "^7.3.3",
     "zod": "^4.6.5"

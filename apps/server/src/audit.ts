@@ -1,4 +1,4 @@
-import { redact } from '@carto/security';
+import { redact } from '@cloudmap/security';
 import type { Db } from './db/index.ts';
 
 export type AuditResult = 'succes' | 'echec' | 'refus';

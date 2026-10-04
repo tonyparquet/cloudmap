@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { decryptEnvelope, encryptEnvelope, envelopeSchema } from '@carto/security';
+import { decryptEnvelope, encryptEnvelope, envelopeSchema } from '@cloudmap/security';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';

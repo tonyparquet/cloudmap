@@ -4,7 +4,7 @@ import {
   ListResourcesCommand,
   ResourceExplorer2Client,
 } from '@aws-sdk/client-resource-explorer-2';
-import type { Resource } from '@carto/core';
+import type { Resource } from '@cloudmap/core';
 import { errorCode, isAccessDenied, resource, tagsOf, type CollectorContext } from './context.ts';
 
 /**

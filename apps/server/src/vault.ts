@@ -1,4 +1,4 @@
-import type { Profile } from '@carto/core';
+import type { Profile } from '@cloudmap/core';
 import {
   assumeRole,
   azureTokenFromSecret,
@@ -7,8 +7,8 @@ import {
   hubCredentials,
   type AzureToken,
   type GcpToken,
-} from '@carto/scanner';
-import { decryptEnvelope, encryptEnvelope, envelopeSchema, maskAccessKeyId } from '@carto/security';
+} from '@cloudmap/scanner';
+import { decryptEnvelope, encryptEnvelope, envelopeSchema, maskAccessKeyId } from '@cloudmap/security';
 import { z } from 'zod';
 import type { AppSettings } from './config.ts';
 import { keyVersion, type Db } from './db/index.ts';

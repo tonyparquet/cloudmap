@@ -217,16 +217,16 @@ importers:
       '@aws-sdk/credential-providers':
         specifier: ^3.1144.0
         version: 3.1144.0
-      '@carto/core':
+      '@cloudmap/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@carto/scanner':
+      '@cloudmap/scanner':
         specifier: workspace:*
         version: link:../../packages/scanner
-      '@carto/security':
+      '@cloudmap/security':
         specifier: workspace:*
         version: link:../../packages/security
-      '@carto/server':
+      '@cloudmap/server':
         specifier: workspace:*
         version: link:../server
       better-sqlite3:
@@ -235,7 +235,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@carto/security':
+      '@cloudmap/security':
         specifier: workspace:*
         version: link:../../packages/security
       selfsigned:
@@ -251,13 +251,13 @@ importers:
 
   apps/server:
     dependencies:
-      '@carto/core':
+      '@cloudmap/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@carto/scanner':
+      '@cloudmap/scanner':
         specifier: workspace:*
         version: link:../../packages/scanner
-      '@carto/security':
+      '@cloudmap/security':
         specifier: workspace:*
         version: link:../../packages/security
       '@fastify/rate-limit':
@@ -340,7 +340,7 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
     devDependencies:
-      '@carto/core':
+      '@cloudmap/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@types/react':
@@ -490,10 +490,10 @@ importers:
       '@aws-sdk/types':
         specifier: ^3.974.6
         version: 3.974.6
-      '@carto/core':
+      '@cloudmap/core':
         specifier: workspace:*
         version: link:../core
-      '@carto/security':
+      '@cloudmap/security':
         specifier: workspace:*
         version: link:../security
       '@smithy/node-http-handler':

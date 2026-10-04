@@ -1,5 +1,5 @@
 {
-  "name": "@carto/server",
+  "name": "@cloudmap/server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -11,9 +11,9 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@carto/core": "workspace:*",
-    "@carto/scanner": "workspace:*",
-    "@carto/security": "workspace:*",
+    "@cloudmap/core": "workspace:*",
+    "@cloudmap/scanner": "workspace:*",
+    "@cloudmap/security": "workspace:*",
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/static": "^10.1.5",
     "argon2": "^0.45.1",

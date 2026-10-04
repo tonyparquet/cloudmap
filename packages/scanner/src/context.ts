@@ -1,4 +1,4 @@
-import type { Resource } from '@carto/core';
+import type { Resource } from '@cloudmap/core';
 import type { AwsCredentialIdentity, AwsCredentialIdentityProvider } from '@aws-sdk/types';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 

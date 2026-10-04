@@ -8,8 +8,8 @@ import {
   resourceKey,
   resourceName,
   type Graph,
-} from '@carto/core';
-import { AZURE_SERVICES, GCP_SERVICES, SERVICES } from '@carto/scanner';
+} from '@cloudmap/core';
+import { AZURE_SERVICES, GCP_SERVICES, SERVICES } from '@cloudmap/scanner';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';

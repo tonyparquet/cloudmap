@@ -13,7 +13,7 @@ test('application de bureau : serveur local TLS, compte + TOTP, démo, navigatio
   const app = await electron.launch({
     executablePath: join(desktop, 'node_modules', 'electron', 'dist', 'electron'),
     args: [join(desktop, 'dist', 'app')],
-    env: { ...process.env, XDG_CONFIG_HOME: config, CARTO_DEMO: 'true' },
+    env: { ...process.env, XDG_CONFIG_HOME: config, CLOUDMAP_DEMO: 'true' },
   });
   const win = await app.firstWindow();
   await expect(win).toHaveURL(/^https:\/\/127\.0\.0\.1:\d+\/login$/);

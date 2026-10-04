@@ -87,7 +87,7 @@ Ce fichier est la spécification complète. **Construis l'application entière e
 | `TLS_CERT_FILE` / `TLS_KEY_FILE` | — | **Obligatoires.** Chemins du certificat et de la clé |
 | `TLS_CA_FILE` | — | Optionnel, chaîne intermédiaire |
 | `MASTER_KEY_FILE` | — | **Obligatoire.** Fichier (Docker secret) contenant 32 octets aléatoires en base64 |
-| `PUBLIC_ORIGIN` | — | **Obligatoire.** Ex. `https://carto.exemple.fr` (utilisé pour CORS, CSRF, cookies) |
+| `PUBLIC_ORIGIN` | — | **Obligatoire.** Ex. `https://cloudmap.exemple.fr` (utilisé pour CORS, CSRF, cookies) |
 | `TRUSTED_PROXY_CIDRS` | vide | CIDR du reverse proxy autorisé à envoyer `X-Forwarded-*` |
 | `AUTH_MODE` | `local` | `local` (comptes + TOTP) ou `oidc` |
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET_FILE`, `OIDC_ADMIN_GROUP` | — | Si `AUTH_MODE=oidc` |
@@ -473,7 +473,7 @@ Rétention des snapshots configurable (nombre ou durée). Migrations SQLite vers
 ## 14. Déploiement
 
 - `deploy/Dockerfile` : build multi-stage, image finale `node:22-alpine` minimale, non-root, `HEALTHCHECK` HTTPS, ports exposés : `8443` uniquement.
-- `deploy/docker-compose.yml` : service `carto`, volumes `config` et `data`, Docker secrets `master_key`, `tls_cert`, `tls_key`, `read_only`, `cap_drop`, `security_opt: no-new-privileges`, labels Traefik (router HTTPS, `tls.options=modern@file`, `serversTransport` HTTPS).
+- `deploy/docker-compose.yml` : service `cloudmap`, volumes `config` et `data`, Docker secrets `master_key`, `tls_cert`, `tls_key`, `read_only`, `cap_drop`, `security_opt: no-new-privileges`, labels Traefik (router HTTPS, `tls.options=modern@file`, `serversTransport` HTTPS).
 - `scripts/gen-dev-cert.sh` : certificat auto-signé **pour le développement uniquement** (`pnpm dev` l'utilise automatiquement s'il n'y en a pas).
 - `docs/deploiement.md` : déploiement autonome (certificat fourni), derrière Traefik, génération de la clé maître (`openssl rand -base64 32`), sauvegarde de `DATA_DIR` et de la clé maître (séparément), mise à jour.
 

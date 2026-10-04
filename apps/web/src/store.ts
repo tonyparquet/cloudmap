@@ -33,7 +33,7 @@ interface AppState {
   showToast(message: string): void;
 }
 
-const THEME_KEY = 'carto.theme';
+const THEME_KEY = 'cloudmap.theme';
 const readPref = () => {
   try {
     return localStorage.getItem(THEME_KEY) ?? undefined;

@@ -1,4 +1,4 @@
-import { externalIdSchema, roleArnSchema, type Profile } from '@carto/core';
+import { externalIdSchema, roleArnSchema, type Profile } from '@cloudmap/core';
 import {
   assumeRole,
   getCallerIdentity,
@@ -6,7 +6,7 @@ import {
   hasWritePermissions,
   hubCredentials,
   isRootArn,
-} from '@carto/scanner';
+} from '@cloudmap/scanner';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Ctx } from '../app.ts';

@@ -12,7 +12,7 @@ import {
 import { ListIndexesCommand, ResourceExplorer2Client } from '@aws-sdk/client-resource-explorer-2';
 import { ListSecretsCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { rawSnapshotSchema } from '@carto/core';
+import { rawSnapshotSchema } from '@cloudmap/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { scanAccount } from '../src/index.ts';

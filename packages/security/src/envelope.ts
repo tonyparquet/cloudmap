@@ -12,9 +12,13 @@ import { z } from 'zod';
 const ALGO = 'aes-256-gcm';
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
-// Sel (et libellé de masterKeyCheck) figés, au nom d'origine de l'application : les changer rendrait
-// les données chiffrées existantes illisibles.
-const HKDF_SALT = 'cartographe-aws/v1';
+const HKDF_SALT = 'cloudmap/v1';
+const KEY_CHECK_LABEL = 'cloudmap key check';
+/**
+ * Dérivation d'avant le renommage en CloudMap (sel et libellé d'origine) : lue uniquement pour migrer
+ * les données existantes au démarrage (voir upgradeLegacyEnvelope). Jamais utilisée pour chiffrer.
+ */
+const LEGACY_KDF = { salt: 'cartographe-aws/v1', check: 'cartographe-aws key check' } as const;
 
 export const envelopeSchema = z.object({
   v: z.number().int().positive(),
@@ -39,9 +43,9 @@ export function parseMasterKey(content: string): Buffer {
   return key;
 }
 
-function derive(masterKey: Buffer, purpose: string): Buffer {
+function derive(masterKey: Buffer, purpose: string, salt: string = HKDF_SALT): Buffer {
   if (masterKey.length !== KEY_BYTES) throw new Error('Clé maître invalide.');
-  return Buffer.from(hkdfSync('sha256', masterKey, HKDF_SALT, purpose, KEY_BYTES));
+  return Buffer.from(hkdfSync('sha256', masterKey, salt, purpose, KEY_BYTES));
 }
 
 function seal(key: Buffer, plaintext: Buffer, aad: string) {
@@ -89,9 +93,9 @@ export function encryptEnvelope(
   }
 }
 
-function unwrapDek(masterKey: Buffer, env: Envelope, aad: string): Buffer {
+function unwrapDek(masterKey: Buffer, env: Envelope, aad: string, salt: string = HKDF_SALT): Buffer {
   return open(
-    derive(masterKey, 'kek'),
+    derive(masterKey, 'kek', salt),
     unb64(env.dekIv),
     unb64(env.dek),
     unb64(env.dekTag),
@@ -126,9 +130,24 @@ export function rewrapEnvelope(
   }
 }
 
-/** Empreinte de contrôle (non réversible) permettant de détecter une mauvaise clé maître au démarrage. */
-export function masterKeyCheck(masterKey: Buffer): string {
-  return createHmac('sha256', derive(masterKey, 'key-check'))
-    .update('cartographe-aws key check')
+/** Migration : DEK d'une enveloppe de l'ancienne dérivation rechiffrée avec la dérivation courante. */
+export function upgradeLegacyEnvelope(masterKey: Buffer, env: Envelope, aad: string): Envelope {
+  const dek = unwrapDek(masterKey, env, aad, LEGACY_KDF.salt);
+  try {
+    const wrapped = seal(derive(masterKey, 'kek'), dek, wrapAad(aad, env.v));
+    return { ...env, dekIv: b64(wrapped.iv), dek: b64(wrapped.ct), dekTag: b64(wrapped.tag) };
+  } finally {
+    dek.fill(0);
+  }
+}
+
+/**
+ * Empreinte de contrôle (non réversible) permettant de détecter une mauvaise clé maître au démarrage ;
+ * `legacy` : empreinte de l'ancienne dérivation (données à migrer).
+ */
+export function masterKeyCheck(masterKey: Buffer, legacy = false): string {
+  const kdf = legacy ? LEGACY_KDF : { salt: HKDF_SALT, check: KEY_CHECK_LABEL };
+  return createHmac('sha256', derive(masterKey, 'key-check', kdf.salt))
+    .update(kdf.check)
     .digest('base64');
 }

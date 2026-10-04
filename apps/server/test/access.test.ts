@@ -189,7 +189,7 @@ describe('rôles et cloisonnement par groupes (section 4.4)', () => {
       headers: {
         cookie: editorB.cookie,
         'x-csrf-token': editorB.csrf,
-        origin: 'https://carto.test',
+        origin: 'https://cloudmap.test',
         'content-type': 'application/json',
       },
       payload: '{"__proto__": {"admin": true}, "schemaVersion": 1}',

@@ -4,7 +4,7 @@
   "client": "Exemple fictif",
   "description": "Projet Google Cloud fictif : équilibreur HTTPS avec Cloud Armor devant Cloud Run et un groupe d'instances, VPC avec Cloud NAT, Cloud SQL en IP privée, règle de pare-feu bloquante, appairage vers un second VPC, organisation avec dossiers et liaisons IAM.",
   "provider": "gcp",
-  "accountId": "projet-demo-carto",
+  "accountId": "projet-demo-cloudmap",
   "regions": ["europe-west9"],
   "auth": { "kind": "import-only" },
   "externalNodes": [
@@ -19,7 +19,9 @@
       "label": "Navigateur",
       "sublabel": "ce poste",
       "icon": "browser",
-      "linksTo": ["//compute.googleapis.com/projects/projet-demo-carto/global/forwardingRules/fr-web-https"]
+      "linksTo": [
+        "//compute.googleapis.com/projects/projet-demo-cloudmap/global/forwardingRules/fr-web-https"
+      ]
     }
   ],
   "allowedGroups": []

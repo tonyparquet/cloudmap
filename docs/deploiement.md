@@ -28,15 +28,15 @@ correspond pas aux données déjà chiffrées.
 
 ```sh
 cd deploy
-PUBLIC_ORIGIN=https://carto.exemple.fr docker compose up -d --build
+PUBLIC_ORIGIN=https://cloudmap.exemple.fr docker compose up -d --build
 docker compose ps        # état « healthy » : healthcheck HTTPS sur /healthz
 ```
 
 L'application écoute uniquement en HTTPS TLS 1.3 sur le port 8443 (aucun écouteur HTTP). Vérification :
 
 ```sh
-openssl s_client -connect carto.exemple.fr:8443 -tls1_2 </dev/null   # refusé
-openssl s_client -connect carto.exemple.fr:8443 -tls1_3 </dev/null   # accepté
+openssl s_client -connect cloudmap.exemple.fr:8443 -tls1_2 </dev/null   # refusé
+openssl s_client -connect cloudmap.exemple.fr:8443 -tls1_3 </dev/null   # accepté
 ```
 
 Au premier accès, l'assistant crée le compte administrateur (TOTP obligatoire).
@@ -44,14 +44,14 @@ Au premier accès, l'assistant crée le compte administrateur (TOTP obligatoire)
 ## Derrière Traefik
 
 1. Monter `deploy/traefik/dynamic.yml` dans Traefik (fournisseur `file`) et l'autorité qui a signé le
-   certificat interne de l'application dans `/etc/traefik/certs/carto-ca.pem` ; adapter `serverName`
+   certificat interne de l'application dans `/etc/traefik/certs/cloudmap-ca.pem` ; adapter `serverName`
    au nom présent dans ce certificat.
 2. Traefik expose deux points d'entrée `web` (80, redirigé vers HTTPS) et `websecure` (443, options
    TLS `modern` : TLS 1.3, `sniStrict`).
 3. Démarrer avec le nom public et la plage du réseau Docker de Traefik :
 
 ```sh
-PUBLIC_ORIGIN=https://carto.exemple.fr PUBLIC_HOST=carto.exemple.fr \
+PUBLIC_ORIGIN=https://cloudmap.exemple.fr PUBLIC_HOST=cloudmap.exemple.fr \
 TRUSTED_PROXY_CIDRS=172.18.0.0/16 docker compose up -d
 ```
 
@@ -83,9 +83,9 @@ URL de retour à déclarer chez le fournisseur : `<PUBLIC_ORIGIN>/api/auth/oidc/
 
 ```sh
 openssl rand -base64 32 > deploy/secrets/master_key.nouvelle
-docker compose stop carto
+docker compose stop cloudmap
 docker compose run --rm --entrypoint node \
-  -v "$PWD/secrets/master_key.nouvelle:/run/secrets/master_key_nouvelle:ro" carto \
+  -v "$PWD/secrets/master_key.nouvelle:/run/secrets/master_key_nouvelle:ro" cloudmap \
   apps/cli/dist/main.mjs rotate-master-key --new-key-file /run/secrets/master_key_nouvelle
 mv deploy/secrets/master_key.nouvelle deploy/secrets/master_key
 docker compose up -d
@@ -98,6 +98,24 @@ git pull && cd deploy && docker compose build && docker compose up -d
 ```
 
 Les migrations SQLite sont appliquées automatiquement au démarrage (versionnées, une seule fois).
+
+### Depuis une version antérieure à 1.2.0 (renommage en CloudMap)
+
+Le projet compose s'appelle désormais `cloudmap` : ses volumes sont `cloudmap_config` et
+`cloudmap_data`. Copiez une fois les anciens volumes avant le premier `docker compose up` (la clé
+maître ne change pas ; les données chiffrées sont migrées automatiquement au démarrage) :
+
+```sh
+docker compose -p cartographe-aws down
+for v in config data; do
+  docker volume create "cloudmap_$v"
+  docker run --rm -v "cartographe-aws_$v:/de:ro" -v "cloudmap_$v:/vers" alpine cp -a /de/. /vers/
+done
+docker compose up -d
+```
+
+Les anciens volumes restent intacts : supprimez-les (`docker volume rm cartographe-aws_config
+cartographe-aws_data`) une fois CloudMap vérifié.
 
 ## Scan hors-ligne (CLI)
 

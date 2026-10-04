@@ -57,7 +57,7 @@ async function assemble() {
     target: 'node22',
     format: 'esm',
     external: ['electron', 'better-sqlite3', 'argon2'],
-    define: { __CARTO_VERSION__: JSON.stringify(version) },
+    define: { __CLOUDMAP_VERSION__: JSON.stringify(version) },
     banner: {
       js: [
         "import { createRequire as __cr } from 'node:module';",
@@ -73,7 +73,7 @@ async function assemble() {
 
   // Ressources lues par le serveur (APP_ROOT) : interface, règles, thème, icônes, fixtures, politiques IAM.
   // Le pack d'icônes AWS téléchargé (licence AWS) n'est pas redistribué : icônes génériques seulement.
-  const res = join(stage, 'carto');
+  const res = join(stage, 'cloudmap');
   cpSync(join(root, 'apps', 'web', 'dist'), join(res, 'apps', 'web', 'dist'), { recursive: true });
   cpSync(join(root, 'config'), join(res, 'config'), {
     recursive: true,
@@ -87,10 +87,9 @@ async function assemble() {
 
   const runtime = JSON.parse(readFileSync(join(root, 'deploy', 'runtime', 'package.json'), 'utf8'));
   const manifest = {
-    // Identité interne figée depuis le renommage en CloudMap (LEGACY_NAME, apps/desktop/src/keystore.ts) :
-    // Electron en dérive le secret du Trousseau macOS qui scelle la clé maître des installations existantes.
-    name: 'cartographe-aws',
-    productName: 'Cartographe AWS',
+    // Nom de l'application pour Electron : dossier des données et secret du trousseau (macOS, Linux).
+    name: 'cloudmap',
+    productName: 'CloudMap',
     version,
     description: 'CloudMap : cartographie en lecture seule de vos comptes AWS, Azure et Google Cloud',
     author: 'CloudMap',

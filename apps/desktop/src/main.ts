@@ -1,9 +1,19 @@
-import { mkdirSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'electron';
 import { loadConfig, StartupError } from '../../server/src/config.ts';
 import { startServer } from '../../server/src/start.ts';
-import { loadOrCreateMasterKey, PRODUCT_NAME, userDataDir } from './keystore.ts';
+import {
+  adoptLegacyInstall,
+  LEGACY_NAME,
+  LEGACY_SEALED_KEY,
+  loadOrCreateMasterKey,
+  PRODUCT_NAME,
+  sealKeyFile,
+  takeOverLegacyKey,
+  type SecretBox,
+} from './keystore.ts';
 import {
   ensureLocalCert,
   isAppUrl,
@@ -26,9 +36,27 @@ let server: { close: () => Promise<void> } | undefined;
 let origin = '';
 let quitting = false;
 
+/** Processus auxiliaire de reprise d'une installation antérieure au renommage (resealUnderNewName). */
+const SEAL_FLAG = '--sceller-cle';
+const isSealHelper = process.argv.includes(SEAL_FLAG);
+const dataDir = join(app.getPath('appData'), PRODUCT_NAME);
+
 // Avant tout accès au dossier des données, verrou d'instance unique compris.
-app.setPath('userData', userDataDir(app.getPath('appData')));
-if (!app.requestSingleInstanceLock()) app.quit();
+if (isSealHelper) {
+  app.dock?.hide();
+  app.setPath('userData', mkdtempSync(join(app.getPath('temp'), 'cloudmap-scellement-')));
+} else {
+  try {
+    adoptLegacyInstall(app.getPath('appData'), process.platform);
+  } catch (err) {
+    fail(`Fermez « ${LEGACY_NAME} » puis relancez ${TITLE} (${(err as Error).message}).`);
+  }
+  app.setPath('userData', dataDir);
+  // Clé maître encore scellée sous l'ancien nom : ce lancement lit le trousseau sous ce nom (le nom
+  // de l'application est figé par Electron après le chargement de ce module), puis la rescelle.
+  if (existsSync(join(dataDir, LEGACY_SEALED_KEY))) app.setName(LEGACY_NAME);
+  if (!app.requestSingleInstanceLock()) app.quit();
+}
 app.enableSandbox();
 
 function fail(message: string): void {
@@ -38,7 +66,41 @@ function fail(message: string): void {
 
 /** Ressources (interface construite, règles, icônes, fixtures, docs/iam) : hors archive asar une fois empaquetée. */
 const appRoot = () =>
-  app.isPackaged ? join(process.resourcesPath, 'carto') : join(app.getAppPath(), 'carto');
+  app.isPackaged ? join(process.resourcesPath, 'cloudmap') : join(app.getAppPath(), 'cloudmap');
+
+const safeBox = (): SecretBox => ({
+  isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+  ...(process.platform === 'linux' ? { backend: safeStorage.getSelectedStorageBackend() } : {}),
+  encryptString: (s) => safeStorage.encryptString(s),
+  decryptString: (b) => safeStorage.decryptString(b),
+});
+
+/**
+ * Rescelle la clé maître sous le nouveau nom dans un processus auxiliaire (même exécutable, nom
+ * « CloudMap ») : la clé passe par un tube, jamais par le disque ni la ligne de commande.
+ */
+function resealUnderNewName(keyBase64: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [...(app.isPackaged ? [] : [app.getAppPath()]), SEAL_FLAG], {
+      stdio: ['pipe', 'ignore', 'ignore'],
+    });
+    child.on('error', reject);
+    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`code ${String(code)}`))));
+    child.stdin.end(keyBase64);
+  });
+}
+
+/** Côté processus auxiliaire : clé reçue sur l'entrée standard, scellée sous le nom courant. */
+async function runSealHelper(): Promise<void> {
+  try {
+    const chunks: Buffer[] = [];
+    for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+    sealKeyFile(dataDir, safeBox(), Buffer.concat(chunks).toString('utf8').trim());
+    app.exit(0);
+  } catch {
+    app.exit(1);
+  }
+}
 
 async function start(): Promise<void> {
   const userData = app.getPath('userData');
@@ -49,12 +111,9 @@ async function start(): Promise<void> {
   };
   for (const d of Object.values(dirs)) mkdirSync(d, { recursive: true, mode: 0o700 });
 
-  const { key } = loadOrCreateMasterKey(userData, {
-    isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
-    ...(process.platform === 'linux' ? { backend: safeStorage.getSelectedStorageBackend() } : {}),
-    encryptString: (s) => safeStorage.encryptString(s),
-    decryptString: (b) => safeStorage.decryptString(b),
-  });
+  const box = safeBox();
+  const key =
+    (await takeOverLegacyKey(userData, box, resealUnderNewName)) ?? loadOrCreateMasterKey(userData, box).key;
   const tls = await ensureLocalCert(dirs.tls);
   const port = await pickPort(PREFERRED_PORT);
   origin = `https://${LOOPBACK}:${port}`;
@@ -73,7 +132,7 @@ async function start(): Promise<void> {
       AUTH_MODE: 'local',
       HUB_CREDENTIALS: 'none',
       LOG_LEVEL: 'info',
-      DEMO_MODE: process.env.CARTO_DEMO === 'true' ? 'true' : 'false',
+      DEMO_MODE: process.env.CLOUDMAP_DEMO === 'true' ? 'true' : 'false',
     },
     { masterKey: key },
   );
@@ -158,8 +217,9 @@ app.on('before-quit', (event) => {
 });
 
 void app.whenReady().then(() => {
+  if (isSealHelper) return runSealHelper();
   // macOS : menus standard (copier-coller, fenêtre) ; ailleurs, aucune barre de menus. Menu de
-  // l'application libellé explicitement : `app.name` garde le nom interne figé (voir LEGACY_NAME).
+  // l'application libellé explicitement (lancement de reprise : `app.name` est l'ancien nom).
   app.setAboutPanelOptions({ applicationName: TITLE, applicationVersion: app.getVersion() });
   Menu.setApplicationMenu(
     process.platform === 'darwin'

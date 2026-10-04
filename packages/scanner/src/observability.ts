@@ -5,7 +5,7 @@ import {
   StartQueryCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { EC2Client, paginateDescribeFlowLogs } from '@aws-sdk/client-ec2';
-import type { RawSnapshot, Resource } from '@carto/core';
+import type { RawSnapshot, Resource } from '@cloudmap/core';
 import { chunks, collect, type CollectorContext } from './context.ts';
 
 type Metric = NonNullable<RawSnapshot['metrics']>[number];

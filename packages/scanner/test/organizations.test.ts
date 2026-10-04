@@ -26,7 +26,7 @@ import {
   SSOAdminClient,
 } from '@aws-sdk/client-sso-admin';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { rawSnapshotSchema } from '@carto/core';
+import { rawSnapshotSchema } from '@cloudmap/core';
 import { mockClient } from 'aws-sdk-client-mock';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { scanAccount } from '../src/index.ts';

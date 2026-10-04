@@ -1,4 +1,4 @@
-import type { Profile } from '@carto/core';
+import type { Profile } from '@cloudmap/core';
 import { useState, type ClipboardEvent } from 'react';
 import { ApiError, del, get, post, put } from '../api.ts';
 import { parseCredentialBlock } from '../credentialBlock.ts';
@@ -164,7 +164,7 @@ function StoredPicker({
   if (list.data && stored.length === 0) return <Alert>{t('cred.aucuneMemorisee')}</Alert>;
   return (
     <>
-      <fieldset className="choices" data-testid="cles-memorisees">
+      <fieldset className="choices inline" data-testid="cles-memorisees">
         <legend>{t('cred.choisirCles')}</legend>
         {stored.map((c) => (
           <label key={c.profileId} className={`choice${c === chosen ? ' selected' : ''}`}>
@@ -258,7 +258,7 @@ export function CredentialFields({
 
   return (
     <>
-      <fieldset className="choices">
+      <fieldset className="choices inline">
         <legend>{t('cred.saisie')}</legend>
         {types.map((x) => (
           <label key={x} className={`choice${type === x ? ' selected' : ''}`}>
@@ -299,39 +299,41 @@ export function CredentialFields({
               </li>
             </ul>
           </details>
-          <Field label={t('cred.accessKeyId')}>
-            <input
-              type="password"
-              autoComplete="off"
-              value={draft.accessKeyId}
-              onChange={(e) => set({ accessKeyId: e.target.value.trim() })}
-              required
-            />
-          </Field>
-          <Field label={t('cred.secret')}>
-            <input
-              type="password"
-              autoComplete="off"
-              value={draft.secretAccessKey}
-              onChange={(e) => set({ secretAccessKey: e.target.value.trim() })}
-              required
-            />
-          </Field>
+          <div className="form-grid">
+            <Field label={t('cred.accessKeyId')}>
+              <input
+                type="password"
+                autoComplete="off"
+                value={draft.accessKeyId}
+                onChange={(e) => set({ accessKeyId: e.target.value.trim() })}
+                required
+              />
+            </Field>
+            <Field label={t('cred.secret')}>
+              <input
+                type="password"
+                autoComplete="off"
+                value={draft.secretAccessKey}
+                onChange={(e) => set({ secretAccessKey: e.target.value.trim() })}
+                required
+              />
+            </Field>
+            {type === 'temporary' && (
+              <Field label={t('cred.token')}>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={draft.sessionToken}
+                  onChange={(e) => set({ sessionToken: e.target.value.trim() })}
+                  required
+                />
+              </Field>
+            )}
+          </div>
         </>
       )}
-      {type === 'temporary' && (
-        <Field label={t('cred.token')}>
-          <input
-            type="password"
-            autoComplete="off"
-            value={draft.sessionToken}
-            onChange={(e) => set({ sessionToken: e.target.value.trim() })}
-            required
-          />
-        </Field>
-      )}
       {(type === 'user-role' || type === 'hub-role') && (
-        <>
+        <div className="form-grid">
           <Field label={t('form.roleArn')}>
             <input
               autoComplete="off"
@@ -350,13 +352,13 @@ export function CredentialFields({
               required
             />
           </Field>
-        </>
+        </div>
       )}
       {(type === 'azure-sp' || type === 'gcp-sa') && (
         <Check label={t('cred.memoriser')} checked={draft.remember} onChange={(v) => set({ remember: v })} />
       )}
       {(type === 'user' || type === 'user-role') && (
-        <>
+        <div className="form-grid">
           <Field label={t('cred.duree')}>
             <input
               type="number"
@@ -371,7 +373,7 @@ export function CredentialFields({
             checked={draft.remember}
             onChange={(v) => set({ remember: v })}
           />
-        </>
+        </div>
       )}
     </>
   );
@@ -434,11 +436,11 @@ function CloudFields({
       {type === 'azure-token' && secret(t('cred.jeton'), 'accessToken', 'eyJ…')}
       {type === 'gcp-token' && secret(t('cred.jeton'), 'accessToken', 'ya29.…')}
       {type === 'azure-sp' && (
-        <>
+        <div className="form-grid">
           {guid(t('cred.tenantId'), 'tenantId')}
           {guid(t('cred.clientId'), 'clientId')}
           {secret(t('cred.clientSecret'), 'clientSecret')}
-        </>
+        </div>
       )}
       {type === 'gcp-sa' && (
         <Field label={t('cred.gcpCle')}>

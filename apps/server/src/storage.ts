@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { parseRules, rawSnapshotSchema, type RawSnapshot, type RuleSet } from '@carto/core';
+import { parseRules, rawSnapshotSchema, type RawSnapshot, type RuleSet } from '@cloudmap/core';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import type { AppSettings } from './config.ts';

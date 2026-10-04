@@ -1,6 +1,6 @@
 # Journal des modifications
 
-Évolutions notables de CloudMap (anciennement Cartographe AWS). Format inspiré de
+Évolutions notables de CloudMap. Format inspiré de
 [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon le
 [versionnage sémantique](https://semver.org/lang/fr/). Chaque version publiée porte le tag `vX.Y.Z`
 (`pnpm release X.Y.Z`, voir `docs/publication.md`).
@@ -9,13 +9,23 @@
 
 ### Modifié
 
-- L'application s'appelle désormais **CloudMap** (interface, application de bureau, installeurs
-  `CloudMap-<version>-…`, image Docker `cloudmap`). Les données existantes sont conservées : dossier
-  de l'application de bureau, volumes Docker, clé maître et identifiants chiffrés.
-- Noms par défaut des rôles en lecture seule (AWS, Azure, Google Cloud) : `CloudMap…`. Les rôles
-  déjà créés continuent de fonctionner (l'ARN complet est enregistré dans chaque profil).
-- Nouvelles inscriptions TOTP émises au nom de « CloudMap » (les entrées existantes de
-  l'application d'authentification restent valables).
+- L'application s'appelle désormais **CloudMap** (anciennement Cartographe AWS) : interface,
+  application de bureau, installeurs `CloudMap-<version>-…`, image et service Docker `cloudmap`,
+  paquets `@cloudmap/*`, CLI (`CLOUDMAP_ACCESS_TOKEN`), rôles en lecture seule par défaut
+  (`CloudMapLectureSeule`…), émetteur TOTP.
+- Formulaire de profil plus compact : page plus large, fournisseur, champs et modes d'accès en ligne,
+  régions sur plusieurs colonnes, boutons d'enregistrement toujours visibles.
+
+### Mise à niveau
+
+- Application de bureau : au premier lancement, CloudMap reprend les données de l'ancienne
+  application (macOS : accès au trousseau à accepter une fois). Windows : l'installeur remplace
+  l'ancienne version.
+- Docker : copier une fois les volumes `cartographe-aws_*` vers `cloudmap_*` (voir
+  `docs/deploiement.md`). La clé maître ne change pas ; les identifiants mémorisés et les secrets
+  TOTP sont migrés automatiquement au démarrage.
+- Les rôles déjà créés chez les clients continuent de fonctionner (ARN complet enregistré dans chaque
+  profil). Les entrées TOTP existantes restent valables.
 
 ## [1.1.0] - 2026-10-04
 

@@ -1,4 +1,4 @@
-import type { Resource } from '@carto/core';
+import type { Resource } from '@cloudmap/core';
 import { isCloudDenied, type ReadOnlyHttp } from '../http.ts';
 import type { GcpProject } from './auth.ts';
 

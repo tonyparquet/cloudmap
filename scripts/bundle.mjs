@@ -19,7 +19,7 @@ await build({
   format: 'esm',
   sourcemap: true,
   external: ['better-sqlite3', 'argon2'],
-  define: { __CARTO_VERSION__: JSON.stringify(version) },
+  define: { __CLOUDMAP_VERSION__: JSON.stringify(version) },
   banner: {
     js: [
       "import { createRequire as __cr } from 'node:module';",
