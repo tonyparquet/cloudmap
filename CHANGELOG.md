@@ -15,6 +15,8 @@
 - Double authentification activable (et désactivable) plus tard, depuis « Mon compte ».
 - Dossiers et sous-dossiers pour ranger les profils et leurs diagrammes, avec glisser-déposer.
 - Réglages `access` dans `app.yaml` pour désactiver le mode invité ou la création libre de comptes.
+- Quatre façons d'installer CloudMap, décrites dans le README : application Windows, application
+  macOS, sur le poste depuis les sources (`pnpm start`) et serveur Docker Compose.
 
 ### Corrigé
 
