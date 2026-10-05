@@ -13,7 +13,10 @@ const AUTH_SCHEME = /\b(Bearer|Basic|AWS4-HMAC-SHA256)\s+[^\s"',;]+/gi;
 const NAMED_SECRET =
   /\b(aws_secret_access_key|aws_session_token|secret_?access_?key|session_?token|x-amz-security-token|authorization|password|client_?secret|access_?token|refresh_?token|private_?key|assertion)(["']?\s*[:=]\s*["']?)[^"'\s,;}&]+/gi;
 const COOKIE_PAIR = /\b(__Host-[\w-]+|__Secure-[\w-]+|session|sid|csrf[\w-]*)=[^;\s"',]+/gi;
-const PRIVATE_KEY = /-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z]+ )?PRIVATE KEY-----/g;
+// Corps borné (clé PEM = quelques Ko) : évite le temps polynomial (ReDoS) ; le corps base64 au-delà
+// reste masqué par LONG_TOKEN.
+const PRIVATE_KEY =
+  /-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----[\s\S]{0,10000}?-----END (?:[A-Z]+ )?PRIVATE KEY-----/g;
 // Azure et Google Cloud : jetons JWT (Entra ID), jetons OAuth Google, secrets clients d'application Entra.
 const JWT = /\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}/g;
 const GOOGLE_TOKEN = /\bya29\.[\w.-]{16,}/g;

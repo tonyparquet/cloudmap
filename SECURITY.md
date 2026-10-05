@@ -8,10 +8,10 @@ garder sûr en signalant les vulnérabilités de façon responsable.
 
 Seule la **dernière version publiée** reçoit les correctifs de sécurité.
 
-| Version   | Prise en charge |
-| --------- | --------------- |
-| 1.5.x     | ✅              |
-| &lt; 1.5  | ❌              |
+| Version  | Prise en charge |
+| -------- | --------------- |
+| 1.5.x    | ✅              |
+| &lt; 1.5 | ❌              |
 
 Mettez à jour vers la dernière [release](https://github.com/tonyparquet/cloudmap/releases/latest)
 avant de signaler un problème, afin de vérifier qu'il n'est pas déjà corrigé.

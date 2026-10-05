@@ -7,6 +7,13 @@
 
 ## [Non publié]
 
+### Corrigé
+
+- Build : `SECURITY.md` reformaté — la vérification Prettier de la CI échouait et empêchait la
+  construction de la version 1.5.1.
+- Redaction : corps de l'expression de détection des clés privées borné (supprime le dernier
+  avertissement d'analyse de code, ReDoS).
+
 ## [1.5.1] - 2026-10-05
 
 ### Ajouté
