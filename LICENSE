@@ -1,25 +1,37 @@
-Licence propriétaire — Tous droits réservés
+Licence CloudMap — usage libre, sans modification
 Copyright (c) 2026 CloudMap
 
-Ce dépôt est « à source visible » (source-available), non open source.
+Tous droits réservés, sauf les permissions expressément accordées ci-dessous.
 
-Le code source est publié uniquement à des fins de consultation et de
-transparence. Aucune licence d'exploitation n'est accordée.
+PERMIS, gratuitement et pour toute personne, à toute fin :
+  - utiliser, exécuter, installer et déployer ce logiciel ;
+  - compiler / construire le logiciel à partir des sources NON MODIFIÉES,
+    dans le seul but de l'utiliser (la compilation de sources inchangées
+    n'est pas une modification) ;
+  - configurer le logiciel par ses mécanismes prévus (variables
+    d'environnement, fichiers de configuration et de données, profils, règles
+    ajoutées dans le dossier de configuration) : cela relève de l'usage et
+    n'est pas une modification du logiciel ;
+  - redistribuer des copies CONFORMES (à l'identique, non modifiées) du
+    logiciel ou de ses sources, à condition de conserver intacts le présent
+    avis de licence et la mention de copyright.
 
-Sauf autorisation écrite préalable du titulaire des droits, il est interdit de :
-  - utiliser, exécuter ou déployer ce logiciel, en tout ou partie ;
-  - copier, reproduire ou republier le code ;
-  - modifier, adapter ou créer des œuvres dérivées ;
-  - distribuer, sous-licencier, vendre ou intégrer ce code dans un autre projet.
+INTERDIT, sauf autorisation écrite préalable du titulaire des droits :
+  - modifier, adapter, traduire, refactoriser ou transformer le code source ;
+  - créer, distribuer ou publier une œuvre dérivée ou une version modifiée,
+    en tout ou partie ;
+  - retirer ou altérer les mentions de licence, de copyright ou d'auteur.
 
-Les droits attachés aux fonctionnalités d'hébergement de la plateforme (par
-exemple la possibilité de « forker » sur GitHub) relèvent des conditions
-d'utilisation de cette plateforme et n'emportent aucune licence sur le code.
+Le code source est publié pour la transparence et l'usage ; cette mise à
+disposition n'emporte aucun droit de modification ni de création de dérivés.
 
 Les marques, noms et logos éventuels restent la propriété de leurs titulaires.
 
-LE LOGICIEL EST FOURNI « EN L'ÉTAT », SANS GARANTIE D'AUCUNE SORTE. EN AUCUN CAS
-LES AUTEURS OU TITULAIRES DES DROITS NE POURRONT ÊTRE TENUS RESPONSABLES D'UNE
-QUELCONQUE RÉCLAMATION, DOMMAGE OU AUTRE RESPONSABILITÉ.
+LE LOGICIEL EST FOURNI « EN L'ÉTAT », SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU
+IMPLICITE. EN AUCUN CAS LES AUTEURS OU TITULAIRES DES DROITS NE POURRONT ÊTRE
+TENUS RESPONSABLES D'UNE QUELCONQUE RÉCLAMATION, D'UN DOMMAGE OU D'UNE AUTRE
+RESPONSABILITÉ, CONTRACTUELLE, DÉLICTUELLE OU AUTRE, LIÉE AU LOGICIEL OU À SON
+UTILISATION.
 
-Pour toute demande d'autorisation : ouvrir une « issue » sur le dépôt.
+Pour toute demande d'autorisation (notamment de modification) : ouvrir une
+« issue » sur le dépôt.
