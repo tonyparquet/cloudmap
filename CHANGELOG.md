@@ -7,6 +7,13 @@
 
 ## [Non publié]
 
+### Corrigé
+
+- Diagramme : les icônes « ressource » des packs officiels (passerelle Internet, NAT, endpoint VPC,
+  lien VPC, groupe cible, compte, OU, stratégie…), pictogrammes d'une seule couleur sans fond,
+  étaient invisibles sur la tuile de même couleur. Elles sont désormais servies en blanc, y compris
+  pour les icônes déjà copiées dans `CONFIG_DIR`.
+
 ## [1.5.4] - 2026-10-05
 
 ### Corrigé

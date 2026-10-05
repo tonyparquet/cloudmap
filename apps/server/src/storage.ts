@@ -235,6 +235,26 @@ export class Storage {
       join(this.configDir, 'icons', 'generic', 'generic.svg'),
     ];
     const found = candidates.find((p) => existsSync(p));
-    return found ? readFileSync(found) : undefined;
+    return found ? Buffer.from(whiteGlyph(readFileSync(found, 'utf8'))) : undefined;
   }
+}
+
+const COLOR = /(fill|stroke|stop-color)(\s*[:=]\s*["']?)([^"';>\s]+)/gi;
+
+/**
+ * Pictogramme d'une seule couleur, sans fond (icônes « ressource » des packs : IGW, endpoint…) :
+ * passé en blanc, sinon invisible sur la tuile de la même couleur. Les icônes à fond propre
+ * (couleur + blanc) ou multicolores restent intactes.
+ */
+export function whiteGlyph(svg: string): string {
+  const colors = new Set(
+    [...svg.matchAll(COLOR)]
+      .map((m) => (m[3] ?? '').toLowerCase())
+      .filter((c) => !/^(none|transparent|currentcolor|inherit|url\()/.test(c)),
+  );
+  const [only] = colors;
+  if (colors.size !== 1 || !only || /^(#fff|#ffffff|white)$/.test(only)) return svg;
+  return svg.replace(COLOR, (m: string, prop: string, sep: string, c: string) =>
+    c.toLowerCase() === only ? `${prop}${sep}#FFFFFF` : m,
+  );
 }
