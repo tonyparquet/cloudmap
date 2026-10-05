@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { SERVICES } from '@cloudmap/scanner';
@@ -128,9 +129,13 @@ export function registerConfigRoutes(app: FastifyInstance, ctx: Ctx): void {
         throw notFound();
       const svg = storage.icon(name, category);
       if (!svg) throw notFound('Icône introuvable');
+      // Revalidée à chaque affichage : une mise à jour ou un pack modifié n'est jamais masqué par le cache
+      // (l'application de bureau garde la même origine d'une version à l'autre).
+      const etag = `"${createHash('sha256').update(svg).digest('base64url').slice(0, 27)}"`;
+      reply.header('cache-control', 'private, no-cache').header('etag', etag);
+      if (req.headers['if-none-match'] === etag) return reply.status(304).send();
       return reply
         .type('image/svg+xml')
-        .header('cache-control', 'private, max-age=3600')
         .header('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox")
         .send(svg);
     },

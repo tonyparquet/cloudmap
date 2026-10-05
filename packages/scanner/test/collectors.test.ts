@@ -171,4 +171,21 @@ describe('scanner (mocks AWS)', () => {
       tags: { Name: 'Migration' },
     });
   });
+
+  it('inventaire générique refusé : la vraie permission IAM est signalée (pas « inventory:* »)', async () => {
+    const denied = (action: string) =>
+      awsError(
+        'AccessDeniedException',
+        `User: arn:aws:iam::${ACCOUNT}:user/lecteur is not authorized to perform: ${action}`,
+      );
+    re.on(ListIndexesCommand).rejects(denied('resource-explorer-2:ListIndexes'));
+    config.on(SelectResourceConfigCommand).rejects(denied('config:SelectResourceConfig'));
+    const snap = await scanAccount({ ...base, services: ['inventory'] });
+    expect(snap.errors).toEqual([
+      expect.objectContaining({
+        service: 'inventory',
+        message: 'Permission manquante : config:SelectResourceConfig',
+      }),
+    ]);
+  });
 });

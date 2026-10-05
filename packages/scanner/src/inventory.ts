@@ -138,10 +138,12 @@ export async function collectInventory(ctx: CollectorContext): Promise<Resource[
   try {
     return await fromConfig(ctx);
   } catch (err) {
-    const reason = isAccessDenied(err) || isAccessDenied(reError) ? 'accès refusé' : errorCode(err);
+    // Accès refusé : l'erreur AWS d'origine nomme l'action IAM manquante (signalée telle quelle).
+    const denied = [err, reError].find(isAccessDenied);
+    if (denied) throw denied;
     throw Object.assign(
       new Error(
-        `Inventaire générique indisponible (${reason}) : aucun index Resource Explorer et AWS Config inaccessible ou non activé`,
+        `Inventaire générique indisponible (${errorCode(err)}) : aucun index Resource Explorer et AWS Config inaccessible ou non activé`,
       ),
       { name: errorCode(err) },
     );

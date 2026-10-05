@@ -1,5 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { whiteGlyph } from '../src/storage.ts';
+import { setupAdmin, startApp } from './helpers.ts';
+
+describe('icônes : jamais servies périmées après une mise à jour', () => {
+  let close: (() => Promise<void>) | undefined;
+  afterAll(() => close?.());
+
+  it('revalidation à chaque affichage (ETag), 304 si inchangée', async () => {
+    const { app } = await startApp();
+    close = () => app.close();
+    const { client } = await setupAdmin(app);
+    const first = await client.req('GET', '/icons/network?category=network');
+    expect(first.status).toBe(200);
+    expect(first.headers['cache-control']).toBe('private, no-cache');
+    const etag = String(first.headers.etag);
+    expect(etag).toMatch(/^"[\w-]+"$/);
+    const again = await client.req('GET', '/icons/network?category=network', undefined, {
+      'if-none-match': etag,
+    });
+    expect(again.status).toBe(304);
+    expect(again.body).toBe('');
+  });
+});
 
 describe('icônes : pictogramme lisible sur la tuile colorée', () => {
   it('pictogramme monochrome sans fond (icône « ressource ») : passé en blanc', () => {

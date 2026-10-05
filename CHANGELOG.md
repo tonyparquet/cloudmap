@@ -7,6 +7,14 @@
 
 ## [Non publié]
 
+### Corrigé
+
+- Diagramme : les icônes sont revalidées à chaque affichage (`ETag`, `no-cache`) au lieu d'être gardées
+  une heure en cache. Après une mise à jour (application de bureau notamment, dont l'origine ne change
+  pas) ou une modification du pack d'icônes, les nouvelles icônes s'affichent immédiatement.
+- Scan AWS : un inventaire générique refusé signale la vraie permission IAM manquante
+  (`config:SelectResourceConfig` ou `resource-explorer-2:ListIndexes`) au lieu de `inventory:*`.
+
 ## [1.5.5] - 2026-10-05
 
 ### Corrigé
