@@ -56,11 +56,19 @@ export function passwordProblem(password: string, username?: string): string | u
 
 const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
 
+/** Caractère aléatoire uniforme de l'alphabet (tirage par rejet : pas de biais de modulo). */
+function randomChar(): string {
+  const limit = 256 - (256 % ALPHABET.length); // plus grand multiple de la taille d'alphabet ≤ 256
+  for (;;) {
+    const b = randomBytes(1)[0] ?? 0;
+    if (b < limit) return ALPHABET.charAt(b % ALPHABET.length);
+  }
+}
+
 /** 10 codes de secours de 50 bits (format « xxxxx-xxxxx »), stockés hachés. */
 export function generateRecoveryCodes(count = 10): string[] {
   return Array.from({ length: count }, () => {
-    const bytes = randomBytes(10);
-    const chars = [...bytes].map((b) => ALPHABET[b % ALPHABET.length]).join('');
+    const chars = Array.from({ length: 10 }, randomChar).join('');
     return `${chars.slice(0, 5)}-${chars.slice(5, 10)}`;
   });
 }

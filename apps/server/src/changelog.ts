@@ -1,7 +1,8 @@
 /** Journal des modifications (CHANGELOG.md, format « Keep a Changelog », en français). */
 
 const UNRELEASED = '## [Non publié]';
-const heading = (version: string) => new RegExp(`^## \\[${version.replace(/[.]/g, '\\.')}\\][^\\n]*$`, 'm');
+const heading = (version: string) =>
+  new RegExp(`^## \\[${version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\][^\\n]*$`, 'm');
 
 /** Contenu de la section d'une version (sans son titre) ; `undefined` si elle n'existe pas. */
 export function changelogSection(markdown: string, version: string): string | undefined {

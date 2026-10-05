@@ -47,7 +47,7 @@ export function SidePanel({
   const tags = (d.tags ?? {}) as Record<string, string>;
   // Marqueurs internes de l'inférence des flux (« schéma:… », Google Cloud) : non affichés.
   const sgs = ((d.securityGroups ?? []) as SgSummary[]).filter((sg) => !sg.id.startsWith('schéma:'));
-  const sgTitle = node.type.includes('.googleapis.com/')
+  const sgTitle = (node.type.split('/')[0] ?? '').endsWith('.googleapis.com')
     ? t('panel.sg.gcp')
     : node.type.startsWith('microsoft.')
       ? t('panel.sg.azure')
