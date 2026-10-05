@@ -4,10 +4,19 @@ Application auto-hébergée qui scanne un compte AWS, un abonnement Azure ou un 
 **en lecture seule**, découvre les services utilisés, déduit les flux réseau et génère un diagramme
 d'architecture interactif. Utilisable avec ou sans compte (mode invité : rien n'est enregistré).
 
+## À propos
+
+CloudMap est développé avec l'assistance de **Claude** (Anthropic). En revanche,
+**l'application elle-même ne contient aucune intelligence artificielle** : aucun
+modèle d'IA, aucun appel à un service d'IA, aucune donnée envoyée à un tiers. Les
+scans se font uniquement par des appels **en lecture seule** aux API du
+fournisseur de cloud, et les résultats restent sur votre poste ou votre serveur
+(voir [docs/securite.md](docs/securite.md)).
+
 ## Installer CloudMap : quatre façons
 
 Les versions publiées sont sur la page
-[Releases](https://github.com/tonyparquet/aws_map/releases/latest).
+[Releases](https://github.com/tonyparquet/cloudmap/releases/latest).
 
 ### 1. Application Windows
 
@@ -36,7 +45,7 @@ Les données restent sur le poste (`~/Library/Application Support/CloudMap/`).
 Prérequis : [Node.js 22](https://nodejs.org/) et pnpm (`corepack enable`), OpenSSL.
 
 ```sh
-git clone https://github.com/tonyparquet/aws_map.git cloudmap && cd cloudmap
+git clone https://github.com/tonyparquet/cloudmap.git cloudmap && cd cloudmap
 pnpm install
 pnpm start        # https://localhost:8443
 ```
@@ -50,7 +59,7 @@ les profils de démonstration : `pnpm dev`.
 Prérequis : Docker 24+ avec Compose v2, OpenSSL.
 
 ```sh
-git clone https://github.com/tonyparquet/aws_map.git cloudmap && cd cloudmap/deploy
+git clone https://github.com/tonyparquet/cloudmap.git cloudmap && cd cloudmap/deploy
 mkdir -p secrets
 openssl rand -base64 32 > secrets/master_key   # clé maître : à sauvegarder à part
 # Certificat TLS : copiez le vôtre en secrets/tls_cert.pem et secrets/tls_key.pem, ou, pour un essai :
