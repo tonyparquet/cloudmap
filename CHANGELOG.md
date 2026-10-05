@@ -7,6 +7,8 @@
 
 ## [Non publié]
 
+## [1.5.6] - 2026-10-05
+
 ### Corrigé
 
 - Diagramme : les icônes sont revalidées à chaque affichage (`ETag`, `no-cache`) au lieu d'être gardées
@@ -218,7 +220,8 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.5...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.6...HEAD
+[1.5.6]: https://github.com/tonyparquet/aws_map/compare/v1.5.5...v1.5.6
 [1.5.5]: https://github.com/tonyparquet/aws_map/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/tonyparquet/aws_map/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/tonyparquet/aws_map/compare/v1.5.2...v1.5.3
