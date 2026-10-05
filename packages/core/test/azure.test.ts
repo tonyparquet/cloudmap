@@ -125,8 +125,48 @@ describe('Azure : vue Organisation', () => {
       resources: snapshot.resources.filter((r) => r.type === 'microsoft.resources/subscriptions'),
     };
     const g = buildOrgGraph(only);
-    expect(g?.containers[0]).toMatchObject({ id: 'org:locataire', kind: 'org' });
+    expect(g?.containers[0]).toMatchObject({ kind: 'org' });
     expect(g?.warnings[0]).toContain("groupes d'administration non lisibles");
+  });
+
+  it('groupes illisibles : hiérarchie reconstituée depuis l’abonnement, portées sans casse', () => {
+    const g = buildOrgGraph({
+      ...snapshot,
+      resources: [
+        {
+          id: '/subscriptions/00000000-0000-4000-8000-000000000001',
+          type: 'microsoft.resources/subscriptions',
+          region: 'global',
+          raw: {
+            name: 'abonnement-exemple',
+            properties: {
+              state: 'Enabled',
+              managementGroupAncestorsChain: [
+                { name: 'Mg-Lab', displayName: 'Laboratoire' },
+                { name: 'tenant-racine', displayName: 'Tenant Root Group' },
+              ],
+            },
+          },
+        },
+        {
+          id: '/providers/microsoft.management/managementgroups/mg-lab/providers/microsoft.authorization/policyassignments/journaux',
+          type: 'microsoft.authorization/policyassignments',
+          region: 'global',
+          raw: {
+            name: 'journaux',
+            properties: { displayName: '', scope: '/providers/microsoft.management/managementgroups/mg-lab' },
+          },
+        },
+      ],
+    });
+    const org = g?.containers.find((c) => c.kind === 'org');
+    expect(org?.label).toBe('Locataire · Tenant Root Group');
+    const lab = g?.containers.find((c) => c.label === 'Laboratoire');
+    expect(lab).toMatchObject({ kind: 'ou', parentId: org?.id });
+    expect(g?.nodes.find((n) => n.icon === 'account')?.containerId).toBe(lab?.id);
+    const pol = g?.nodes.find((n) => n.icon === 'policy');
+    expect(pol).toMatchObject({ label: 'journaux', status: 'actif' });
+    expect(g?.edges.find((e) => e.source === pol?.id)?.target).toBe(lab?.id);
   });
 
   it('aucune donnée d’organisation : pas de vue', () => {

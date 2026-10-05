@@ -7,6 +7,13 @@
 
 ## [Non publié]
 
+### Corrigé
+
+- Vue Organisation Azure : hiérarchie des groupes d'administration reconstituée depuis la chaîne
+  d'ancêtres de l'abonnement quand les groupes ne sont pas lisibles, stratégies affectées à un groupe
+  d'administration désormais reliées à leur portée (comparaison sans casse) et stratégies sans nom
+  d'affichage libellées par leur nom.
+
 ## [1.5.3] - 2026-10-05
 
 ### Modifié

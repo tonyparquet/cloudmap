@@ -46,53 +46,74 @@ export function buildAzureOrgGraph(snapshot: RawSnapshot): Graph | null {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
   const warnings: string[] = [];
-  /** Portée ARM (minuscules) → conteneur ou nœud du graphe. */
+  /** Portée ARM en minuscules (Resource Graph varie la casse selon la table) → conteneur ou nœud. */
   const target = new Map<string, string>();
+  const key = (name: string) => name.toLowerCase();
   const chain = (r: Resource) =>
-    ((props(r).managementGroupAncestorsChain ?? []) as { name?: string }[]).map((x) => x.name ?? '');
+    ((props(r).managementGroupAncestorsChain ?? []) as { name?: string; displayName?: string }[]).flatMap(
+      (x) => (x.name ? [{ name: x.name, label: x.displayName || x.name }] : []),
+    );
 
-  // Groupes d'administration, parents avant enfants.
-  const byName = new Map(mgs.map((m) => [str(raw(m).name) ?? m.id, m]));
-  const parentOf = (m: Resource) =>
-    str(((props(m).details as Props | undefined)?.parent as Props | undefined)?.name) ?? chain(m)[0];
-  const depth = (m: Resource, seen = new Set<Resource>()): number => {
-    const p = byName.get(parentOf(m) ?? '');
-    return p && !seen.has(p) ? 1 + depth(p, seen.add(m)) : 0;
+  // Groupes d'administration lus, complétés par la chaîne d'ancêtres des abonnements (lisible même
+  // sans droit sur les groupes ; parent direct en tête, racine du locataire en dernier).
+  const groups = new Map<string, { label: string; parent?: string }>();
+  for (const m of mgs) {
+    const name = str(raw(m).name) ?? m.id;
+    const parent =
+      str(((props(m).details as Props | undefined)?.parent as Props | undefined)?.name) ?? chain(m)[0]?.name;
+    groups.set(key(name), {
+      label: str(props(m).displayName) || name,
+      ...(parent ? { parent: key(parent) } : {}),
+    });
+  }
+  const readable = new Set(groups.keys());
+  for (const s of subs)
+    chain(s).forEach((a, i, all) => {
+      const parent = all[i + 1]?.name;
+      if (!groups.has(key(a.name)))
+        groups.set(key(a.name), { label: a.label, ...(parent ? { parent: key(parent) } : {}) });
+    });
+
+  // Parents avant enfants.
+  const depth = (k: string, seen = new Set<string>()): number => {
+    const p = groups.get(k)?.parent;
+    return p && groups.has(p) && !seen.has(p) ? 1 + depth(p, seen.add(k)) : 0;
   };
-  const sorted = [...mgs].sort((a, b) => depth(a) - depth(b));
-  let orgId =
-    sorted[0] && !byName.has(parentOf(sorted[0]) ?? '') ? `mg:${str(raw(sorted[0]).name)}` : undefined;
+  const sorted = [...groups].sort(([a], [b]) => depth(a) - depth(b));
+  const top = sorted[0];
+  let orgId = top && !groups.has(top[1].parent ?? '') ? `mg:${top[0]}` : undefined;
   if (!orgId) {
     orgId = 'org:locataire';
     containers.push({ id: orgId, kind: 'org', label: 'Locataire Azure' });
   }
-  for (const m of sorted) {
-    const name = str(raw(m).name) ?? m.id;
-    const id = `mg:${name}`;
-    const parent = byName.has(parentOf(m) ?? '') ? `mg:${parentOf(m)}` : undefined;
-    const label = str(props(m).displayName) ?? name;
+  for (const [k, g] of sorted) {
+    const id = `mg:${k}`;
     containers.push(
       id === orgId
-        ? { id, kind: 'org', label: `Locataire · ${label}` }
-        : { id, kind: 'ou', label, parentId: parent ?? orgId },
+        ? { id, kind: 'org', label: `Locataire · ${g.label}` }
+        : {
+            id,
+            kind: 'ou',
+            label: g.label,
+            parentId: g.parent && groups.has(g.parent) ? `mg:${g.parent}` : orgId,
+          },
     );
-    target.set(m.id, id);
+    target.set(`/providers/microsoft.management/managementgroups/${k}`, id);
   }
 
-  const known = new Set(byName.keys());
   const subscriptionId = (r: Resource) => r.id.split('/')[2] ?? r.id;
   for (const s of subs) {
     const guid = subscriptionId(s);
-    const ancestors = chain(s);
-    if (ancestors.some((a) => a && !known.has(a)))
+    const ancestors = chain(s).map((a) => a.name);
+    if (ancestors.some((a) => !readable.has(key(a))))
       warnings.push(
-        `Abonnement ${guid} : groupes d'administration non lisibles avec ces droits (lecture au niveau ` +
-          "du groupe d'administration requise pour la hiérarchie complète).",
+        `Abonnement ${guid} : groupes d'administration non lisibles avec ces droits, hiérarchie limitée ` +
+          "aux ancêtres de l'abonnement (lecture au niveau du groupe d'administration requise pour la vue complète).",
       );
-    const parent = ancestors.find((a) => known.has(a));
+    const parent = ancestors[0];
     const state = str(props(s).state);
     const id = `sub:${guid}`;
-    target.set(s.id, id);
+    target.set(key(s.id), id);
     nodes.push({
       id,
       resourceRef: s.id,
@@ -102,7 +123,7 @@ export function buildAzureOrgGraph(snapshot: RawSnapshot): Graph | null {
       icon: 'account',
       category: 'management',
       status: subscriptionStatus(state),
-      containerId: parent ? `mg:${parent}` : orgId,
+      containerId: parent ? `mg:${key(parent)}` : orgId,
       details: {
         typeLabel: 'Abonnement Azure',
         resourceId: guid,
@@ -118,10 +139,10 @@ export function buildAzureOrgGraph(snapshot: RawSnapshot): Graph | null {
   /** Portée → nœud ou conteneur (une portée de groupe de ressources désigne son abonnement). */
   const scopeTarget = (scope: string | undefined): { to: string; rg?: string } | undefined => {
     if (!scope) return undefined;
-    const exact = target.get(scope);
+    const exact = target.get(key(scope));
     if (exact) return { to: exact };
-    const m = /^(\/subscriptions\/[^/]+)\/resourcegroups\/([^/]+)/.exec(scope);
-    const sub = m?.[1] ? target.get(m[1]) : undefined;
+    const m = /^(\/subscriptions\/[^/]+)\/resourcegroups\/([^/]+)/i.exec(scope);
+    const sub = m?.[1] ? target.get(key(m[1])) : undefined;
     return sub ? { to: sub, ...(m?.[2] ? { rg: m[2] } : {}) } : undefined;
   };
   const detail = (to: string, key: 'politiquesDirectes' | 'acces', text: string) => {
@@ -144,7 +165,7 @@ export function buildAzureOrgGraph(snapshot: RawSnapshot): Graph | null {
 
   for (const p of of('microsoft.authorization/policyassignments')) {
     const pp = props(p);
-    const name = str(pp.displayName) ?? str(raw(p).name) ?? p.id;
+    const name = str(pp.displayName) || str(raw(p).name) || p.id;
     const initiative = (str(pp.policyDefinitionId) ?? '').includes('/policysetdefinitions/');
     const kind = initiative ? 'Initiative' : 'Stratégie';
     const where = scopeTarget(str(pp.scope));
