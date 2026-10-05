@@ -274,7 +274,7 @@ external`, `externalType`.
 
 ## Application de bureau (Windows et macOS)
 
-- Electron (plan `docs/plan-application-bureau.md`) : le serveur Fastify tourne dans le processus
+- Electron : le serveur Fastify tourne dans le processus
   principal, sur `127.0.0.1` en TLS 1.3, l'interface existante s'affiche dans une fenêtre. Aucun code
   métier dupliqué ; seule modification du serveur : `loadConfig` accepte une clé maître fournie en
   mémoire (tous les autres contrôles bloquants inchangés) et le démarrage est factorisé (`start.ts`).

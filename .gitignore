@@ -18,3 +18,15 @@ deploy/secrets/
 
 # Harnais d'audit de sécurité (local, jamais versionné : peut contenir rapports, logs, IDs)
 security-audit/
+
+# Jamais dans le dépôt : suivis d'avancement, feuilles de route, idées, brouillons internes
+docs/avancement.md
+docs/plan-application-bureau.md
+ROADMAP.md
+TODO.md
+IDEAS.md
+IDEES.md
+NOTES.md
+docs/roadmap*.md
+docs/idees*.md
+docs/avancement*.md
