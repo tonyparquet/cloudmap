@@ -9,3 +9,6 @@ coverage
 playwright-report
 test-results
 config/icons
+
+# Workflows CI (parfois ajoutés/édités depuis GitHub, pas au format Prettier)
+.github/

@@ -7,6 +7,11 @@
 
 ## [Non publié]
 
+### Modifié
+
+- Intégration continue : retrait du workflow SonarQube (CodeQL assure déjà l'analyse de sécurité) et
+  exclusion des fichiers de workflow de la vérification Prettier, pour fiabiliser la publication.
+
 ## [1.5.2] - 2026-10-05
 
 ### Corrigé
