@@ -225,8 +225,11 @@ export class Storage {
   }
 
   icon(name: string, category: string | undefined): Buffer | undefined {
+    // Dossier du fournisseur selon le préfixe du nom (azure-*, gcp-*, sinon AWS/partagé),
+    // puis repli générique par nom et par catégorie. Chaque pack est récupéré par `pnpm fetch-icons`.
+    const provider = name.startsWith('azure-') ? 'azure' : name.startsWith('gcp-') ? 'gcp' : 'aws';
     const candidates = [
-      join(this.configDir, 'icons', 'aws', `${name}.svg`),
+      join(this.configDir, 'icons', provider, `${name}.svg`),
       join(this.configDir, 'icons', 'generic', `${name}.svg`),
       ...(category ? [join(this.configDir, 'icons', 'generic', `${category}.svg`)] : []),
       join(this.configDir, 'icons', 'generic', 'generic.svg'),

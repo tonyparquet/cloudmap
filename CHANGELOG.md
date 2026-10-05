@@ -7,6 +7,20 @@
 
 ## [Non publié]
 
+### Ajouté
+
+- Icônes officielles par fournisseur : `pnpm fetch-icons` récupère désormais les packs **AWS**,
+  **Azure** et **Google Cloud** (vers `config/icons/aws|azure|gcp/`) et les sert selon le préfixe du
+  nom d'icône. Les ressources Azure et GCP s'affichent avec leurs icônes officielles, comme AWS. Sans
+  les packs, le repli par icône générique de catégorie reste en place.
+
+### Corrigé
+
+- Montée de version : les nouvelles règles par défaut (dont Azure, Google Cloud) sont désormais
+  ajoutées à une installation existante au démarrage, sans écraser les fichiers modifiés. Avant, un
+  `CONFIG_DIR` déjà initialisé restait figé : les ressources d'un fournisseur ajouté après coup
+  s'affichaient en nœuds génériques (libellé = identifiant complet, pas d'icône, pas de hiérarchie).
+
 ## [1.3.0] - 2026-10-05
 
 ### Ajouté

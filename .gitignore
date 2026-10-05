@@ -9,7 +9,12 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 .eslintcache
-# Pack officiel AWS téléchargé par scripts/fetch-icons.ts (licence AWS, non versionné)
+# Packs d'icônes officiels téléchargés par scripts/fetch-icons.ts (licences AWS/Azure/Google, non versionnés)
 config/icons/aws/*.svg
+config/icons/azure/*.svg
+config/icons/gcp/*.svg
 deploy/secrets/
 .claude/worktrees/
+
+# Harnais d'audit de sécurité (local, jamais versionné : peut contenir rapports, logs, IDs)
+security-audit/
