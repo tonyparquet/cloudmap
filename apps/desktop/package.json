@@ -1,6 +1,6 @@
 {
   "name": "@cloudmap/desktop",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "description": "Application de bureau Windows et macOS : serveur CloudMap local (127.0.0.1, TLS 1.3) dans une fenêtre Electron.",

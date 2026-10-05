@@ -7,6 +7,8 @@
 
 ## [Non publié]
 
+## [1.5.0] - 2026-10-05
+
 ### Ajouté
 
 - Interface multilingue : **français, anglais (Royaume-Uni), anglais (États-Unis), espagnol et
@@ -156,7 +158,8 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.4.1...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/tonyparquet/aws_map/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/tonyparquet/aws_map/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/tonyparquet/aws_map/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/tonyparquet/aws_map/compare/v1.2.1...v1.3.0
