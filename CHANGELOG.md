@@ -7,6 +7,8 @@
 
 ## [Non publié]
 
+## [1.5.5] - 2026-10-05
+
 ### Corrigé
 
 - Diagramme : les icônes « ressource » des packs officiels (passerelle Internet, NAT, endpoint VPC,
@@ -208,7 +210,8 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.4...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.5...HEAD
+[1.5.5]: https://github.com/tonyparquet/aws_map/compare/v1.5.4...v1.5.5
 [1.5.4]: https://github.com/tonyparquet/aws_map/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/tonyparquet/aws_map/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/tonyparquet/aws_map/compare/v1.5.1...v1.5.2
