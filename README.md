@@ -79,6 +79,7 @@ clé maître : [docs/deploiement.md](docs/deploiement.md).
 
 - Spécification complète : [CLAUDE.md](CLAUDE.md)
 - Sécurité (modèle de menace, chiffrement, authentification, mode invité) : [docs/securite.md](docs/securite.md)
+- Signaler une vulnérabilité : [SECURITY.md](SECURITY.md)
 - Rôle en lecture seule à créer chez le client : AWS [docs/iam/](docs/iam/), Azure
   [docs/azure/](docs/azure/), Google Cloud [docs/gcp/](docs/gcp/)
 - Versions et publication : [docs/publication.md](docs/publication.md), [CHANGELOG.md](CHANGELOG.md)
