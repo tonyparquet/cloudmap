@@ -117,15 +117,16 @@ export interface ServerConfig {
 /** Racine de l'application : contient `config/` (valeurs par défaut), `fixtures/`, `docs/` et `apps/web/dist`. */
 export const defaultAppRoot = () => fileURLToPath(new URL('../../../', import.meta.url));
 
-/** Premier démarrage : copie des valeurs par défaut (règles, thème, icônes, app.yaml) dans CONFIG_DIR. */
+/**
+ * À chaque démarrage : ajoute dans CONFIG_DIR les fichiers par défaut (règles, thème, icônes,
+ * app.yaml) qui y manquent, sans jamais écraser ceux que l'utilisateur a modifiés (`force: false`).
+ * Une mise à niveau apporte ainsi ses nouvelles règles (ex. nouveaux fournisseurs) à une
+ * installation existante, au lieu de rester figée sur le contenu du premier démarrage.
+ */
 export function ensureConfigDir(configDir: string, appRoot: string): void {
   mkdirSync(configDir, { recursive: true });
   const defaults = join(appRoot, 'config');
-  if (
-    !existsSync(join(configDir, 'app.yaml')) &&
-    existsSync(defaults) &&
-    resolve(defaults) !== resolve(configDir)
-  ) {
+  if (existsSync(defaults) && resolve(defaults) !== resolve(configDir)) {
     cpSync(defaults, configDir, { recursive: true, force: false, errorOnExist: false });
   }
 }
