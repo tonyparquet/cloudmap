@@ -1635,3 +1635,11 @@ a.account-link {
   color: var(--text);
   font-weight: 600;
 }
+
+/* Sélecteur de langue sur l'écran de connexion (coin haut-droit) */
+.login-lang {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+}

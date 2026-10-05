@@ -6,6 +6,7 @@ import { navigate } from '../router.tsx';
 import { useApp } from '../store.ts';
 import { Alert, Field, useAction } from '../ui.tsx';
 import { Icon, Logo } from '../icons.tsx';
+import { LanguageSelector } from '../LanguageSelector.tsx';
 
 export interface RegisterResult {
   transferred?: { profiles: number; snapshots: number };
@@ -180,13 +181,18 @@ export function LoginPage() {
   }, [auth]);
 
   const brand = (
-    <div className="brand">
-      <Logo size={36} />
-      <div>
-        <div>{t('app.titre')}</div>
-        <div className="signature">{t('app.signature')}</div>
+    <>
+      <div className="login-lang">
+        <LanguageSelector />
       </div>
-    </div>
+      <div className="brand">
+        <Logo size={36} />
+        <div>
+          <div>{t('app.titre')}</div>
+          <div className="signature">{t('app.signature')}</div>
+        </div>
+      </div>
+    </>
   );
   if (!auth) return <div className="login card">{brand}</div>;
   if (auth.stage === 'mfa')
