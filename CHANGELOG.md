@@ -7,6 +7,8 @@
 
 ## [Non publié]
 
+## [1.5.4] - 2026-10-05
+
 ### Corrigé
 
 - Vue Organisation Azure : hiérarchie des groupes d'administration reconstituée depuis la chaîne
@@ -199,7 +201,8 @@ Première version publiée.
   lancement (voir `docs/bureau.md`).
 - macOS : Apple Silicon uniquement.
 
-[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.3...HEAD
+[Non publié]: https://github.com/tonyparquet/aws_map/compare/v1.5.4...HEAD
+[1.5.4]: https://github.com/tonyparquet/aws_map/compare/v1.5.3...v1.5.4
 [1.5.3]: https://github.com/tonyparquet/aws_map/compare/v1.5.2...v1.5.3
 [1.5.2]: https://github.com/tonyparquet/aws_map/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/tonyparquet/aws_map/compare/v1.5.0...v1.5.1
