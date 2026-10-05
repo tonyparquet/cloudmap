@@ -10,6 +10,8 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm build
+# Icônes officielles des fournisseurs embarquées (repli générique si le téléchargement échoue).
+RUN node_modules/.bin/tsx scripts/fetch-icons.ts || true
 
 # ---------------------------------------------------------------- dépendances natives d'exécution
 # Le serveur et la CLI sont bundlés : seuls better-sqlite3 et argon2 (prébuilds musl) restent externes.
@@ -35,7 +37,7 @@ COPY --from=runtime-deps /app/node_modules ./node_modules
 COPY --from=build /src/apps/server/dist/main.mjs ./apps/server/dist/main.mjs
 COPY --from=build /src/apps/cli/dist/main.mjs ./apps/cli/dist/main.mjs
 COPY --from=build /src/apps/web/dist ./apps/web/dist
-COPY config ./config
+COPY --from=build /src/config ./config
 COPY fixtures ./fixtures
 COPY docs/iam ./docs/iam
 COPY docs/azure ./docs/azure

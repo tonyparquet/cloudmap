@@ -71,14 +71,18 @@ async function assemble() {
     logLevel: 'warning',
   });
 
+  // Icônes officielles des fournisseurs (AWS, Azure, Google Cloud) : téléchargées puis embarquées
+  // pour que les diagrammes affichent les vrais logos ; repli sur les icônes génériques si le
+  // téléchargement échoue (hors ligne). Voir docs/decisions.md pour les licences des packs.
+  try {
+    run(bin(root, 'tsx'), [join(root, 'scripts', 'fetch-icons.ts')]);
+  } catch {
+    console.warn('fetch-icons indisponible : icônes génériques embarquées.');
+  }
   // Ressources lues par le serveur (APP_ROOT) : interface, règles, thème, icônes, fixtures, politiques IAM.
-  // Le pack d'icônes AWS téléchargé (licence AWS) n'est pas redistribué : icônes génériques seulement.
   const res = join(stage, 'cloudmap');
   cpSync(join(root, 'apps', 'web', 'dist'), join(res, 'apps', 'web', 'dist'), { recursive: true });
-  cpSync(join(root, 'config'), join(res, 'config'), {
-    recursive: true,
-    filter: (src) => !src.includes(join('icons', 'aws')),
-  });
+  cpSync(join(root, 'config'), join(res, 'config'), { recursive: true });
   cpSync(join(root, 'fixtures'), join(res, 'fixtures'), { recursive: true });
   for (const doc of ['iam', 'azure', 'gcp'])
     if (existsSync(join(root, 'docs', doc)))
