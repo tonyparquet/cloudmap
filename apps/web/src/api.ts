@@ -1,4 +1,4 @@
-import { t } from './i18n/index.ts';
+import { t, tError } from './i18n/index.ts';
 import { navigate } from './router.tsx';
 import { useApp } from './store.ts';
 
@@ -39,7 +39,7 @@ export async function api<T>(method: string, url: string, body?: unknown, retrie
     const err = new ApiError(
       res.status,
       obj.error?.code ?? 'ERREUR',
-      obj.error?.message ?? t('commun.erreur'),
+      tError(obj.error?.code, obj.error?.message ?? t('commun.erreur')),
     );
     if (res.status === 401 && !url.startsWith('/api/auth/')) {
       useApp.getState().setAuth(undefined);

@@ -22,6 +22,7 @@ export default defineConfig({
   outputDir: '.tmp/test-results',
   use: {
     baseURL: `https://localhost:${PORT}`,
+    locale: 'fr-FR',
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
     viewport: { width: 1600, height: 1000 },

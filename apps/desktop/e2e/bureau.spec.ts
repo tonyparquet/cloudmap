@@ -12,7 +12,7 @@ test('application de bureau : serveur local TLS, compte puis MFA, démo, navigat
   const config = mkdtempSync(join(root, '.tmp', 'bureau-'));
   const app = await electron.launch({
     executablePath: join(desktop, 'node_modules', 'electron', 'dist', 'electron'),
-    args: [join(desktop, 'dist', 'app')],
+    args: [join(desktop, 'dist', 'app'), '--lang=fr-FR'],
     env: { ...process.env, XDG_CONFIG_HOME: config, CLOUDMAP_DEMO: 'true' },
   });
   const win = await app.firstWindow();

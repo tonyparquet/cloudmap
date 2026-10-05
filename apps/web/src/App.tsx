@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { get, post, setCsrf } from './api.ts';
 import { Diagram } from './diagram/Diagram.tsx';
 import { t, type MessageKey } from './i18n/index.ts';
+import { LanguageSelector } from './LanguageSelector.tsx';
 import { AccountPage } from './pages/Account.tsx';
 import { AuditPage } from './pages/Audit.tsx';
 import { ConfigPage } from './pages/Config.tsx';
@@ -174,6 +175,7 @@ export function App() {
   const theme = useApp((s) => s.theme);
   const themes = useApp((s) => s.themes);
   const themeName = useApp((s) => s.themeName);
+  const locale = useApp((s) => s.locale);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -203,7 +205,7 @@ export function App() {
   }, [path]);
 
   if (!ready) return <div className="empty">{t('app.chargement')}</div>;
-  if (path === '/login' || !loggedIn) return <LoginPage />;
+  if (path === '/login' || !loggedIn) return <LoginPage key={locale} />;
 
   const user = auth.user;
   const guest = !!user?.guest;
@@ -218,7 +220,7 @@ export function App() {
     ['/aide', t('nav.aide'), true],
   ];
   return (
-    <div className="shell">
+    <div className="shell" key={locale}>
       <header className="topbar">
         <Link to="/profils" className="brand" aria-label={t('app.titre')}>
           <Logo size={22} />
@@ -250,6 +252,7 @@ export function App() {
             </option>
           ))}
         </select>
+        <LanguageSelector />
         <UpdatePill admin={user?.role === 'admin'} />
         {guest ? (
           <span className="who">{t('invite.nom')}</span>

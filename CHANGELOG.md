@@ -7,6 +7,13 @@
 
 ## [Non publié]
 
+### Ajouté
+
+- Interface multilingue : **français, anglais (Royaume-Uni), anglais (États-Unis), espagnol et
+  allemand**, avec un sélecteur à drapeau dans l'en-tête. La langue est détectée automatiquement
+  d'après le navigateur au premier lancement, puis mémorisée. Les messages d'erreur du serveur sont
+  aussi traduits (par leur code).
+
 ## [1.4.1] - 2026-10-05
 
 ### Corrigé

@@ -577,6 +577,41 @@ export const fr = {
   'maj.badge': 'Mise à jour {v}',
   'maj.nouveautes': 'Version {v} : nouveautés',
   'maj.pasDeNotes': 'Aucune note pour cette version.',
+
+  // Messages d'erreur du serveur, traduits côté client par leur code (sinon message brut du serveur).
+  'err.ERREUR': 'Une erreur est survenue.',
+  'err.REQUETE_INVALIDE': 'Requête invalide.',
+  'err.NON_AUTHENTIFIE': 'Vous devez vous connecter.',
+  'err.INTERDIT': 'Action non autorisée.',
+  'err.INTROUVABLE': 'Ressource introuvable.',
+  'err.CONFLIT': 'Conflit avec l’état actuel.',
+  'err.TROP_DE_REQUETES': 'Trop de requêtes : réessayez plus tard.',
+  'err.CSRF': 'Jeton de sécurité invalide : rechargez la page.',
+  'err.IDENTIFIANTS_INVALIDES': 'Identifiants invalides.',
+  'err.IDENTIFIANT_PRIS': 'Ce nom d’utilisateur est déjà pris.',
+  'err.INSCRIPTION_FERMEE': 'La création de compte est désactivée.',
+  'err.INVITE_DESACTIVE': 'Le mode invité est désactivé.',
+  'err.MOT_DE_PASSE_FAIBLE': 'Mot de passe trop faible (14 caractères minimum).',
+  'err.CODE_INVALIDE': 'Code invalide.',
+  'err.MFA_DEJA_ACTIF': 'La double authentification est déjà active.',
+  'err.REAUTH_REQUISE': 'Ré-authentification requise.',
+  'err.REAUTH_ECHEC': 'Échec de la ré-authentification.',
+  'err.OIDC_ECHEC': 'Échec de la connexion.',
+  'err.HUB_INVALIDE': 'L’identité propre de l’outil est indisponible.',
+  'err.IMPORT_SEUL': 'Ce profil est en import seul : ni scan ni identifiants.',
+  'err.VIA_PROFIL': 'Action impossible pour ce mode de profil.',
+  'err.AUCUN_SNAPSHOT': 'Aucun instantané disponible.',
+  'err.SCAN_EN_COURS': 'Un scan est déjà en cours pour ce profil.',
+  'err.CYCLE': 'Déplacement impossible : cela créerait un cycle.',
+  'err.TROP_DE_DOSSIERS': 'Trop de dossiers.',
+
+  // Sélecteur de langue.
+  'langue.titre': 'Langue',
+  'langue.fr': 'Français',
+  'langue.en-GB': 'Anglais (Royaume-Uni)',
+  'langue.en-US': 'Anglais (États-Unis)',
+  'langue.es': 'Espagnol',
+  'langue.de': 'Allemand',
 } as const;
 
 export type MessageKey = keyof typeof fr;
