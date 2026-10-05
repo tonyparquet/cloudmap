@@ -3,6 +3,7 @@ import { get } from '../api.ts';
 import { t } from '../i18n/index.ts';
 import { PROVIDER_IDS, providerOf, type Provider } from '../providers.ts';
 import { CopyButton, Field, useLoad } from '../ui.tsx';
+import { ReleaseLink, type UpdateStatus } from '../updates.tsx';
 import type { ProfileView } from './Profiles.tsx';
 
 interface IamHelp {
@@ -28,6 +29,7 @@ function Block({ title, text }: { title: string; text: string }) {
 export function HelpPage() {
   const profiles = useLoad(() => get<{ profiles: ProfileView[] }>('/api/profiles'), []);
   const changelog = useLoad(() => get<{ version: string; notes: string }>('/api/changelog'), []);
+  const updates = useLoad(() => get<UpdateStatus>('/api/updates'), []);
   const [profileId, setProfileId] = useState(
     () => new URLSearchParams(window.location.search).get('profil') ?? '',
   );
@@ -53,6 +55,24 @@ export function HelpPage() {
           <summary>{t('maj.nouveautes', { v: changelog.data.version })}</summary>
           <pre className="notes">{changelog.data.notes || t('maj.pasDeNotes')}</pre>
         </details>
+      )}
+      {updates.data?.enabled && (
+        <div className="card" data-testid="aide-maj">
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <span>
+              <strong>{t('maj.installee')} :</strong> <span className="mono">{updates.data.current}</span>
+              {updates.data.available &&
+                updates.data.latest &&
+                ` · ${t('maj.disponible', { v: updates.data.latest })}`}
+            </span>
+            {updates.data.available && (
+              <ReleaseLink
+                status={updates.data}
+                label={t('maj.telecharger', { v: updates.data.latest ?? '' })}
+              />
+            )}
+          </div>
+        </div>
       )}
       <fieldset className="choices inline compact" data-testid="aide-fournisseur">
         <legend>{t('form.fournisseur')}</legend>

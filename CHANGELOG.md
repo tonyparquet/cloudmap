@@ -7,6 +7,22 @@
 
 ## [Non publié]
 
+### Ajouté
+
+- Les **icônes officielles AWS, Azure et Google Cloud sont désormais embarquées** dans les
+  applications publiées (bureau et image Docker) : les diagrammes affichent les vrais logos des
+  services, plus seulement les icônes génériques. Repli générique si le téléchargement du pack échoue.
+- Page **Aide** : bloc « version installée / mise à jour disponible » avec lien de téléchargement,
+  visible par **tous les rôles** (éditeur, lecteur, invité), pour récupérer une mise à jour sans
+  être administrateur.
+
+### Corrigé
+
+- Durcissement signalé par l'analyse de code (CodeQL) : échappement de la version dans la lecture du
+  journal des modifications (injection regex), expression de redaction des clés privées non
+  polynomiale (ReDoS), tirage aléatoire sans biais pour les codes de secours, et vérification d'hôte
+  ancrée dans le panneau du diagramme.
+
 ## [1.5.0] - 2026-10-05
 
 ### Ajouté
