@@ -76,5 +76,5 @@ access:
 # du dépôt, consultées par le serveur. Dépôt privé : jeton en lecture via UPDATES_TOKEN_FILE.
 updates:
   enabled: true
-  feedUrl: https://api.github.com/repos/tonyparquet/aws_map/releases/latest
+  feedUrl: https://api.github.com/repos/tonyparquet/cloudmap/releases/latest
   intervalHours: 24

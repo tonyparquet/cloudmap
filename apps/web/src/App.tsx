@@ -58,19 +58,33 @@ export async function refreshAuth(): Promise<AuthState> {
   return s;
 }
 
-/** Administrateurs : badge discret quand une version plus récente est publiée. */
-function UpdatePill() {
+/**
+ * Badge discret quand une version plus récente est publiée, visible par tout utilisateur (utile en
+ * mode local/invité). L'administrateur ouvre la page Configuration (notes + recherche) ; les autres
+ * vont directement à la page de téléchargement de la release (ouverte hors de l'application).
+ */
+function UpdatePill({ admin }: { admin: boolean }) {
   const status = useLoad(() => get<UpdateStatus>('/api/updates'), []);
   if (!status.data?.available) return null;
-  return (
-    <Link
-      to="/configuration"
+  const label = t('maj.badge', { v: status.data.latest ?? '' });
+  const aria = t('maj.disponible', { v: status.data.latest ?? '' });
+  if (admin)
+    return (
+      <Link to="/configuration" className="update-pill" aria-label={aria}>
+        {label}
+      </Link>
+    );
+  return status.data.url ? (
+    <a
       className="update-pill"
-      aria-label={t('maj.disponible', { v: status.data.latest ?? '' })}
+      href={status.data.url}
+      target="_blank"
+      rel="noreferrer noopener"
+      aria-label={aria}
     >
-      {t('maj.badge', { v: status.data.latest ?? '' })}
-    </Link>
-  );
+      {label}
+    </a>
+  ) : null;
 }
 
 /** Onglets d'un profil, précédés du fil d'Ariane ; un profil « imports uniquement » n'a ni scan ni identifiants. */
@@ -236,7 +250,7 @@ export function App() {
             </option>
           ))}
         </select>
-        {user?.role === 'admin' && <UpdatePill />}
+        <UpdatePill admin={user?.role === 'admin'} />
         {guest ? (
           <span className="who">{t('invite.nom')}</span>
         ) : (

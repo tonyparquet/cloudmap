@@ -7,6 +7,14 @@
 
 ## [Non publié]
 
+### Corrigé
+
+- Bouton de mise à jour : la pastille « une nouvelle version est disponible » est désormais visible
+  par tout utilisateur connecté (y compris en mode invité, utile sur l'application de bureau), et non
+  plus seulement par les administrateurs. L'administrateur ouvre la page Configuration ; les autres
+  vont directement à la page de téléchargement.
+- Flux de mise à jour pointant sur le dépôt de publication actuel.
+
 ## [1.4.0] - 2026-10-05
 
 ### Ajouté
